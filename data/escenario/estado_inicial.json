@@ -1,0 +1,119 @@
+{
+  "_nota": "Estado heredado en t=0 (§5.2). El motor NO arranca en cero: el paro lleva quince días. Los nombres de nodo son ficticios sobre estructura real, pendiente de la decisión D1 de §12.1.",
+  "fecha_inicio": "2021-05-11T06:00",
+
+  "regiones": [
+    {
+      "region_id": "R-VAL", "nombre": "Valle",
+      "dias_autonomia_combustible": 3.4,
+      "dias_autonomia_alimentos": 3.0,
+      "dias_autonomia_oxigeno": 2.6,
+      "presion_hospitalaria": 0.92,
+      "intensidad_movilizacion": 84.0,
+      "nodos_secundarios_activos": 420
+    },
+    {
+      "region_id": "R-CAU", "nombre": "Cauca",
+      "dias_autonomia_combustible": 2.8,
+      "dias_autonomia_alimentos": 2.5,
+      "dias_autonomia_oxigeno": 1.8,
+      "presion_hospitalaria": 0.88,
+      "intensidad_movilizacion": 71.0,
+      "nodos_secundarios_activos": 260
+    },
+    {
+      "region_id": "R-NAR", "nombre": "Nariño",
+      "dias_autonomia_combustible": 3.1,
+      "dias_autonomia_alimentos": 3.4,
+      "dias_autonomia_oxigeno": 2.9,
+      "presion_hospitalaria": 0.74,
+      "intensidad_movilizacion": 58.0,
+      "nodos_secundarios_activos": 180
+    },
+    {
+      "region_id": "R-BUE", "nombre": "Buenaventura",
+      "dias_autonomia_combustible": 2.1,
+      "dias_autonomia_alimentos": 2.2,
+      "dias_autonomia_oxigeno": 2.4,
+      "presion_hospitalaria": 0.81,
+      "intensidad_movilizacion": 66.0,
+      "nodos_secundarios_activos": 140
+    }
+  ],
+
+  "corredores": [
+    {
+      "corredor_id": "C-PUE", "nombre": "Ciudad - Puerto",
+      "nodos": ["N001", "N002", "N003", "N004"],
+      "poblacion_aguas_abajo": 2400000,
+      "costo_diario_mm_cop": 48000,
+      "clases_prioridad": ["combustible", "alimentario", "humanitario", "general"]
+    },
+    {
+      "corredor_id": "C-SUR", "nombre": "Corredor Sur (Panamericana)",
+      "nodos": ["N005", "N006", "N007", "N008", "N009"],
+      "poblacion_aguas_abajo": 1650000,
+      "costo_diario_mm_cop": 31000,
+      "clases_prioridad": ["alimentario", "humanitario", "general"]
+    },
+    {
+      "corredor_id": "C-HOS", "nombre": "Anillo hospitalario",
+      "nodos": ["N010", "N011", "N012"],
+      "poblacion_aguas_abajo": 900000,
+      "costo_diario_mm_cop": 9000,
+      "clases_prioridad": ["humanitario"]
+    },
+    {
+      "corredor_id": "C-REF", "nombre": "Refinería - Centros de acopio",
+      "nodos": ["N013", "N014", "N015", "N016"],
+      "poblacion_aguas_abajo": 1200000,
+      "costo_diario_mm_cop": 27000,
+      "clases_prioridad": ["combustible"]
+    },
+    {
+      "corredor_id": "C-NOR", "nombre": "Corredor Norte",
+      "nodos": ["N017", "N018", "N019", "N020"],
+      "poblacion_aguas_abajo": 780000,
+      "costo_diario_mm_cop": 14000,
+      "clases_prioridad": ["alimentario", "general"]
+    }
+  ],
+
+  "_nota_nodos": "composicion_real es la CAPA 1: el motor la conoce y nadie más. Nunca debe salir en vista_publica(). Los cuatro nodos con control_voceria bajo son la trampa de la concertación: negociar allí produce una apertura parcial que se desmiente sola.",
+
+  "nodos": [
+    {"nodo_id": "N001", "nombre": "Peaje del Puerto", "region_id": "R-VAL", "corredor_id": "C-PUE", "dureza": 0.72, "dias_sostenido": 13, "apoyo_local": 0.81, "control_voceria": 0.35, "proximidad_infra_critica": false, "composicion_real": [0.62, 0.20, 0.18]},
+    {"nodo_id": "N002", "nombre": "Glorieta La Ceiba", "region_id": "R-VAL", "corredor_id": "C-PUE", "dureza": 0.55, "dias_sostenido": 11, "apoyo_local": 0.74, "control_voceria": 0.68, "proximidad_infra_critica": false, "composicion_real": [0.80, 0.14, 0.06]},
+    {"nodo_id": "N003", "nombre": "Puente Amarillo", "region_id": "R-VAL", "corredor_id": "C-PUE", "dureza": 0.84, "dias_sostenido": 15, "apoyo_local": 0.88, "control_voceria": 0.22, "proximidad_infra_critica": false, "composicion_real": [0.45, 0.22, 0.33]},
+    {"nodo_id": "N004", "nombre": "Km 18 vía al mar", "region_id": "R-BUE", "corredor_id": "C-PUE", "dureza": 0.61, "dias_sostenido": 9, "apoyo_local": 0.66, "control_voceria": 0.71, "proximidad_infra_critica": false, "composicion_real": [0.83, 0.11, 0.06]},
+
+    {"nodo_id": "N005", "nombre": "Cruce de Villarrica", "region_id": "R-CAU", "corredor_id": "C-SUR", "dureza": 0.48, "dias_sostenido": 8, "apoyo_local": 0.62, "control_voceria": 0.79, "proximidad_infra_critica": false, "composicion_real": [0.88, 0.08, 0.04]},
+    {"nodo_id": "N006", "nombre": "Alto de la Virgen", "region_id": "R-CAU", "corredor_id": "C-SUR", "dureza": 0.69, "dias_sostenido": 12, "apoyo_local": 0.79, "control_voceria": 0.41, "proximidad_infra_critica": false, "composicion_real": [0.58, 0.19, 0.23]},
+    {"nodo_id": "N007", "nombre": "Variante del Sur", "region_id": "R-CAU", "corredor_id": "C-SUR", "dureza": 0.53, "dias_sostenido": 7, "apoyo_local": 0.58, "control_voceria": 0.64, "proximidad_infra_critica": false, "composicion_real": [0.79, 0.15, 0.06]},
+    {"nodo_id": "N008", "nombre": "Puente de Guadua", "region_id": "R-NAR", "corredor_id": "C-SUR", "dureza": 0.44, "dias_sostenido": 6, "apoyo_local": 0.55, "control_voceria": 0.73, "proximidad_infra_critica": false, "composicion_real": [0.86, 0.10, 0.04]},
+    {"nodo_id": "N009", "nombre": "Retén de Pasto Norte", "region_id": "R-NAR", "corredor_id": "C-SUR", "dureza": 0.39, "dias_sostenido": 5, "apoyo_local": 0.49, "control_voceria": 0.58, "proximidad_infra_critica": false, "composicion_real": [0.84, 0.12, 0.04]},
+
+    {"nodo_id": "N010", "nombre": "Acceso Hospital Universitario", "region_id": "R-VAL", "corredor_id": "C-HOS", "dureza": 0.31, "dias_sostenido": 4, "apoyo_local": 0.38, "control_voceria": 0.82, "proximidad_infra_critica": false, "composicion_real": [0.93, 0.05, 0.02]},
+    {"nodo_id": "N011", "nombre": "Calle 5 con Autopista", "region_id": "R-VAL", "corredor_id": "C-HOS", "dureza": 0.42, "dias_sostenido": 6, "apoyo_local": 0.51, "control_voceria": 0.66, "proximidad_infra_critica": false, "composicion_real": [0.87, 0.09, 0.04]},
+    {"nodo_id": "N012", "nombre": "Rotonda del Oriente", "region_id": "R-CAU", "corredor_id": "C-HOS", "dureza": 0.58, "dias_sostenido": 10, "apoyo_local": 0.72, "control_voceria": 0.44, "proximidad_infra_critica": false, "composicion_real": [0.71, 0.17, 0.12]},
+
+    {"nodo_id": "N013", "nombre": "Portería de la refinería", "region_id": "R-VAL", "corredor_id": "C-REF", "dureza": 0.77, "dias_sostenido": 14, "apoyo_local": 0.69, "control_voceria": 0.28, "proximidad_infra_critica": true, "composicion_real": [0.52, 0.19, 0.29]},
+    {"nodo_id": "N014", "nombre": "Centro de acopio norte", "region_id": "R-VAL", "corredor_id": "C-REF", "dureza": 0.63, "dias_sostenido": 11, "apoyo_local": 0.64, "control_voceria": 0.47, "proximidad_infra_critica": true, "composicion_real": [0.68, 0.18, 0.14]},
+    {"nodo_id": "N015", "nombre": "Vía de carrotanques", "region_id": "R-BUE", "corredor_id": "C-REF", "dureza": 0.51, "dias_sostenido": 8, "apoyo_local": 0.57, "control_voceria": 0.62, "proximidad_infra_critica": false, "composicion_real": [0.81, 0.13, 0.06]},
+    {"nodo_id": "N016", "nombre": "Bomba del kilómetro 9", "region_id": "R-BUE", "corredor_id": "C-REF", "dureza": 0.46, "dias_sostenido": 7, "apoyo_local": 0.53, "control_voceria": 0.69, "proximidad_infra_critica": true, "composicion_real": [0.85, 0.11, 0.04]},
+
+    {"nodo_id": "N017", "nombre": "Terminal del Norte", "region_id": "R-VAL", "corredor_id": "C-NOR", "dureza": 0.49, "dias_sostenido": 9, "apoyo_local": 0.61, "control_voceria": 0.55, "proximidad_infra_critica": false, "composicion_real": [0.82, 0.13, 0.05]},
+    {"nodo_id": "N018", "nombre": "Cruce industrial", "region_id": "R-VAL", "corredor_id": "C-NOR", "dureza": 0.66, "dias_sostenido": 12, "apoyo_local": 0.70, "control_voceria": 0.33, "proximidad_infra_critica": false, "composicion_real": [0.61, 0.18, 0.21]},
+    {"nodo_id": "N019", "nombre": "Vía a la central de abastos", "region_id": "R-VAL", "corredor_id": "C-NOR", "dureza": 0.37, "dias_sostenido": 5, "apoyo_local": 0.44, "control_voceria": 0.76, "proximidad_infra_critica": false, "composicion_real": [0.90, 0.07, 0.03]},
+    {"nodo_id": "N020", "nombre": "Peaje del Norte", "region_id": "R-NAR", "corredor_id": "C-NOR", "dureza": 0.42, "dias_sostenido": 6, "apoyo_local": 0.50, "control_voceria": 0.67, "proximidad_infra_critica": false, "composicion_real": [0.85, 0.10, 0.05]},
+
+    {"nodo_id": "N021", "nombre": "Barrio Las Palmas", "region_id": "R-VAL", "corredor_id": null, "dureza": 0.70, "dias_sostenido": 13, "apoyo_local": 0.86, "control_voceria": 0.30, "proximidad_infra_critica": false, "composicion_real": [0.66, 0.19, 0.15]},
+    {"nodo_id": "N022", "nombre": "Loma del Oriente", "region_id": "R-VAL", "corredor_id": null, "dureza": 0.75, "dias_sostenido": 14, "apoyo_local": 0.89, "control_voceria": 0.19, "proximidad_infra_critica": false, "composicion_real": [0.49, 0.23, 0.28]},
+    {"nodo_id": "N023", "nombre": "Puente del Comercio", "region_id": "R-CAU", "corredor_id": null, "dureza": 0.52, "dias_sostenido": 8, "apoyo_local": 0.60, "control_voceria": 0.57, "proximidad_infra_critica": false, "composicion_real": [0.80, 0.14, 0.06]},
+    {"nodo_id": "N024", "nombre": "Salida a la vereda", "region_id": "R-NAR", "corredor_id": null, "dureza": 0.35, "dias_sostenido": 4, "apoyo_local": 0.42, "control_voceria": 0.71, "proximidad_infra_critica": false, "composicion_real": [0.91, 0.06, 0.03]}
+  ],
+
+  "instalaciones_criticas_candidatas": [
+    "Refinería", "Centro de acopio norte", "Subestación eléctrica", "Planta de oxígeno medicinal"
+  ]
+}

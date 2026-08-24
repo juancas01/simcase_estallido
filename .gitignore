@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Entornos virtuales
+.venv/
+venv/
+
+# Secretos
+.env
+
+# Node
+node_modules/
+
+# Herramientas de IA
+.claude/
+
+# Salida del ejercicio
+logs/
+sim_history/
+*.log
+
+# Sistema
+.DS_Store
+Thumbs.db

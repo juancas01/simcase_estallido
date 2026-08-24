@@ -1,0 +1,27 @@
+[project]
+name = "simcase-estallido"
+version = "0.1.0"
+description = "Simulación de crisis aumentada con IA — El Estado frente al Estallido Social (Paro Nacional 2021)"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi[standard]>=0.115",
+    "pydantic>=2.9",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+agents = [
+    "langchain>=0.3",
+    "langchain-openai>=0.2",
+    "langgraph>=0.2",
+]
+dev = [
+    "pytest>=8.3",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.setuptools.packages.find]
+include = ["src*"]
