@@ -80,6 +80,10 @@ def _cifras_en_disputa() -> dict:
     """
     Las tres cifras. Divergen porque las fuentes tienen sesgos opuestos, no
     porque alguien mienta — que es justamente lo que hace difícil el problema.
+
+    PENDIENTE(B3): la divergencia sale hoy de aritmética cableada y no del motor
+    de información. Debe salir de `information.estimar_nodo()`, que ya existe y
+    ya produce la dispersión real. Ver PENDIENTES.md.
     """
     verificada = sum(1 for n in _estado.nodos.values() if not n.abierto)
     return {
@@ -90,7 +94,11 @@ def _cifras_en_disputa() -> dict:
 
 
 def _publicaciones_recientes() -> list[dict]:
-    """Placeholder hasta conectar los seis agentes de la capa 3 (§9)."""
+    """
+    PENDIENTE(B2): plantilla hasta conectar los seis agentes de entorno de la
+    capa 3 (§9) — Comité del Paro, prensa, redes, gremios, internacional y
+    alcaldes. Ver PENDIENTES.md.
+    """
     out = []
     for r in motor.historial[-2:]:
         for ev in r.eventos:
@@ -126,8 +134,9 @@ def interpretar(orden: TextoOrden):
     Ese momento no es un trámite: la sala oye su propia decisión reformulada,
     con su riesgo, y con frecuencia la cambia.
 
-    TODO(capa 4): aquí entra el NLU con herramientas tipadas. Por ahora la
-    interpretación es determinista y de prueba.
+    PENDIENTE(B1): aquí entra el NLU con herramientas tipadas de la capa 4. Por
+    ahora la interpretación ignora el texto y es determinista y de prueba. Ver
+    PENDIENTES.md.
     """
     plan_id = f"plan-{len(sala['planes']) + 1}"
     acciones = []

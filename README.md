@@ -27,6 +27,7 @@ puede cerrar dos, y eso sale de la aritmética del motor, no de un guion.
 | **entender cómo funciona la simulación** | [`docs/COMO_FUNCIONA.md`](docs/COMO_FUNCIONA.md) — explica el motor con los números reales que usa, sin necesidad de leer código |
 | saber **por qué** está diseñado así | [`docs/propuesta_simulacion_estallido_social.md`](docs/propuesta_simulacion_estallido_social.md) — el documento de diseño completo |
 | montar **otro** caso con esta arquitectura | [`docs/guia_arquitectura_simulaciones.md`](docs/guia_arquitectura_simulaciones.md) |
+| saber **qué falta** por hacer | [`PENDIENTES.md`](PENDIENTES.md) — decisiones abiertas, código sin escribir y calibración, en un solo sitio |
 
 ---
 
@@ -73,7 +74,7 @@ src/engine/          EL MOTOR. Único dueño del estado. Sin IA, determinista sa
   simulation.py        el bucle de turnos
 
 src/api/             capa delgada sobre el motor
-src/agents/          capa 4 · canal de órdenes en LN (pendiente)
+src/agents/          capas 3 y 4 · agentes y órdenes en LN (sin escribir)
 data/escenario/      el caso, en datos y no en código
 web_ui/              las tres superficies
 scripts/             corredor sin interfaz, para calibrar
@@ -123,14 +124,15 @@ si alguien lo rompe.
 - 18 pruebas sin modelo, en 0,1 s
 - las tres superficies de la interfaz, conectadas a la API
 
-**Falta:**
+**Falta** — la lista completa, con su porqué y su sitio en el código, está en
+[`PENDIENTES.md`](PENDIENTES.md). En resumen:
 
-- **capa 4** — el canal de órdenes en lenguaje natural. `/api/plan/interpretar`
-  devuelve hoy una interpretación determinista de prueba.
-- **capa 3** — los seis agentes de entorno (Comité del Paro, prensa, redes,
-  gremios, internacional, alcaldes). La esfera pública se llena con un
-  marcador de posición.
-- **calibración** — ver abajo.
+- **capa 4** — el canal de órdenes en lenguaje natural (hoy, un stub determinista)
+- **capa 3** — los seis agentes de entorno (hoy, plantilla)
+- **calibración** — cuatro problemas medidos, ver abajo
+- **seis decisiones de diseño** que no son técnicas y no son mías
+
+Los stubs están marcados donde viven: `grep -rn "PENDIENTE" src/`
 
 ---
 
@@ -155,9 +157,11 @@ herramienta que lo mide. Medición del 2026-08-24:
 
 Ninguna domina —`solo_mesa` conserva las reservas pero no salva a nadie;
 `humanitaria` salva la mitad y lo paga en legitimidad y cohesión— pero quedan
-dos problemas abiertos: la cohesión se hunde a 0 en tres de las cinco (satura), y
-`constituida` rinde por debajo de lo que debería para una sala que hace las cosas
-bien. Ver §12.2 de la propuesta.
+cuatro problemas abiertos: la cohesión se hunde a 0 en tres de las cinco
+(satura), las muertes son 147 en cuatro de las cinco, `constituida` rinde por
+debajo de lo que debería para una sala que hace las cosas bien, y la fuerza casi
+nunca alcanza a abrir un corredor en cinco turnos. Los cuatro están en
+[`PENDIENTES.md` §C](PENDIENTES.md#c--calibración).
 
 ---
 

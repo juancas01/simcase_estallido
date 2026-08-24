@@ -1,0 +1,6 @@
+PENDIENTE(B4): aquí van las ocho fichas de rol y sus RADs, en datos y no en
+código, por la misma razón que el escenario: lo que se duplique entre los datos
+y el prompt de un modelo se desincroniza. Siempre.
+
+Depende de las decisiones A1 (nombres reales o ficticios) y A5 (paquete
+detonante fijo o sorteado). Ver PENDIENTES.md.
