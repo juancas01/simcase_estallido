@@ -20,9 +20,13 @@ operación de fuerza, cada cifra desmentida y cada sesión de mesa modifica la
 intensidad de aquello que se intenta contener. Abrir un corredor por la fuerza
 puede cerrar dos, y eso sale de la aritmética del motor, no de un guion.
 
-El diseño completo está en
-[`docs/propuesta_simulacion_estallido_social.md`](docs/propuesta_simulacion_estallido_social.md).
-**Léelo antes de tocar el código.**
+### Por dónde empezar
+
+| Si quieres… | Lee |
+|---|---|
+| **entender cómo funciona la simulación** | [`docs/COMO_FUNCIONA.md`](docs/COMO_FUNCIONA.md) — explica el motor con los números reales que usa, sin necesidad de leer código |
+| saber **por qué** está diseñado así | [`docs/propuesta_simulacion_estallido_social.md`](docs/propuesta_simulacion_estallido_social.md) — el documento de diseño completo |
+| montar **otro** caso con esta arquitectura | [`docs/guia_arquitectura_simulaciones.md`](docs/guia_arquitectura_simulaciones.md) |
 
 ---
 
