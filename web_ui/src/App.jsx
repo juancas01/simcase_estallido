@@ -1,95 +1,134 @@
-import TableroSituacion from './components/TableroSituacion'
+// ---------------------------------------------------------------------------
+// CUATRO SUPERFICIES (v2)
+//
+//   /tablero        PROYECTAR · lo que el Estado tiene por cierto, grano grueso
+//                   — lleva la esfera pública como barra lateral plegable
+//   /esfera         PROYECTAR · lo que se dice, como pantalla aparte
+//   /vista/{rol}    el dispositivo de cada uno · su cartera en alta resolución
+//   /consola        donde se transcriben las órdenes · NO proyectar
+//
+// La distancia entre las dos proyecciones es el caso, y solo se percibe si se ven
+// A LA VEZ. De ahí los dos montajes:
+//
+//   · con DOS proyectores, `/tablero` y `/esfera` en pantallas distintas
+//   · con UNO solo o un portátil, `/tablero` con su barra lateral abierta
+//
+// Lo que no se hace nunca es ponerla en una pestaña: una pestaña sustituye una
+// cosa por la otra y elimina justamente lo que hay que enseñar.
+//
+// Y NO HAY MODERADOR COMO FIGURA APARTE: quien opera la consola puede ser uno de
+// los ocho. El sistema conduce el turno.
+// ---------------------------------------------------------------------------
+
+import Tablero from './components/Tablero'
 import EsferaPublica from './components/EsferaPublica'
-import ConsolaModerador from './components/ConsolaModerador'
+import Consola from './components/Consola'
+import VistaPrivada from './components/VistaPrivada'
+import { ROLES } from './comun.jsx'
 import LogoAiLab from '../logos/LOGO Ai Lab_blanco.png'
 
-// ---------------------------------------------------------------------------
-// TRES SUPERFICIES, UN SOLO TECLADO (§10 de la propuesta)
-//
-// El ejercicio anterior enseñó que una pantalla por participante produce ocho
-// personas mirando ocho pantallas y ninguna mirando a las otras siete. En un
-// caso cuyo objeto es la ARQUITECTURA DE DECISIÓN de un cuerpo colegiado,
-// retirar las pantallas individuales no es una concesión: es lo que hace que
-// el objeto exista.
-//
-//   /tablero   proyectado a toda la sala · lo que el Estado tiene por cierto
-//   /esfera    proyectado a toda la sala · lo que se dice
-//   /consola   el único teclado, del moderador · NO se proyecta
-//
-// La distancia entre las dos proyecciones es el caso. Nunca en pestañas: la
-// divergencia solo se percibe simultánea.
-// ---------------------------------------------------------------------------
-
-const PANTALLAS = [
+const PROYECCIONES = [
   {
     ruta: '/tablero',
     nombre: 'Tablero de situación',
-    detalle: 'Proyección para la sala. Lo que el Estado tiene por cierto, con su procedencia.',
-    proyectar: true,
+    detalle: 'Qué está pasando: reservas, mapa, corredores y pliego. Lleva la esfera pública como barra lateral, para montajes de una sola pantalla.',
   },
   {
     ruta: '/esfera',
     nombre: 'Esfera pública',
-    detalle: 'Proyección para la sala. Prensa, redes, internacional y la guerra de cifras.',
-    proyectar: true,
-  },
-  {
-    ruta: '/consola',
-    nombre: 'Consola del moderador',
-    detalle: 'El único teclado. Transcribe, lee el plan de vuelta con su riesgo, entrega notas.',
-    proyectar: false,
+    detalle: 'Qué se dice: prensa, redes, gremios y denuncias sin verificar. Para el montaje de dos proyectores.',
   },
 ]
 
-const Portada = () => (
-  <div style={{
-    minHeight: '100vh', display: 'flex', flexDirection: 'column',
-    alignItems: 'center', justifyContent: 'center', gap: '2rem',
-    backgroundColor: 'var(--bg-main, #0d1117)', color: 'var(--text-main, #e6e9ee)',
-    fontFamily: 'system-ui, sans-serif', padding: '2rem',
-  }}>
-    <img src={LogoAiLab} alt="AI Lab" style={{ height: '3rem', opacity: 0.9 }} />
-    <h1 style={{ fontSize: '1.5rem', fontWeight: 600, textAlign: 'center' }}>
-      SIMCASE · El Estado frente al Estallido Social
-    </h1>
-    <p style={{ opacity: 0.7, maxWidth: '38rem', textAlign: 'center', lineHeight: 1.6 }}>
-      Puesto de Mando Unificado · Casa de Nariño, segunda semana de mayo de 2021.
-      <br />
-      <strong>La mesa no lleva pantallas.</strong> Dos proyecciones para la sala y una consola
-      para el moderador.
-    </p>
-    <div style={{ display: 'grid', gap: '0.75rem', width: '100%', maxWidth: '34rem' }}>
-      {PANTALLAS.map(p => (
-        <a key={p.ruta} href={p.ruta} style={{
-          display: 'block', padding: '1rem 1.25rem', borderRadius: '0.5rem',
-          border: '1px solid rgba(255,255,255,0.15)', textDecoration: 'none',
-          color: 'inherit', backgroundColor: 'rgba(255,255,255,0.04)',
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <span style={{ fontWeight: 600 }}>{p.nombre}</span>
-            <span style={{
-              fontSize: '0.7rem', letterSpacing: '0.08em', textTransform: 'uppercase',
-              opacity: 0.5,
-            }}>
-              {p.proyectar ? 'proyectar' : 'no proyectar'}
-            </span>
-          </div>
-          <div style={{ opacity: 0.65, fontSize: '0.9rem', marginTop: '0.15rem' }}>{p.detalle}</div>
-          <code style={{ opacity: 0.45, fontSize: '0.8rem' }}>{p.ruta}</code>
-        </a>
-      ))}
+function Portada() {
+  return (
+    <div className="pantalla">
+      <div className="cuerpo" style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        justifyContent: 'center', gap: '1.75rem', padding: '3rem 1.5rem',
+      }}>
+        <img src={LogoAiLab} alt="AI Lab" style={{ height: '2.6rem', opacity: 0.85 }} />
+        <div style={{ textAlign: 'center', maxWidth: '40rem' }}>
+          <h1 style={{ fontSize: '1.5rem' }}>
+            SIMCASE · El Estado frente al Estallido Social
+          </h1>
+          <p style={{ color: 'var(--texto-2)', marginTop: '0.75rem' }}>
+            Puesto de Mando Unificado · segunda semana de mayo.
+            Ocho personas, dos horas, y un motor que calcula las consecuencias de
+            lo que la sala decide.
+          </p>
+        </div>
+
+        <Seccion titulo="Proyectar a la sala" nota="a la vez · con una sola pantalla, use la barra del tablero">
+          {PROYECCIONES.map(p => (
+            <a key={p.ruta} href={p.ruta} className="tarjeta"
+               style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
+              <div style={{ fontWeight: 650 }}>{p.nombre}</div>
+              <div style={{ color: 'var(--texto-2)', fontSize: '0.88rem',
+                            marginTop: '0.15rem' }}>{p.detalle}</div>
+              <code style={{ color: 'var(--texto-3)', fontSize: '0.78rem' }}>{p.ruta}</code>
+            </a>
+          ))}
+        </Seccion>
+
+        <Seccion titulo="Vista personal de cada rol"
+                 nota="en su propio dispositivo · personal, no confidencial">
+          {ROLES.map(r => (
+            <a key={r.id} href={`/vista/${encodeURIComponent(r.id)}`} className="tarjeta"
+               style={{ textDecoration: 'none', color: 'inherit', display: 'block',
+                        padding: '0.7rem 0.9rem' }}>
+              <span className="eyebrow">{r.frente}</span>
+              <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>{r.nombre}</div>
+            </a>
+          ))}
+        </Seccion>
+
+        <Seccion titulo="Consola" nota="no proyectar · puede operarla uno de los ocho">
+          <a href="/consola" className="tarjeta"
+             style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
+            <div style={{ fontWeight: 650 }}>Transcripción de órdenes</div>
+            <div style={{ color: 'var(--texto-2)', fontSize: '0.88rem',
+                          marginTop: '0.15rem' }}>
+              Se escribe lo que la mesa acordó y la pantalla devuelve el plan con su
+              banda de riesgo, para leerlo en voz alta antes de ejecutar.
+            </div>
+            <code style={{ color: 'var(--texto-3)', fontSize: '0.78rem' }}>/consola</code>
+          </a>
+        </Seccion>
+      </div>
     </div>
-  </div>
-)
+  )
+}
 
-function App() {
-  const ruta = window.location.pathname
+function Seccion({ titulo, nota, children }) {
+  return (
+    <div style={{ width: '100%', maxWidth: '52rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between',
+                    alignItems: 'baseline', marginBottom: '0.5rem' }}>
+        <span className="eyebrow">{titulo}</span>
+        <span className="eyebrow" style={{ letterSpacing: '0.06em',
+                                           textTransform: 'none' }}>{nota}</span>
+      </div>
+      <div className="rejilla" style={{
+        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0.6rem',
+      }}>
+        {children}
+      </div>
+    </div>
+  )
+}
 
-  if (ruta === '/tablero') return <TableroSituacion />
+export default function App() {
+  const ruta = decodeURIComponent(window.location.pathname)
+
+  if (ruta === '/tablero') return <Tablero />
   if (ruta === '/esfera') return <EsferaPublica />
-  if (ruta === '/consola') return <ConsolaModerador />
+  if (ruta === '/consola') return <Consola />
+
+  if (ruta.startsWith('/vista/')) {
+    const rol = ruta.slice('/vista/'.length)
+    if (ROLES.some(r => r.id === rol)) return <VistaPrivada rol={rol} />
+  }
 
   return <Portada />
 }
-
-export default App

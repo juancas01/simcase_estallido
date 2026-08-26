@@ -10,15 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "d3-scale": "^4.0.2",
-    "d3-scale-chromatic": "^3.1.0",
-    "leaflet": "^1.9.4",
     "lucide-react": "^0.577.0",
-    "proj4": "^2.20.4",
-    "proj4leaflet": "^1.0.2",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "react-leaflet": "^5.0.0"
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
