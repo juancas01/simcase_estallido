@@ -79,11 +79,6 @@ def cargar_estado(ruta: str | Path | None = None) -> Estado:
             clases_prioridad=set(c.get("clases_prioridad", [])),
         )
 
-    # PENDIENTE(B4): falta el hecho H1 del paquete detonante — el incidente
-    # nocturno junto a una instalación de combustible, con un herido grave de la
-    # fuerza pública. Los puntos contiguos a infraestructura crítica ya vienen
-    # marcados con `proximidad_infra_critica`; falta el evento que los active.
-
     # El hecho H2 del paquete detonante: dos denuncias graves sin verificar, una
     # cierta y otra falsa, y nada las distingue.
     for x in d.get("denuncias_iniciales", []):
@@ -109,8 +104,82 @@ def cargar_estado(ruta: str | Path | None = None) -> Estado:
     estado.posicion_gremios = "fuera"
     estado.ultimatum_gremios_turno = P.TURNO_ULTIMATUM_GREMIOS
 
+    _aplicar_hecho_h1(estado, d.get("hecho_h1"))
+
     _verificar_invariantes(estado)
     return estado
+
+
+def _aplicar_hecho_h1(estado: Estado, h: dict | None) -> None:
+    """
+    H1 del paquete detonante: el incidente nocturno junto a la refinería.
+
+    **Ya ocurrió.** La sala lo recibe en el parte heredado, no lo provoca, y esa
+    diferencia es el punto: el turno 1 no empieza en calma sino con un herido
+    grave de la fuerza pública y una instalación crítica bajo presión.
+
+    POR QUÉ `N013` Y NO OTRO. El punto ya trae la trampa en los datos:
+
+        dureza 0,77 .............. el más duro de los tres junto a infraestructura
+        control_voceria 0,28 ..... casi no hay con quién concertar
+        51 % protesta legítima ... apenas sobre el umbral de 0,50, así que
+                                   operar ahí cuesta el doble
+        región epicentro, corredor de la refinería — el que Minas necesita
+
+    Responder con fuerza es la jugada evidente y es la más cara, en el punto
+    donde menos se puede negociar, sobre el corredor que otra cartera necesita
+    intacto. Y la mesa todavía no se ha constituido: sin registro escrito, sin
+    protocolo de vocería y sin criterio de priorización, los mitigadores están
+    al mínimo.
+
+    LO QUE H1 NO HACE: matar a nadie ni abrir el punto. Es una condición
+    inicial, no un resultado. Si el hecho detonante ya resolviera algo, el turno
+    1 empezaría con menos decisiones y no con más.
+
+    La intensidad se asigna DIRECTAMENTE y no vía `registrar_evento()`: ese
+    camino lleva la cuenta de repeticiones para los rendimientos decrecientes, y
+    gastar ahí un turno que aún no ha empezado descontaría el primer incidente
+    de verdad.
+    """
+    if not h:
+        return
+
+    nodo = estado.nodos.get(h["nodo"])
+    if nodo is None:
+        raise ValueError(
+            f"El hecho H1 apunta a «{h['nodo']}», que no existe en el escenario."
+        )
+
+    nodo.dureza = min(1.0, nodo.dureza + h.get("dureza_extra", 0.0))
+
+    region = estado.regiones[nodo.region_id]
+    region.intensidad_movilizacion = min(
+        100.0, region.intensidad_movilizacion + h.get("intensidad_region", 0.0))
+    estado.intensidad_nacional = min(
+        100.0, estado.intensidad_nacional + h.get("intensidad_nacional", 0.0))
+
+    # La custodia inmoviliza fuerza: es la colisión entre lo que Minas necesita
+    # proteger y lo que Defensa necesita disponible. Sale de la reserva, para que
+    # se note en el contador del tablero desde el primer minuto.
+    instalacion = h.get("instalacion")
+    if instalacion:
+        estado.instalaciones_criticas.append(instalacion)
+    cuantas = h.get("custodia_inmovilizada", 0)
+    for u in estado.unidades:
+        if cuantas <= 0:
+            break
+        if u.tipo == "policia" and u.asignacion != "custodia":
+            u.asignacion = "custodia"
+            u.ubicacion = nodo.nodo_id
+            cuantas -= 1
+
+    estado.hecho_h1 = {
+        "nodo": nodo.nodo_id,
+        "nombre": nodo.nombre,
+        "region": region.nombre,
+        "texto": h.get("texto", ""),
+        "publicacion": h.get("publicacion"),
+    }
 
 
 def _construir_fuerza() -> list[Unidad]:

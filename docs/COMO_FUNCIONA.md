@@ -978,18 +978,22 @@ reloj tenía **una sola entrada**. **Ahora** tiene tres:
 ```
   estrategia      netas  reap  muert  legit  cohes  credib   resp
   ---------------------------------------------------------------------
-  solo_fuerza         1     2     64     15      0      21     24
-  solo_mesa           5     4     64     59     56      29     49
+  solo_fuerza         1     2     64     11      0      21     20
+  solo_mesa           9     0     64     65     56      49     49
   constituida         3     1     48     24     74      21     38
-  humanitaria         3     0     16     32     28      35     50
+  humanitaria         3     0     14     41     28      35     54
   logistica           3     1     24     41     40      26     39
-  pasiva              0     0     64     23     28      45     43
+  pasiva              1     0     64     23     28      45     43
 ```
 
-**Ninguna domina, que es el criterio.** `solo_mesa` abre más caminos y conserva
-las reservas — y deja morir a la misma gente que `pasiva`. `humanitaria` salva al
-75 % y lo paga en cohesión y en caminos. `constituida` tiene la mejor mesa y opera
-lo justo para gastar legitimidad. `solo_fuerza` se queda sin nada.
+**Ninguna domina, y el reparto es el que debe ser.** `solo_mesa` abre nueve
+caminos y conserva las reservas — **y deja morir exactamente a la misma gente que
+`pasiva`**. `humanitaria` salva 50 de las 64 muertes y abre un tercio de los
+caminos. `constituida` tiene la mejor mesa y opera lo justo para gastar
+legitimidad. `solo_fuerza` se queda sin nada.
+
+El dilema central del caso está en esa primera línea: **abrir el país y dejar
+morir a la gente, o salvarla y entregar el país cerrado.**
 
 > **Si en el debriefing una opción resulta haber sido obviamente correcta desde el
 > turno 1, el ejercicio está mal calibrado.** Hoy no la hay.
@@ -1015,7 +1019,7 @@ uv run python scripts/correr_ejercicio.py --comparar
 # Cambiar la semilla y ver cuánto es ruido y cuánto es señal
 uv run python scripts/correr_ejercicio.py --semilla 7 --comparar
 
-# Las 57 pruebas, sin modelo, en dos décimas de segundo
+# Las 59 pruebas, sin modelo, en dos décimas de segundo
 uv run pytest -q
 
 # La API con sus superficies
@@ -1035,16 +1039,15 @@ arquitectura de cuatro capas se respeta.
 |---|---|---|
 | **B1** | El archivo de la corrida · persistencia y telemetría en uno | el historial vive en memoria; reiniciar el servidor lo borra |
 | **B7** | El debriefing | veinte minutos de sesión sin nada que proyectar. Depende de **B1** |
-| **B4** | El hecho H1 del paquete detonante | propuesta escrita; falta implementarla en `N013` |
-| **B2** | La identidad de los ocho roles, en datos | hoy duplicada en `comun.jsx`. Las **fichas** siguen en papel, y así se quedan |
+| **B2** | La identidad de los ocho roles, en datos | hoy duplicada en `comun.jsx`. Las **fichas y sus agendas** siguen en papel: son contexto del rol, no una pieza del motor |
+| **B3** | Decisiones alineadas con información privada | la medida de si la asimetría produjo conversación — derivada del motor, no de un observador |
 
 **Con personas en una sala** — lo que ninguna prueba de código sustituye:
 
 | | Qué | Por qué no lo ve el motor |
 |---|---|---|
 | **P2–P4** | Las tres corridas con gente | el motor puede estar perfecto y el ejercicio no funcionar |
-| **B3** | La hoja de observación | «¿quién compartió primero algo de su vista?» ocurre en voz alta y no pasa por ninguna pantalla |
-| **C1–C3** | Tres calibraciones | solo se ven con ocho personas dentro |
+| **C1–C4** | Cuatro calibraciones | solo se ven con ocho personas dentro |
 
 La lista completa, con sus propuestas de diseño, en
 [`PENDIENTES.md`](../PENDIENTES.md). Los stubs están marcados donde viven:
@@ -1052,7 +1055,7 @@ La lista completa, con sus propuestas de diseño, en
 
 ---
 
-*Motor v2 · 57 pruebas en verde · semilla `20210511`. Diseño en
+*Motor v2 · 59 pruebas en verde · semilla `20210511`. Diseño en
 [`propuesta.md`](propuesta.md); diagnóstico del motor anterior en
 [`historial/mapa_de_palancas.md`](historial/mapa_de_palancas.md).*
 

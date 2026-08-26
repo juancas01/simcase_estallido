@@ -385,6 +385,10 @@ class Estado:
     instalaciones_criticas: list[str] = field(default_factory=list)
     frentes_rurales_descubiertos: int = 0
 
+    # H1 del paquete detonante, tal como llega en el parte heredado. Es texto
+    # para la sala, no una variable: el motor ya aplicó sus efectos al cargar.
+    hecho_h1: dict = field(default_factory=dict)
+
     # UN SOLO BOLSILLO DE TRES: verificar un punto, verificar una denuncia o
     # acompañar una operación salen de aquí. Se repone al empezar cada turno.
     duplas_disponibles: int = P.DUPLAS_TOTALES

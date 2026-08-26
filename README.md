@@ -186,7 +186,7 @@ serlo — y eso, sobre hechos con responsabilidad judicial viva, es tomar partid
 - denuncias con veracidad oculta, y el ultimátum gremial del turno 1
 - territorio ficticio, con posiciones para el mapa esquemático
 - corredor sin interfaz con **seis estrategias** comparables
-- **57 pruebas sin modelo, en 0,2 s**
+- **59 pruebas sin modelo, en 0,2 s**
 
 **Falta** — la lista completa está en [`PENDIENTES.md`](PENDIENTES.md):
 
@@ -212,18 +212,17 @@ estrategia pura gane. `scripts/correr_ejercicio.py --comparar` lo mide.
 ```
   estrategia      netas  reap  muert  legit  cohes  credib   resp
   ---------------------------------------------------------------------
-  solo_fuerza         1     2     64     15      0      21     24
-  solo_mesa           5     4     64     59     56      29     49
+  solo_fuerza         1     2     64     11      0      21     20
+  solo_mesa           9     0     64     65     56      49     49
   constituida         3     1     48     24     74      21     38
-  humanitaria         3     0     16     32     28      35     50
+  humanitaria         3     0     14     41     28      35     54
   logistica           3     1     24     41     40      26     39
-  pasiva              0     0     64     23     28      45     43
+  pasiva              1     0     64     23     28      45     43
 ```
 
-**Ninguna domina.** `solo_mesa` abre más caminos y conserva las reservas — y deja
-morir a la misma gente que `pasiva`. `humanitaria` salva al 75 % y lo paga en
-cohesión y en caminos. `constituida` tiene la mejor mesa y gasta legitimidad al
-operar. `solo_fuerza` se queda sin nada.
+**Ninguna domina.** `solo_mesa` abre nueve caminos y conserva las reservas — y
+deja morir exactamente a la misma gente que `pasiva`. `humanitaria` salva 50 de
+las 64 muertes y abre un tercio de los caminos. Ahí está el dilema del caso.
 
 Los dos problemas que estaban medidos —la cohesión saturada en 0 y las muertes
 idénticas en cuatro de cinco estrategias— **no eran de coeficientes: eran piezas

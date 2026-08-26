@@ -905,3 +905,60 @@ def test_el_resumen_de_pendientes_no_se_deja_ninguna_entrada():
     assert not detalladas - citadas, (
         f"entradas que existen pero no salen en «En una mirada»: "
         f"{sorted(detalladas - citadas)}")
+
+
+# ===========================================================================
+# H1 — el hecho detonante que la sala recibe
+# ===========================================================================
+
+def test_h1_llega_aplicado_y_no_resuelve_nada():
+    """
+    H1 **ya ocurrió**: la sala lo recibe en el parte heredado, no lo provoca.
+
+    Lo que tiene que hacer es dejar el turno 1 más cargado, no menos. Si el
+    hecho detonante resolviera algo —abrir el punto, cerrar una denuncia— el
+    ejercicio empezaría con menos decisiones sobre la mesa, que es exactamente
+    lo contrario de lo que un paquete detonante existe para hacer.
+    """
+    e = cargar_estado()
+    assert e.hecho_h1, "H1 no se aplicó al cargar"
+
+    nodo = e.nodos[e.hecho_h1["nodo"]]
+    assert nodo.proximidad_infra_critica, "H1 debe caer junto a infraestructura crítica"
+
+    # No resuelve: el punto sigue cerrado y nadie lo ha mirado.
+    assert not nodo.abierto
+    assert nodo.ultima_verificacion_turno is None
+
+    # Sí carga: endurece el punto e inmoviliza fuerza en la instalación.
+    assert nodo.dureza > 0.77, "el punto se endurece tras el incidente"
+    custodia = [u for u in e.unidades if u.asignacion == "custodia"]
+    assert len(custodia) == 3
+    assert {u.ubicacion for u in custodia} == {nodo.nodo_id}
+    assert e.instalaciones_criticas
+
+
+def test_h1_cae_donde_la_via_pactada_casi_no_existe():
+    """
+    **Por qué `N013` y no otro.** El punto tiene que hacer cara la respuesta
+    evidente. Si H1 cayera donde se puede concertar barato, no ofrecería ningún
+    dilema: se pacta y se sigue.
+
+    Las tres condiciones, las tres ya en los datos del escenario.
+    """
+    e = cargar_estado()
+    nodo = e.nodos[e.hecho_h1["nodo"]]
+
+    # 1 · casi no hay con quién concertar
+    assert nodo.control_voceria < 0.35
+
+    # 2 · mayoría de protesta legítima → operar cuesta el doble
+    assert nodo.composicion_real.protesta_legitima > P.UMBRAL_PROTESTA_CIVIL
+
+    # 3 · en el epicentro, y sobre un corredor que otra cartera necesita
+    assert nodo.region_id == e.region_epicentro
+    assert nodo.corredor_id is not None
+
+    # Y es el más duro de los puntos junto a infraestructura crítica.
+    vecinos = [n for n in e.nodos.values() if n.proximidad_infra_critica]
+    assert nodo.dureza == max(n.dureza for n in vecinos)

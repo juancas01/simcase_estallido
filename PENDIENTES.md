@@ -26,7 +26,6 @@ lunes por la mañana:
 |---|---|---|---|
 | **B1** | el archivo de la corrida — persistencia y telemetría | no | **no existe** · bloquea B7 |
 | **B2** | la identidad de los ocho roles, en datos | no | `data/roles/` vacío · hoy duplicada en el frontend |
-| **B4** | el hecho H1 del paquete detonante | no | **propuesta escrita**, falta implementar |
 | **B7** | el debriefing, la superficie que falta | no | **no existe** · depende de B1 |
 | **B5** | presupuesto de latencia medido | se mide en P2 | hay timeout, falta medirlo |
 | **B6** | el guion de la sesión | no | fuera del código |
@@ -34,8 +33,8 @@ lunes por la mañana:
 | **P2** | las pantallas | **sí** — dos personas, 30 min | listo |
 | **P3** | en seco, tres roles | **sí** — tres personas, 45 min | listo |
 | **P4** | la corrida completa | **sí** — ocho personas, 2 h | listo |
-| **B3** | la hoja de observación | **sí** — se llena en P3 y P4 | no existe |
-| **C1–C3** | tres calibraciones que solo se ven con gente | **sí** | esperando P3/P4 |
+| **B3** | decisiones alineadas con información privada | no | derivado del motor · sale en B1, se lee en B7 |
+| **C1–C4** | cuatro calibraciones | **sí** | esperando P3/P4 · **C4 es nueva** |
 | **A1** | cuántos dispositivos, o papel | — | esperando |
 | **A2** | quién opera la consola | — | esperando |
 | **A3** | ¿con llave o sin llave la primera vez? | — | esperando |
@@ -175,62 +174,13 @@ Lo que sí falta es pequeño y sí es necesario:
 | **2** | el nombre ficticio que aparece en la ficha impresa | tiene que coincidir con el de las pantallas, o la sala ve dos mundos (**A5**) |
 | **3** | un puntero al apartado de la ficha del GovLab | para ir del rol al documento sin buscarlo |
 
-La **agenda reservada** (apartado 11 del Manual) **no entra al repositorio**: va
-en sobre sellado, se juega y no se enuncia. Ponerla en un archivo que el motor
-lee es la manera más fácil de que se filtre.
+La **agenda reservada** (apartado 11 del Manual) tampoco entra, y por una razón
+más simple de la que yo le atribuía: **es contexto fijo del rol, no una pieza
+secreta del juego.** Describe desde dónde llega cada uno a la mesa. El motor no
+la lee, no la puntúa y no la necesita — vive en la ficha del GovLab y ahí se
+queda.
 
 Depende de **A5** (nombres).
-
-
-### B4 · El hecho H1 del paquete detonante — propuesta
-
-**Dónde:** [`data/escenario/estado_inicial.json`](data/escenario/estado_inicial.json)
-y [`loader.py`](src/engine/loader.py), que ya lleva la marca `PENDIENTE(B4)`
-
-De los cuatro hechos que abren el turno 1 hay tres: **H2** (dos denuncias, una
-cierta y una falsa), **H3** (el ultimátum gremial) y **H4** (la región que cruza
-los dos días de oxígeno). Falta H1.
-
-**La propuesta: el incidente ya ocurrió, en la noche anterior al turno 1.** No es
-algo que la sala provoque — es lo que la sala **recibe**, y esa diferencia es el
-punto. Llega en el parte heredado, con un herido grave de la fuerza pública junto
-a una instalación de combustible.
-
-**Dónde: `N013`, Portería de la refinería.** No es una elección arbitraria: el
-punto ya está en los datos con todo lo que hace falta.
-
-| Dato de `N013` | Valor | Qué produce |
-|---|---|---|
-| `dureza` | **0,77** | la más alta de los tres puntos junto a infraestructura |
-| `control_voceria` | **0,28** | casi no hay con quién concertar: la vía pactada apenas existe aquí |
-| `composicion_real` | **51 % protesta legítima** | apenas por encima del umbral de 0,50 → **operar cuesta el doble** |
-| `region_id` | `R-BEL` | la región **epicentro** |
-| `corredor_id` | `C-REF` | el corredor de la refinería, que es **justo el que Minas necesita** |
-
-**La trampa, y por eso funciona como hecho detonante:** responder con fuerza es la
-jugada evidente —hay un herido de la fuerza pública— y es el punto donde más
-cuesta, donde menos se puede negociar, y cuyo corredor otra cartera necesita
-intacto. La sala aún no se ha constituido: no hay registro escrito, ni protocolo
-de vocería, ni criterio de priorización, así que los mitigadores están al mínimo.
-
-**Qué mueve al arrancar**, todo con maquinaria que ya existe:
-
-```jsonc
-"hecho_h1": {
-  "nodo": "N013",
-  "dureza_extra": 0.06,          // el punto se endurece tras el incidente
-  "intensidad_region": 6,        // registrar_evento en R-BEL
-  "custodia_inmovilizada": 3,    // unidades pegadas a la instalación
-  "publicacion": { "fuente": "prensa_nacional", "encuadre": "desorden" }
-}
-```
-
-**Va en los datos y no en el código**, como el resto del caso: `loader.py` lo lee
-y lo aplica. Así se puede apagar para una corrida de prueba sin tocar el motor.
-
-> **Lo que H1 NO hace:** matar a nadie ni abrir el punto. Es una condición
-> inicial, no un resultado. Si el hecho detonante ya resolviera algo, el turno 1
-> empezaría con menos decisiones y no con más.
 
 
 ### B7 · El debriefing — la superficie que falta
@@ -278,8 +228,54 @@ que decidimos?»*. Sale al archivo como líneas `{"t":"cargo", ...}`.
 una región cruzó el reloj de oxígeno. Los cruces de umbral ya se calculan en
 `umbrales_cruzados`.
 
-**5 · Las agendas reservadas**, que se revelan y **no se puntúan**.
+> **Lo que NO va en el debriefing: las agendas reservadas.** Son contexto fijo
+> del rol —de dónde viene cada uno—, no una jugada oculta que haya que destapar
+> al final. Revelarlas como cierre las convertiría en un marcador encubierto, que
+> es justo lo que este ejercicio no tiene.
 
+
+### B3 · Que la información se comparta, evidenciado en las decisiones
+
+**Dónde:** [`simulation.py`](src/engine/simulation.py) · sale en el archivo de
+**B1** y se lee en **B7**
+
+**Esta entrada estaba mal planteada y la corrección viene del equipo docente.**
+Yo proponía una hoja de observación: alguien con un papel anotando quién habló
+primero de su vista privada. Dos problemas:
+
+| | |
+|---|---|
+| **Convierte la conversación en un marcador** | anotar quién compartió invita a compartir para que quede anotado, que no es lo que se quiere medir |
+| **Necesita un observador dedicado** | y con ocho participantes ya hay alguien en la consola |
+
+**Compartir información no se anota: se evidencia en lo que la sala decide.** Si
+la asimetría funciona, se nota en que el Puesto de Mando prioriza donde solo un
+rol sabía que había que priorizar. Y eso el motor **sí** lo puede calcular,
+porque conoce las dos mitades: el dato privado y la decisión.
+
+**Decisiones alineadas con información que solo tenía un rol.** Para cada
+decisión del pliego, el motor comprueba si aprovecha algo que no estaba en el
+tablero:
+
+| Decisión | El dato privado que la respalda | De quién |
+|---|---|---|
+| Prioridad de combustible a una región | ¿es la del reloj de oxígeno más corto? El tablero solo da el semáforo | **Minas** |
+| Verificar un punto y no otro | ¿es el que bloquea un corredor? | **Transporte** |
+| Escoltar por un corredor | ¿sirve a la región peor abastecida? | **Minas + Transporte** |
+| Operar con dupla presente | el mitigador que solo la Defensoría puede aportar | **Defensoría** |
+| Concertar en vez de operar | ¿tiene el punto vocería con quién hablar? | **Interior + Alcalde** |
+
+Cada una da *alineada · no alineada · no aplica*. El agregado —«N de M
+decisiones aprovecharon información que solo tenía un rol»— es la medida de si
+la asimetría produjo conversación.
+
+> **Con la cautela dicha en voz alta:** con cuatro regiones, acertar por azar
+> pasa una de cada cuatro veces. El número es indicio a lo largo de cinco
+> turnos, no prueba de una decisión concreta. Se dice así en la pantalla.
+
+**Lo que esto NO mide** —y conviene no fingir que sí— es si alguien miró su
+pantalla durante la deliberación. Eso se observa en **P2** y **P4** mirando la
+sala, no leyendo un archivo.
 
 ### B5 · Presupuesto de latencia, medido
 
@@ -402,42 +398,14 @@ sin turno 0 ni debriefing. Y una sola cosa que mirar:
 **Y es una medición, no un ejercicio.** Conviene decirlo antes de empezar.
 
 Las tres lecturas del debriefing: la línea declarada contra la ejecutada · el
-turno en que la mesa dejó de ser una mesa · las agendas reservadas, que se
-revelan y no se puntúan.
+turno en que la mesa dejó de ser una mesa · el país que se recibió contra el que
+se entrega.
 
 Y una comprobación nueva de la v2: **en el minuto 4 de la deliberación, mire
 cuántas personas están mirando su pantalla.** Si hay alguna, una de las cinco
 reglas de §6.3 de la propuesta se rompió.
 
 ---
-
-
----
-
-### B3 · La hoja de observación — lo que el motor no puede ver
-
-**Dónde:** fuera del código · se llena durante **P3** y **P4**
-
-Con **B1** el archivo de la corrida responde casi todo. Pero las dos métricas
-más importantes de la v2 **no son estados del mundo: son conductas de la sala**,
-y ningún motor las puede registrar solo.
-
-| Pregunta | ¿La ve el motor? |
-|---|---|
-| ¿En qué turno cada rol compartió por primera vez algo de su vista privada? | **No.** Ocurre en voz alta y no pasa por ninguna pantalla |
-| ¿Cuántas decisiones se tomaron habiendo en la sala un dato que las desaconsejaba? | **No.** El motor sabe que el dato existía; no sabe si alguien lo dijo |
-| ¿Cuánto duró cada fase de verdad? | Sí, con **B1** |
-| ¿Alguien miró su pantalla en el minuto 4 de la deliberación? | **No** |
-
-Las tres filas con «No» son de una persona con un papel y un reloj. Es la parte
-del ejercicio que **no se automatiza**, y conviene decirlo en vez de fingir que
-un archivo la va a resolver.
-
-La hoja es una rejilla de ocho filas por cinco turnos y tres marcas:
-*habló de su vista* · *preguntó por la de otro* · *miró la pantalla mientras se
-deliberaba*.
-
-Depende de **A2**: probablemente quien opera la consola no puede además observar.
 
 
 ---
@@ -454,23 +422,65 @@ Medición actual con `--comparar`:
 ```
   estrategia      netas  reap  muert  legit  cohes  credib   resp
   ---------------------------------------------------------------------
-  solo_fuerza         1     2     64     15      0      21     24
-  solo_mesa           5     4     64     59     56      29     49
+  solo_fuerza         1     2     64     11      0      21     20
+  solo_mesa           9     0     64     65     56      49     49
   constituida         3     1     48     24     74      21     38
-  humanitaria         3     0     16     32     28      35     50
+  humanitaria         3     0     14     41     28      35     54
   logistica           3     1     24     41     40      26     39
-  pasiva              0     0     64     23     28      45     43
+  pasiva              1     0     64     23     28      45     43
 ```
 
-**Ninguna domina, que es el criterio.** `solo_mesa` abre más caminos y conserva
-las reservas — y deja morir a la misma gente que `pasiva`. `humanitaria` salva al
-75 % y lo paga en cohesión y en caminos. `constituida` tiene la mejor mesa y
-gasta legitimidad al operar. `solo_fuerza` se queda sin nada.
+**Ninguna domina, y el reparto es el que debe ser.** `solo_mesa` abre nueve
+caminos y conserva las reservas — **y deja morir exactamente a la misma gente que
+`pasiva`**. `humanitaria` salva 50 de las 64 muertes y abre un tercio de los
+caminos. `constituida` tiene la mejor mesa y gasta legitimidad al operar.
+`solo_fuerza` se queda sin nada.
+
+El dilema central del caso está en esa primera línea: **abrir el país y dejar
+morir a la gente, o salvarla y entregar el país cerrado.**
 
 **Los dos problemas que estaban medidos ya no lo están** — y no eran de
 coeficientes, eran piezas que faltaban. Ver «Lo que ya NO está pendiente».
 
 Quedan **tres cosas que solo se ven con personas dentro**:
+
+### C4 · `solo_mesa` termina a un punto del acantilado
+
+**Encontrado al implementar H1**, y merece quedar escrito porque es una
+fragilidad de la medición, no del diseño.
+
+Un punto abierto por concertación se sostiene **mientras la credibilidad de la
+mesa siga por encima de 30**. Por debajo, los acuerdos se caen y con ellos los
+caminos. Que haya acantilado está bien: es el punto pedagógico de todo el eje de
+negociación.
+
+El problema es dónde aterriza `solo_mesa`:
+
+```
+credibilidad al cierre de cada jornada
+  sin H1 ....... 45  51  49  49  29      → 4 reaperturas en la última noche
+  con H1 ....... 45  51  49  49  49      → ninguna
+```
+
+**Veintinueve contra treinta.** Un punto de diferencia decide si cuatro caminos
+siguen abiertos, y por eso añadir H1 movió la fila entera de `solo_mesa` de
+5 netas a 9. No es azar: pasa igual con las cuatro semillas probadas.
+
+| | Qué significa |
+|---|---|
+| Para el **ejercicio** | nada. Una sala real no juega `solo_mesa` puro |
+| Para la **tabla de calibración** | esa fila es bimodal: cualquier cambio pequeño la voltea, así que **no sirve para detectar regresiones** |
+
+Dos salidas, y la decisión es del equipo:
+
+1. **Aceptarlo y anotarlo** — la tabla compara estrategias caricaturescas, no
+   salas; que una fila sea sensible no invalida el resto.
+2. **Separar el umbral del final de la corrida** — si el acantilado se cruzara en
+   la jornada 3 y no en la 5, la sala tendría dos turnos para reaccionar y el
+   mecanismo *enseñaría* en vez de solo puntuar.
+
+La 2 es más interesante pedagógicamente y toca calibración, así que se decide
+midiendo con gente dentro.
 
 ### C1 · ¿24 puntos son demasiados para 5 decisiones?
 
@@ -606,9 +616,9 @@ igual mostrarla.
 
 ## Fuera del código
 
-- **El protocolo de los sobres.** La agenda reservada en papel depende de que
-  nadie pase la hoja. Con ocho personas y un facilitador es sostenible; no
-  escalaría a treinta.
+- **Las fichas y sus agendas** se entregan en papel. Son contexto del rol, no
+  una jugada oculta: no hace falta protocolo de custodia, hace falta que cada
+  uno lea la suya antes de empezar.
 - **La declaración del turno 0** sobre el alcance del ejercicio: el motor no
   cuantifica culpa ni produce veredictos sobre hechos históricos.
 - **Qué se dice sobre el azar.** *«El azar nunca decide si algo era buena idea;
@@ -640,6 +650,39 @@ Anotado aquí para que nadie lo vuelva a levantar.
 | **A4** | `capital_politico` no es implementable | Eliminado. Con ocho personas en una sala, el capital político lo administra la sala sola |
 | **A6** | ¿Se acepta el azar? | Sí, con semilla fija. **La semilla no es un elemento visible de la interfaz** |
 
+### El paquete detonante, completo
+
+**B4** era el último de los cuatro hechos que abren el turno 1. Ya está.
+
+| | Qué | Dónde |
+|---|---|---|
+| **H1** | el incidente nocturno junto a la refinería, con un herido grave de la fuerza pública | `hecho_h1` en [`estado_inicial.json`](data/escenario/estado_inicial.json), aplicado por `_aplicar_hecho_h1()` |
+| **H2** | dos denuncias graves sin verificar, una cierta y una falsa | `denuncias_iniciales` |
+| **H3** | el ultimátum gremial de 48 horas | `ultimatum_gremios_turno` |
+| **H4** | la región que cruza los dos días de oxígeno | autonomías del escenario |
+
+**H1 cae en `N013`, la Portería de la refinería**, y no es una elección
+arbitraria: el punto ya traía la trampa en los datos.
+
+| Dato | Valor | Qué produce |
+|---|---|---|
+| `dureza` | **0,77** → 0,83 tras el incidente | el más duro de los tres junto a infraestructura |
+| `control_voceria` | **0,28** | casi no hay con quién concertar |
+| `composicion_real` | **51 % protesta legítima** | apenas sobre el umbral de 0,50 → **operar cuesta el doble** |
+| región y corredor | epicentro · `C-REF` | el corredor que Minas necesita |
+
+Responder con fuerza es la jugada evidente —hay un herido de la fuerza
+pública— y es la más cara, donde menos se puede negociar, sobre el corredor que
+otra cartera necesita intacto. Y la mesa aún no se ha constituido: los
+mitigadores están al mínimo.
+
+> **H1 no mata a nadie ni abre el punto.** Es una condición inicial, no un
+> resultado: el turno 1 empieza con más decisiones sobre la mesa, no con menos.
+> Lo custodian `test_h1_llega_aplicado_y_no_resuelve_nada` y
+> `test_h1_cae_donde_la_via_pactada_casi_no_existe`.
+
+Al implementarlo se descubrió **C4**, que sigue abierto.
+
 ### Del diagnóstico del motor anterior
 
 Los siete problemas de [`docs/historial/mapa_de_palancas.md`](docs/historial/mapa_de_palancas.md):
@@ -651,7 +694,7 @@ Los siete problemas de [`docs/historial/mapa_de_palancas.md`](docs/historial/map
 | **D3** | El dueño del ESMAD no podía asignarlo | `DisponerESMAD` y `Escoltar` |
 | **D4** | El frente logístico no podía mover carga | Escolta, caravana, gremios, y la prioridad de combustible como criterio permanente |
 | **D5** | La cohesión era una rampa determinista | Solo se cobra de día, y ahora se puede reponer. Va de 0 a 74 según lo que la sala haga |
-| **D6** | El paquete detonante no existía | H2, H3 y H4 en el motor; la jornada nacional en el calendario. Falta H1 (**B4**) |
+| **D6** | El paquete detonante no existía | **Los cuatro hechos**, más la jornada nacional en el calendario |
 | **D7** | El eje de Vocería no tenía mecánica | Parcial: el anuncio verificado y el parte clasificado sí; el encuadre sigue pendiente |
 
 ### Las dos capas de lenguaje natural
@@ -683,5 +726,5 @@ decisión de la simulación se delegó al modelo.
 
 ---
 
-*Última revisión: 2026-08-26 · 57 pruebas en verde · capas de lenguaje natural
+*Última revisión: 2026-08-26 · 59 pruebas en verde · capas de lenguaje natural
 activas con `gpt-5-nano`.*
