@@ -16,6 +16,22 @@
 //   4 · la ficha de rol y la agenda reservada van en papel
 //   5 · no repite lo que ya está en el tablero
 //
+// EL REPERTORIO SE LEE EN CLARO, NO EN NOMBRE DE ACTO
+// ---------------------------------------------------
+// Cada acción se muestra por lo que HACE —«autoriza que el Ejército apoye a la
+// Policía»— y no por cómo se llama —«acto administrativo de asistencia
+// militar». El nombre formal sigue debajo, en pequeño, porque es el que va al
+// pliego; pero deja de ser lo primero que se lee.
+//
+// Los participantes son ocho personas con dos horas, no ocho ministerios. Una
+// acción que hay que descifrar antes de poder pedirla es una acción que no se
+// pide.
+//
+// **Y esto tensa la regla 1.** Cuatro o cinco acciones a dos frases ocupan más
+// que cuatro sintágmas nominales. Si en P2 la vista de algún rol se desplaza,
+// lo que sobra es el repertorio —no el detalle—: el repertorio se aprende una
+// vez y el detalle cambia cada turno.
+//
 // Prueba para la primera corrida: si en el minuto 4 de la deliberación alguien
 // está mirando su pantalla, una de estas cinco se rompió.
 // ---------------------------------------------------------------------------
@@ -83,6 +99,11 @@ export default function VistaPrivada({ rol }) {
                 </tr>
               </thead>
               <tbody>
+                {/* En claro primero, nombre del acto después y en pequeño.
+                    Quien lee su repertorio no necesita saber que se llama «acto
+                    administrativo de asistencia militar»: necesita saber que
+                    autoriza al Ejército a apoyar a la Policía. El nombre formal
+                    no se pierde — es el que va al pliego. */}
                 {datos.acciones.map(a => (
                   <tr key={a.accion}>
                     <td style={{ width: '1%' }}>
@@ -90,7 +111,14 @@ export default function VistaPrivada({ rol }) {
                         {rotulo(CLASE_ACCION, a.clase)}
                       </span>
                     </td>
-                    <td style={{ color: 'var(--texto)' }}>{a.descripcion}</td>
+                    <td>
+                      <div style={{ color: 'var(--texto)' }}>
+                        {a.en_claro || a.descripcion}
+                      </div>
+                      {a.en_claro && (
+                        <div className="nombre-formal">{a.descripcion}</div>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

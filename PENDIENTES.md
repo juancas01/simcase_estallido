@@ -125,7 +125,6 @@ corridas/2026-08-26-1430/corrida.jsonl
 {"t":"linea",     "rol":"Defensa", "linea":"..."}          // turno 0
 {"t":"orden",     "ventana":3, "dictado":"...", "interpretado_por":"...", "acciones":[...]}
 {"t":"decision",  "ventana":3, "rol":"...", "accion":"...", "responsable":"..."}
-{"t":"cargo",     "ventana":3, "motivo":"incidente_con_victima", "por":"OperarNodo", "deltas":{...}}
 {"t":"ventana",   "n":3, "franja":"dia", "indicadores":{...}, "deltas":{...}, "eventos":[...]}
 {"t":"cierre",    "metricas":{...}, "proyeccion":{...}}
 ```
@@ -205,23 +204,22 @@ turno 0 y lo que el pliego dice que hizo. Los datos ya existen
 (`lineas_declaradas` + `registro` filtrado por rol). **Es el panel más cargado
 del ejercicio** y ya está nombrado como una de las tres lecturas del debriefing.
 
-**3 · Las decisiones y lo que costaron.** Aquí hay una decisión de honestidad que
-conviene tomar por adelantado:
+**3 · Las decisiones y la ventana en que cayeron.** El pliego completo, y al lado
+lo que se movió en esa ventana.
 
-> **El motor no sabe hoy qué decisión causó qué.** Varias caen en la misma
-> ventana y el mundo además se mueve solo. Decir «esta orden costó 9 puntos de
-> legitimidad» sería **fabricar causalidad**.
+> **El motor no atribuye una consecuencia a una decisión, y no va a hacerlo.**
+> Varias caen en la misma ventana y el mundo además se mueve solo. Se muestra
+> *«en la ventana en que se ordenó esto, la legitimidad bajó 9»* y se dice que
+> es lo que es.
 
-Dos etapas, y la primera es barata:
-
-| | Qué | Qué se puede afirmar |
-|---|---|---|
-| **a** | hoy, con B1 | *«en la ventana en que se ordenó esto, la legitimidad bajó 9»* — correlación, y se dice que lo es |
-| **b** | `Reservas.aplicar()` gana un `motivo` y un libro de cargos | *«esta operación costó 9 por incidente con víctima»* — **causalidad real**, porque `COSTO_RESERVAS` ya tiene las claves con nombre |
-
-La etapa **b** es media hora y convierte el panel de correlacional en causal. Es
-la que hace que el debriefing responda de verdad a *«¿qué consecuencias tuvo lo
-que decidimos?»*. Sale al archivo como líneas `{"t":"cargo", ...}`.
+**Llegó a estar en el plan hacer que el motor rastreara el porqué** —un `motivo`
+en cada cargo a las reservas, un libro de cargos— para poder afirmar *«esta
+operación costó 9 por incidente con víctima»*. **Se descartó por decisión del
+equipo docente, y con razón:** el porqué de una decisión es material de
+conversación, no de instrumentación. Lo interesante en la sala no es que la
+pantalla diga qué causó qué, sino que ocho personas lo discutan mirando el
+pliego. Aparejar el motor para eso habría sido complicarlo para sustituir la
+parte que no conviene sustituir.
 
 **4 · Los tres momentos.** El turno en que la mesa dejó de ser una mesa
 (credibilidad bajo 30), el turno del primer registro escrito, y el turno en que

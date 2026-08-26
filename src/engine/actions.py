@@ -64,7 +64,21 @@ class Accion:
     codigo: str = "A0"
     rol: str = ""
     clase: Clase = "operativa"
+
+    # DOS DESCRIPCIONES, PARA DOS LECTORES DISTINTOS.
+    #
+    #   `descripcion`  el nombre formal del acto — «Acto administrativo de
+    #                  asistencia militar». Va al pliego, que es un registro, y
+    #                  ahí el registro formal es lo correcto.
+    #
+    #   `en_claro`     qué hace y qué cambia, en dos frases y sin jerga. Es lo
+    #                  que lee quien tiene que decidir si pedirlo.
+    #
+    # No son el mismo dato con dos redacciones: son dos informaciones distintas
+    # para dos lectores distintos. Quien lee su repertorio no necesita el nombre
+    # del acto administrativo — necesita saber qué puede pedir.
     descripcion: str = ""
+    en_claro: str = ""
 
     def validar(self, estado: Estado) -> Validacion:
         return Validacion(ok=True)
@@ -84,6 +98,9 @@ class FijarRegistroEscrito(Accion):
     rol = "Presidente"
     clase: Clase = "constitutiva"
     descripcion = "Nodo único de coordinación y registro escrito de decisiones"
+    en_claro = (
+        "Deja por escrito cada decisión y quién responde por ella. Sin "
+        "registro, al cierre nadie puede decir quién ordenó qué.")
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         nuevo = estado.banderas.activar("registro_escrito", estado.turno)
@@ -103,6 +120,9 @@ class FijarLineasRojas(Accion):
     rol = "Presidente"
     clase: Clase = "constitutiva"
     descripcion = "Líneas rojas del Ejecutivo y marco de lo negociable"
+    en_claro = (
+        "Anuncia qué está y qué no está sobre la mesa. Fija el terreno de lo "
+        "negociable antes de que lo fije otro.")
     margen: float = 0.5     # 0 = sin margen, 1 = todo negociable
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
@@ -127,6 +147,10 @@ class FirmarAsistenciaMilitar(Accion):
     rol = "Presidente"
     clase: Clase = "operativa"
     descripcion = "Acto administrativo de asistencia militar"
+    en_claro = (
+        "Autoriza que el Ejército apoye a la Policía. Da más fuerza "
+        "disponible, y militares frente a multitudes suben la tensión en la "
+        "calle.")
     delimitada: bool = False    # territorio + plazo + reglas + criterio de terminación
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
@@ -170,6 +194,9 @@ class ConvocarAlcaldes(Accion):
     rol = "Presidente"
     clase: Clase = "operativa"
     descripcion = "Convocatoria a los alcaldes de las ciudades críticas"
+    en_claro = (
+        "Reúne a los alcaldes de las ciudades más golpeadas. Sirve para "
+        "llegar a la mesa con una sola posición en vez de varias.")
     concede_prioridad: bool = False   # ¿se le da prioridad de fuerza al epicentro?
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
@@ -197,6 +224,9 @@ class DesplazarseAlEpicentro(Accion):
     rol = "Presidente"
     clase: Clase = "informativa"
     descripcion = "Desplazamiento presidencial al epicentro"
+    en_claro = (
+        "Viaja en persona a la ciudad más afectada. Es un gesto público de "
+        "que el Gobierno da la cara.")
     acompana: str = "ninguna"    # operacion | mesa | ninguna
 
     def validar(self, estado: Estado) -> Validacion:
@@ -242,6 +272,9 @@ class ExigirProtocoloVoceria(Accion):
     rol = "Interior"
     clase: Clase = "constitutiva"
     descripcion = "Protocolo de vocería y plazo suspensivo de 24 h"
+    en_claro = (
+        "Establece que una sola persona habla por el Gobierno. Evita que dos "
+        "carteras digan cosas distintas el mismo día.")
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         estado.banderas.activar("protocolo_voceria", estado.turno)
@@ -267,6 +300,10 @@ class ConvocarMesaNacional(Accion):
     rol = "Interior"
     clase: Clase = "operativa"
     descripcion = "Sesión de la mesa nacional con el Comité del Paro"
+    en_claro = (
+        "Sienta al Gobierno con el Comité del Paro. Es la vía más rápida para "
+        "bajar la tensión, y operar por la fuerza ese mismo día es lo que más "
+        "caro le sale a la mesa.")
     nodos_pactados: list[str] = field(default_factory=list)
 
     def validar(self, estado: Estado) -> Validacion:
@@ -336,6 +373,10 @@ class AbrirMesaLocal(Accion):
     rol = "Interior"
     clase: Clase = "operativa"
     descripcion = "Mesa local de concertación, corredor por corredor"
+    en_claro = (
+        "Negocia un punto concreto para que lo desbloqueen sus propios "
+        "voceros. Tarda dos turnos, y lo que se abre así aguanta mientras se "
+        "cumpla lo pactado.")
     nodo_id: str = ""
     con_alcaldia: bool = False
 
@@ -398,6 +439,9 @@ class OfrecerContraprestacion(Accion):
     rol = "Interior"
     clase: Clase = "informativa"
     descripcion = "Contraprestación legislativa por el levantamiento de cierres"
+    en_claro = (
+        "Ofrece algo concreto a cambio de levantar los cierres. Funciona "
+        "donde hay con quién negociar; no donde nadie manda.")
 
     def validar(self, estado: Estado) -> Validacion:
         if estado.banderas.lineas_rojas_fijadas is False:
@@ -436,6 +480,10 @@ class CondicionarEmpleoFuerza(Accion):
     rol = "Alcalde"
     clase: Clase = "constitutiva"
     descripcion = "Concertación previa del empleo de la fuerza en su jurisdicción"
+    en_claro = (
+        "Exige que cualquier operación en su ciudad se acuerde antes con la "
+        "Alcaldía. Baja el riesgo de que salga mal, y le quita velocidad a "
+        "Defensa.")
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         estado.banderas.activar("concertacion_previa_cali", estado.turno)
@@ -453,6 +501,9 @@ class InstalarMesaConVoceros(Accion):
     rol = "Alcalde"
     clase: Clase = "operativa"
     descripcion = "Mesa local de desbloqueo con voceros del punto"
+    en_claro = (
+        "Sienta a hablar a los voceros de un punto de su ciudad. Es la vía "
+        "pactada, hecha desde el municipio.")
     nodo_id: str = ""
 
     def validar(self, estado: Estado) -> Validacion:
@@ -507,6 +558,9 @@ class EsquemaHumanitarioMunicipal(Accion):
     rol = "Alcalde"
     clase: Clase = "operativa"
     descripcion = "Esquema humanitario municipal"
+    en_claro = (
+        "Monta un paso para ambulancias, oxígeno y alimentos en su "
+        "jurisdicción. No abre el punto: abre una ventana.")
     region_id: str = ""
 
     def validar(self, estado: Estado) -> Validacion:
@@ -540,6 +594,9 @@ class PublicarParteMunicipal(Accion):
     rol = "Alcalde"
     clase: Clase = "informativa"
     descripcion = "Parte municipal verificado y disputa de la cifra nacional"
+    en_claro = (
+        "Publica su propio conteo de lo que pasó en la ciudad. Si contradice "
+        "la cifra nacional, uno de los dos queda desmentido.")
     disputa_cifra: bool = True
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
@@ -575,6 +632,10 @@ class FijarReglasEmpleoSector(Accion):
     rol = "Defensa"
     clase: Clase = "constitutiva"
     descripcion = "Reglas de empleo del sector y registro audiovisual obligatorio"
+    en_claro = (
+        "Ordena que sus unidades vayan identificadas, con reglas escritas y "
+        "grabando. Baja mucho la probabilidad de que una operación termine "
+        "mal.")
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         estado.banderas.activar("reglas_escritas", estado.turno)
@@ -599,6 +660,10 @@ class OperarNodo(Accion):
     rol = "Defensa"
     clase: Clase = "operativa"
     descripcion = "Operación de desbloqueo sobre un punto"
+    en_claro = (
+        "Manda a la fuerza pública a abrir un punto. Es lo más rápido que "
+        "existe y lo más caro: el punto suele volver a cerrarse esa misma "
+        "noche.")
 
     nodo_id: str = ""
     tipo_unidad: str = "esmad"
@@ -747,6 +812,9 @@ class RedesplegarMilitares(Accion):
     rol = "Defensa"
     clase: Clase = "operativa"
     descripcion = "Redespliegue militar a infraestructura o proyección aérea"
+    en_claro = (
+        "Mueve tropa a proteger instalaciones críticas. Libera policía para "
+        "otras tareas e inmoviliza esas unidades donde las puso.")
     modo: str = "infraestructura"   # infraestructura | proyeccion_aerea
     n_unidades: int = 4
 
@@ -797,6 +865,10 @@ class PresentarEvidenciaInteligencia(Accion):
     rol = "Defensa"
     clase: Clase = "informativa"
     descripcion = "Evidencia de financiación de cierres y su solidez judicial"
+    en_claro = (
+        "Presenta lo que Inteligencia tiene sobre quién financia los cierres. "
+        "Vale según lo sólido que sea; si no se sostiene, se vuelve en "
+        "contra.")
     nodos: list[str] = field(default_factory=list)
     declara_solidez: bool = True    # ¿dice cuáles de sus casos no aguantan?
 
@@ -847,6 +919,10 @@ class ClasificarParteOperacional(Accion):
     rol = "Policía"
     clase: Clase = "constitutiva"
     descripcion = "Parte operacional clasificado en confirmado, estimado y en verificación"
+    en_claro = (
+        "Separa en su parte lo confirmado, lo estimado y lo que está en "
+        "verificación. Evita que una estimación se lea en la mesa como un "
+        "hecho.")
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         estado.banderas.activar("protocolo_verificacion", estado.turno)
@@ -869,6 +945,9 @@ class DisponerESMAD(Accion):
     rol = "Policía"
     clase: Clase = "operativa"
     descripcion = "Concentración del ESMAD en puntos priorizados"
+    en_claro = (
+        "Concentra escuadrones en los puntos que decida. Gana fuerza donde la "
+        "lleva y deja descubierto lo que abandona.")
     n_escuadrones: int = 6
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
@@ -898,6 +977,10 @@ class Escoltar(Accion):
     rol = "Policía"
     clase: Clase = "operativa"
     descripcion = "Escolta de caravana, carrotanque o misión médica"
+    en_claro = (
+        "Escolta una caravana, un carrotanque o una misión médica. Hace "
+        "llegar el suministro sin abrir el punto, y ocupa escuadrones todo el "
+        "turno.")
     corredor_id: str = ""
     clase_carga: str = "humanitario"
 
@@ -962,6 +1045,9 @@ class SolicitarRelevo(Accion):
     rol = "Policía"
     clase: Clase = "operativa"
     descripcion = "Relevo y rotación de unidades agotadas"
+    en_claro = (
+        "Releva a las unidades más agotadas. Un escuadrón cansado es el "
+        "principal factor de que una operación salga mal.")
     n_unidades: int = 6
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
@@ -989,6 +1075,10 @@ class ExigirEstandaresEmpleo(Accion):
     rol = "Defensoría"
     clase: Clase = "constitutiva"
     descripcion = "Estándar de empleo de la fuerza: reglas, identificación, registro"
+    en_claro = (
+        "Exige que la fuerza actúe con reglas escritas, identificada y "
+        "grabando. Es lo que hace que después se pueda saber qué pasó de "
+        "verdad.")
     exigencias: int = 3     # >3 simultáneas y la mesa lo aísla
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
@@ -1015,6 +1105,9 @@ class AdoptarProtocoloVerificacion(Accion):
     rol = "Defensoría"
     clase: Clase = "constitutiva"
     descripcion = "Protocolo único de verificación de cifras y denuncias"
+    en_claro = (
+        "Establece una sola manera de verificar cifras y denuncias, igual "
+        "para todos. Evita que cada cartera traiga su propio número.")
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         estado.banderas.activar("protocolo_verificacion", estado.turno)
@@ -1042,6 +1135,10 @@ class AsignarDuplas(Accion):
     rol = "Defensoría"
     clase: Clase = "operativa"
     descripcion = "Asignación de las duplas de verificación"
+    en_claro = (
+        "Manda a sus verificadores a mirar puntos concretos. Solo tiene tres "
+        "por turno, y también hacen falta para comprobar denuncias y "
+        "acompañar operaciones.")
     nodos: list[str] = field(default_factory=list)
     denuncias: list[str] = field(default_factory=list)
 
@@ -1093,6 +1190,9 @@ class RequerirCorredoresHumanitarios(Accion):
     rol = "Defensoría"
     clase: Clase = "operativa"
     descripcion = "Requerimiento de corredores humanitarios permanentes"
+    en_claro = (
+        "Exige que haya un paso permanente para lo humanitario. Negarlo es lo "
+        "que más caro cuesta de cara al exterior.")
     corredor_id: str = ""
 
     def validar(self, estado: Estado) -> Validacion:
@@ -1143,6 +1243,10 @@ class ManifestarDudaPermanencia(Accion):
     rol = "Defensoría"
     clase: Clase = "informativa"
     descripcion = "Manifestación pública de duda sobre su permanencia"
+    en_claro = (
+        "Dice en público que se está planteando si tiene sentido seguir en la "
+        "mesa. Es su palanca más fuerte y se gasta: la segunda vez pesa menos "
+        "que la primera.")
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         n = estado.dudas_permanencia
@@ -1186,6 +1290,9 @@ class AdoptarCriterioPriorizacion(Accion):
     rol = "Transporte"
     clase: Clase = "constitutiva"
     descripcion = "Criterio único de priorización de corredores"
+    en_claro = (
+        "Fija en qué orden se atienden los corredores y por qué. Sin "
+        "criterio, cada turno se discute lo mismo desde cero.")
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         estado.banderas.activar("criterio_priorizacion", estado.turno)
@@ -1211,6 +1318,9 @@ class OrganizarCaravana(Accion):
     rol = "Transporte"
     clase: Clase = "operativa"
     descripcion = "Caravana escoltada en un corredor priorizado"
+    en_claro = (
+        "Junta la carga en una caravana por un corredor prioritario. Necesita "
+        "escolta para poder pasar.")
     corredor_id: str = ""
 
     def validar(self, estado: Estado) -> Validacion:
@@ -1263,6 +1373,9 @@ class NegociarConGremios(Accion):
     rol = "Transporte"
     clase: Clase = "operativa"
     descripcion = "Negociación con los gremios camioneros"
+    en_claro = (
+        "Habla con los camioneros antes de que decidan sumarse al paro. Si se "
+        "suman, se cierra lo que hoy todavía circula.")
     ofrece_compensacion: bool = True
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
@@ -1300,6 +1413,9 @@ class PublicarMapaCierres(Accion):
     rol = "Transporte"
     clase: Clase = "informativa"
     descripcion = "Mapa de cierres y anuncio verificado de aperturas"
+    en_claro = (
+        "Publica dónde está cerrado y qué se ha abierto. Anunciar una "
+        "apertura que no se sostiene cuesta credibilidad.")
     anunciar: str = ""      # corredor_id que se quiere anunciar como abierto
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
@@ -1359,6 +1475,10 @@ class FijarPrioridadCombustible(Accion):
     rol = "Minas"
     clase: Clase = "constitutiva"
     descripcion = "Orden de prioridad del combustible entre usos"
+    en_claro = (
+        "Decide a qué va primero el combustible que queda: hospitales, "
+        "transporte o industria. Es un criterio permanente, no una entrega "
+        "puntual.")
     orden: list[str] = field(default_factory=lambda: list(P.ORDEN_PRIORIDAD_COMBUSTIBLE))
 
     def validar(self, estado: Estado) -> Validacion:
@@ -1397,6 +1517,9 @@ class DeclararInfraestructuraCritica(Accion):
     rol = "Minas"
     clase: Clase = "operativa"
     descripcion = "Declaratoria de infraestructura crítica"
+    en_claro = (
+        "Declara una instalación como crítica para que la custodien. Queda "
+        "protegida, e inmoviliza fuerza que hace falta en otra parte.")
     instalaciones: list[str] = field(default_factory=list)
 
     def validar(self, estado: Estado) -> Validacion:
@@ -1441,6 +1564,9 @@ class AcordarPasosSeguros(Accion):
     rol = "Minas"
     clase: Clase = "operativa"
     descripcion = "Pasos seguros y ventanas de despacho concertadas"
+    en_claro = (
+        "Acuerda ventanas horarias para que pasen carrotanques por un punto. "
+        "Pasa el suministro sin abrir el bloqueo.")
     nodo_id: str = ""
 
     def validar(self, estado: Estado) -> Validacion:
@@ -1486,6 +1612,10 @@ class EntregarCalendarioAgotamiento(Accion):
     rol = "Minas"
     clase: Clase = "informativa"
     descripcion = "Calendario de agotamiento por región"
+    en_claro = (
+        "Dice cuántos días de oxígeno, combustible y comida le quedan a cada "
+        "región. Es el dato que solo usted tiene, y difundirlo también genera "
+        "pánico.")
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         r = supply.difundir_calendario(estado)
@@ -1535,5 +1665,6 @@ def catalogo_por_rol() -> dict[str, list[dict]]:
             "accion": cls.__name__,
             "clase": cls.clase,
             "descripcion": cls.descripcion,
+            "en_claro": cls.en_claro,
         })
     return out

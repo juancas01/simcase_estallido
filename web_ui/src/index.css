@@ -745,3 +745,13 @@ tr.aviso > td:first-child { padding-left: 0.65rem; }
   border-radius: 50%;
   vertical-align: -0.05em;
 }
+
+/* El nombre formal del acto, bajo su versión en claro. No se pierde —es el que
+   va al pliego— pero deja de ser lo primero que se lee. */
+.nombre-formal {
+  margin-top: 0.15rem;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
+  color: var(--texto-3);
+}
