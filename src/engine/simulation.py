@@ -67,7 +67,7 @@ class MotorCrisis:
         self.eventos_programados: list[dict] = []
         self.acciones_condicionales: list[dict] = []
 
-        # PENDIENTE(B5): el historial vive solo en memoria. Sin volcarlo a disco
+        # PENDIENTE(B1): el historial vive solo en memoria. Sin volcarlo a disco
         # con la semilla, la corrida no se puede repetir con una decisión
         # cambiada — que es la mejor herramienta del debriefing.
         self.historial: list[ResultadoTurno] = []

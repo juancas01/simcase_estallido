@@ -79,6 +79,11 @@ def cargar_estado(ruta: str | Path | None = None) -> Estado:
             clases_prioridad=set(c.get("clases_prioridad", [])),
         )
 
+    # PENDIENTE(B4): falta el hecho H1 del paquete detonante — el incidente
+    # nocturno junto a una instalación de combustible, con un herido grave de la
+    # fuerza pública. Los puntos contiguos a infraestructura crítica ya vienen
+    # marcados con `proximidad_infra_critica`; falta el evento que los active.
+
     # El hecho H2 del paquete detonante: dos denuncias graves sin verificar, una
     # cierta y otra falsa, y nada las distingue.
     for x in d.get("denuncias_iniciales", []):

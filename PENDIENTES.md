@@ -25,11 +25,13 @@ Va ordenado por lo que bloquea. Hay cuatro clases y no se resuelven igual:
 | **A3** | ¿con llave o sin llave la primera vez? | qué se está midiendo | esperando |
 | **A4** | el contenido exacto de las ocho vistas | la versión definitiva | se decide probando |
 | **A5** | cerrar el territorio ficticio | las fichas impresas | nombres provisionales puestos |
+| **A6** | ¿el mapa muestra dónde está la fuerza? | el papel de la Policía en la mesa | **esperando — nuevo** |
 | **B1** | persistencia de la corrida | el debriefing | no existe |
 | **B2** | las ocho fichas de rol, en datos | imprimir los sobres | `data/roles/` vacío |
 | **B3** | telemetría por turno | medir el ejercicio | no existe |
 | **B4** | el hecho H1 del paquete detonante | el turno 1 completo | falta 1 de 4 |
 | **B5** | presupuesto de latencia medido | la fase de consecuencias | hay timeout, falta medirlo |
+| **B6** | el guion de la sesión | conducir la sala | fuera del código |
 | **C1–C3** | tres cosas que solo se ven con personas | la primera corrida real | esperando |
 
 Lo que **sí** funciona está en el README, sección «Estado actual», y en
@@ -138,6 +140,11 @@ Ninguna de las cuatro señales nombra un remedio.
 - ¿El delta ▼ de una reserva provoca la pregunta «¿qué hicimos anoche?»? Es
   exactamente para lo que está.
 - ¿La franja de noche se distingue de la de día **sin leerla**?
+- ¿Se entiende, **sin explicarlo**, que un anillo en el mapa quiere decir que ahí
+  pasó algo anoche? Y en particular: ¿se ve el bucle completo —se operó por
+  fuerza, se abrió, volvió a cerrarse en el interludio— sin que nadie lo narre?
+- ¿Alguien pregunta dónde están los escuadrones? Esa pregunta es **A6**, y la
+  respuesta a P3 la decide.
 
 > Las 30 definiciones viven en un solo archivo,
 > [`definiciones.jsx`](web_ui/src/definiciones.jsx). Si un umbral cambia en
@@ -255,6 +262,34 @@ porque el motor identifica por código y no por nombre.
 ---
 
 ## B · Código que falta
+
+### A6 · ¿El mapa muestra dónde está la fuerza?
+
+**Quién decide:** el equipo docente. **Bloquea:** el papel de la Policía en la
+mesa.
+
+El mapa ya dibuja **lo que se hizo**: un anillo sobre cada punto donde ocurrió
+algo en la última ventana — se operó, con qué unidad y si llevaba dupla; se
+volvió a cerrar de noche; alguien lo verificó. Eso es público: sale en las
+noticias esa misma tarde.
+
+Lo que **no** dibuja es dónde está la fuerza ahora. La ubicación, la asignación
+y la fatiga de cada escuadrón existen en el motor (`Unidad.ubicacion`) y viven
+solo en la vista de la Dirección General de la Policía.
+
+| | Si se muestra | Si no se muestra |
+|---|---|---|
+| **La sala** | lee el tablero sin preguntar | tiene que preguntarle a alguien |
+| **La Policía** | pierde su razón de estar | es la única que convierte «hay 6 escuadrones libres» en «hay 2 que llegan a tiempo» |
+| **El ejercicio** | más fácil de seguir | siete roles siguen necesitando al octavo |
+
+> **Está puesto del lado que preserva los ocho roles**, que es el que sostiene el
+> diseño. Cambiarlo es media hora: `vista_publica()` ya tiene el dato y solo
+> habría que dejarlo salir.
+
+Se decide mejor **después de P3**: si con tres personas nadie le pregunta nunca a
+la Policía dónde tiene los escuadrones, la asimetría no está funcionando y da
+igual mostrarla.
 
 ### B1 · Persistencia de la corrida
 
@@ -399,6 +434,11 @@ Anotado aquí para que nadie lo vuelva a levantar.
 
 ### De la propuesta original
 
+> **Ojo con los identificadores de esta tabla:** son los de la propuesta
+> original, no los de la lista de arriba. El `A6` de aquí («¿se acepta el
+> azar?») no tiene nada que ver con el `A6` vigente («¿el mapa muestra dónde
+> está la fuerza?»). Los dos numeraron cosas distintas en momentos distintos.
+
 | | Era | Cómo quedó |
 |---|---|---|
 | **T1** | `intensidad_movilizacion` satura en 100 y deja de discriminar | Rendimientos decrecientes (×0,6 por repetición) y decaimiento proporcional (×0,96) |
@@ -446,10 +486,13 @@ decisión de la simulación se delegó al modelo.
 | | Era | Cómo quedó |
 |---|---|---|
 | **—** | tres superficies contra la API antigua | Tres: `/tablero` —con la esfera dentro—, `/vista/{rol}` ×8 y `/consola` |
-| **—** | el mapa no existía | [`MapaEsquematico.jsx`](web_ui/src/components/MapaEsquematico.jsx) · esquema de líneas, con la forma del nodo diciendo cómo se abrió y un `?` en lo que nadie ha mirado |
-| **—** | el reloj lo llevaba el moderador | Lo lleva el sistema, fase por fase |
+| **—** | el mapa no existía | [`MapaEsquematico.jsx`](web_ui/src/components/MapaEsquematico.jsx) · esquema de líneas, con la forma del nodo diciendo cómo se abrió, un `?` en lo que nadie ha mirado y **un anillo sobre lo que cambió en la última ventana** |
+| **—** | el tablero no decía qué hora era | `Estado.reloj()` · cinco jornadas del 11 al 15 de mayo, nueve ventanas, y la noche se ve distinta |
+| **—** | un número solo no decía si iba a mejor | `MotorCrisis.deltas()` · ▲▼ contra la ventana anterior, no contra el arranque |
+| **—** | cada cifra llevaba su glosa impresa debajo | Marca **(?)** y 30 definiciones formales en [`definiciones.jsx`](web_ui/src/definiciones.jsx) |
+| **—** | el reloj de fases lo llevaba el moderador | Lo lleva el sistema, fase por fase |
 
 ---
 
-*Última revisión: 2026-08-26 · 49 pruebas en verde · capas de lenguaje natural
+*Última revisión: 2026-08-26 · 57 pruebas en verde · capas de lenguaje natural
 activas con `gpt-5-nano`.*

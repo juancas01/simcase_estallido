@@ -23,7 +23,7 @@ y el diagnóstico del que salió esta versión, en
 
 1. [Qué archivo hace qué](#1-qué-archivo-hace-qué)
 2. [Un turno completo, de principio a fin](#2-un-turno-completo-de-principio-a-fin)
-3. [Las cuatro superficies y de dónde sale cada dato](#3-las-cuatro-superficies-y-de-dónde-sale-cada-dato)
+3. [Las cuatro superficies, en tres rutas](#3-las-cuatro-superficies-en-tres-rutas)
 
 **B · Los seis motores, desde la sala**
 
@@ -73,7 +73,7 @@ src/engine/                EL MOTOR. Único dueño del estado.
   simulation.py    416 l   El bucle de turnos. `paso()` es la única forma de que
                            el tiempo avance.
 
-src/api/main.py            Capa delgada: sirve las cuatro superficies.
+src/api/main.py            Capa delgada: sirve las superficies.
 data/escenario/            El caso, en datos y no en código.
 scripts/                   El corredor sin interfaz, para calibrar sin montar la sala.
 tests/                     49 verificadores sin modelo, en 0,2 s.
@@ -166,7 +166,7 @@ proyección**.
 
 ---
 
-## 3. Las cuatro superficies y de dónde sale cada dato
+## 3. Las cuatro superficies, en tres rutas
 
 ### En la sala
 
@@ -1015,10 +1015,10 @@ uv run python scripts/correr_ejercicio.py --comparar
 # Cambiar la semilla y ver cuánto es ruido y cuánto es señal
 uv run python scripts/correr_ejercicio.py --semilla 7 --comparar
 
-# Las 49 pruebas, sin modelo, en dos décimas de segundo
+# Las 57 pruebas, sin modelo, en dos décimas de segundo
 uv run pytest -q
 
-# La API con sus cuatro superficies
+# La API con sus superficies
 uv run python -m src.api.main       # http://localhost:8000/api/tablero
                                     #                      /api/vista/Minas
 ```
@@ -1040,7 +1040,7 @@ Los stubs están marcados donde viven: `grep -rn "PENDIENTE" src/`
 
 ---
 
-*Motor v2 · 49 pruebas en verde · semilla `20210511`. Diseño en
+*Motor v2 · 57 pruebas en verde · semilla `20210511`. Diseño en
 [`propuesta.md`](propuesta.md); diagnóstico del motor anterior en
 [`historial/mapa_de_palancas.md`](historial/mapa_de_palancas.md).*
 

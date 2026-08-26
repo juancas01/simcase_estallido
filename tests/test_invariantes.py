@@ -11,6 +11,7 @@ pierde su objeto sin que nada reviente ruidosamente.
 
 from __future__ import annotations
 
+import pathlib
 import random
 
 import pytest
@@ -851,3 +852,56 @@ def test_el_anillo_del_mapa_se_apaga_a_la_ventana_siguiente():
     m.paso("noche")
     despues = {h["tipo"] for h in m.hechos_por_punto().get(nid, [])}
     assert "operacion" not in despues, "el hecho no se arrastra de una ventana a otra"
+
+
+def test_cada_marca_del_codigo_apunta_a_un_pendiente_que_existe():
+    """
+    `PENDIENTES.md` promete navegación en los dos sentidos: del código a la
+    explicación y de la explicación al código. Esa promesa **ya se rompió una
+    vez** —el marcador de la persistencia decía `B5`, que es el presupuesto de
+    latencia— y se rompió en silencio, que es lo peor de una promesa de este
+    tipo: no falla nada, simplemente se lee mal.
+
+    La lista es la autoridad. Una marca que no corresponde a ninguna entrada es
+    un error, y una entrada sin marca es legítima (no todo pendiente vive en un
+    archivo).
+    """
+    import re
+
+    raiz = pathlib.Path(__file__).resolve().parents[1]
+    lista = (raiz / "PENDIENTES.md").read_text(encoding="utf-8")
+    entradas = set(re.findall(r"^### ([PABC]\d+) ·", lista, re.M))
+    assert entradas, "no se encontró ninguna entrada en PENDIENTES.md"
+
+    marcas: list[tuple[str, str]] = []
+    for py in (raiz / "src").rglob("*.py"):
+        for n, linea in enumerate(py.read_text(encoding="utf-8").splitlines(), 1):
+            for ident in re.findall(r"PENDIENTE\(([PABC]\d+)\)", linea):
+                marcas.append((f"{py.relative_to(raiz)}:{n}", ident))
+
+    huerfanas = [(d, i) for d, i in marcas if i not in entradas]
+    assert not huerfanas, f"marcas sin entrada en PENDIENTES.md: {huerfanas}"
+
+
+def test_el_resumen_de_pendientes_no_se_deja_ninguna_entrada():
+    """
+    La tabla «En una mirada» es lo único que mucha gente va a leer. Si una
+    entrada existe abajo y no aparece arriba, para efectos prácticos no existe
+    — que es lo que le pasó a **B6**, el guion de la sesión.
+    """
+    import re
+
+    lista = (pathlib.Path(__file__).resolve().parents[1]
+             / "PENDIENTES.md").read_text(encoding="utf-8")
+    resumen = lista[lista.index("## En una mirada"):lista.index("## Cómo verlos")]
+
+    detalladas = set(re.findall(r"^### ([PABC]\d+) ·", lista, re.M))
+    # El resumen agrupa rangos: «P1–P4», «C1–C3». Se expanden antes de comparar.
+    citadas: set[str] = set()
+    for letra, ini, fin in re.findall(
+            r"\*\*([PABC])(\d+)(?:[–-](?:[PABC])?(\d+))?\*\*", resumen):
+        citadas.update(f"{letra}{n}" for n in range(int(ini), int(fin or ini) + 1))
+
+    assert not detalladas - citadas, (
+        f"entradas que existen pero no salen en «En una mirada»: "
+        f"{sorted(detalladas - citadas)}")

@@ -70,7 +70,7 @@ uv run pytest -q
 # 5 · Las ocho vistas privadas de un turno real
 uv run python scripts/correr_ejercicio.py --vistas
 
-# 6 · Las cuatro superficies
+# 6 · Las superficies
 cd web_ui
 npm install
 npm run build
@@ -126,10 +126,10 @@ src/engine/          EL MOTOR. Único dueño del estado. Sin IA, determinista sa
   actions.py           las 34 acciones de los ocho roles
   simulation.py        el bucle de turnos
 
-src/api/             capa delgada · sirve las cuatro superficies
+src/api/             capa delgada · sirve las superficies
 src/agents/          capas 3 y 4 · agentes y órdenes en LN (sin escribir)
 data/escenario/      el caso, en datos y no en código
-web_ui/              las cuatro superficies · React + Vite
+web_ui/              las superficies · React + Vite
 scripts/             corredor sin interfaz, para calibrar
 tests/               verificadores sin modelo
 ```
@@ -186,7 +186,7 @@ serlo — y eso, sobre hechos con responsabilidad judicial viva, es tomar partid
 - denuncias con veracidad oculta, y el ultimátum gremial del turno 1
 - territorio ficticio, con posiciones para el mapa esquemático
 - corredor sin interfaz con **seis estrategias** comparables
-- **49 pruebas sin modelo, en 0,2 s**
+- **57 pruebas sin modelo, en 0,2 s**
 
 **Falta** — la lista completa está en [`PENDIENTES.md`](PENDIENTES.md):
 
