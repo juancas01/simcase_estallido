@@ -1515,6 +1515,6 @@ decisión cambiada.
 
 *Propuesta derivada del Manual de Roles con RADs (8 roles) y de la Matriz
 Operativa del GovLab, y del diagnóstico del motor actual recogido en
-[`mapa_de_palancas.md`](mapa_de_palancas.md).*
+[`historial/mapa_de_palancas.md`](historial/mapa_de_palancas.md).*
 
 *Escuela de Gobierno · Universidad de La Sabana.*

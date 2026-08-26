@@ -40,7 +40,7 @@ class Composicion:
     Qué hay realmente en un punto de cierre. El Estado NUNCA lo ve.
 
     Desde la v2 esta mezcla SÍ tiene consecuencias, por dos vías y solo dos
-    (§P1 de `docs/propuesta_v2.md`):
+    (§P1 de `docs/propuesta.md`):
 
       1 · operar sobre un punto mayoritariamente de protesta legítima cuesta más
       2 · concertar donde hay estructura organizada produce un acuerdo que se rompe

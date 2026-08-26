@@ -125,7 +125,7 @@ def multiplicador_costo_civil(nodo: Nodo) -> float:
     Cuánto más cuesta un incidente según a quién se le hizo.
 
     **Es la primera de las dos vías por las que la mezcla real de un punto tiene
-    consecuencia** (§P1 de la propuesta v2). Un incidente en un punto que es 90 %
+    consecuencia** (§P1 de la propuesta). Un incidente en un punto que es 90 %
     protesta legítima cuesta casi el doble que uno donde la mitad es otra cosa:
     es fuerza sobre población civil, y se paga como tal.
 

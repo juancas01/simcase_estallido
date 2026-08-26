@@ -1128,7 +1128,7 @@ distinta de que el país deje de respaldar al Gobierno, y las dos tienen que
 coexistir.
 
 > **Recomendación:** H2 y H3 al motor; H1 y H4 por guion. Y conviene decidir ya si
-> el paquete es fijo o se sortea —punto **A5** de [`PENDIENTES.md`](../PENDIENTES.md)—,
+> el paquete es fijo o se sortea —punto **A5** de [`PENDIENTES.md`](../../PENDIENTES.md)—,
 > porque cambia dónde vive el dato.
 
 ---
@@ -1151,7 +1151,7 @@ calibrará contra un sistema al que le faltan piezas.
 ---
 
 *Fuentes: Manual de Roles con RADs (8 roles) y Matriz Operativa (8 roles) del
-GovLab · la [propuesta de simulación](propuesta_simulacion_estallido_social.md) ·
+GovLab · la [propuesta de simulación](propuesta_inicial.md) ·
 el motor en el commit `510d903`. Las afirmaciones de 9.4 y 9.5 se comprobaron
 ejecutando el motor, no leyéndolo.*
 

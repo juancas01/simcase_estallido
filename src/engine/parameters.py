@@ -8,7 +8,7 @@ ADVERTENCIA DE CALIBRACIÓN
 --------------------------
 Ninguno de estos coeficientes está medido. Son convenciones declaradas, elegidas
 para que ninguna estrategia pura (solo fuerza / solo mesa) gane. Ver §12.3 de
-`docs/propuesta_simulacion_estallido_social.md`. La primera corrida con personas
+`docs/historial/propuesta_inicial.md`. La primera corrida con personas
 es una medición, no un ejercicio.
 """
 

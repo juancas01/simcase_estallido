@@ -7,7 +7,7 @@
 Este documento propone **qué debe modelar el motor**: con qué variables, qué reglas
 acoplan unas decisiones con otras y qué dilemas quedan garantizados por
 construcción. Sigue la arquitectura de cuatro capas de
-[`guia_arquitectura_simulaciones.md`](guia_arquitectura_simulaciones.md) y toma
+[`../guia_arquitectura_simulaciones.md`](../guia_arquitectura_simulaciones.md) y toma
 los ocho roles, sus recursos y sus acciones del Manual de Roles y de la Matriz
 Operativa ya elaborados.
 
@@ -1519,5 +1519,5 @@ aquí:
 
 *Documento de diseño derivado del Manual de Roles con RADs (8 roles) y de la
 Matriz Operativa del caso Estallido Social, sobre la arquitectura de
-[`guia_arquitectura_simulaciones.md`](guia_arquitectura_simulaciones.md). Los
+[`../guia_arquitectura_simulaciones.md`](../guia_arquitectura_simulaciones.md). Los
 coeficientes son propuestas de partida para calibrar, no valores medidos.*

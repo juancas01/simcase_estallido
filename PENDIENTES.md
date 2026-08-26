@@ -33,7 +33,7 @@ Va ordenado por lo que bloquea. Hay cuatro clases y no se resuelven igual:
 | **C1–C3** | tres cosas que solo se ven con personas | la primera corrida real | esperando |
 
 Lo que **sí** funciona está en el README, sección «Estado actual», y en
-[`docs/COMO_FUNCIONA_2.md`](docs/COMO_FUNCIONA_2.md).
+[`docs/COMO_FUNCIONA.md`](docs/COMO_FUNCIONA.md).
 
 ---
 
@@ -386,7 +386,7 @@ Anotado aquí para que nadie lo vuelva a levantar.
 
 ### Del diagnóstico del motor anterior
 
-Los siete problemas de [`docs/mapa_de_palancas.md`](docs/mapa_de_palancas.md):
+Los siete problemas de [`docs/historial/mapa_de_palancas.md`](docs/historial/mapa_de_palancas.md):
 
 | | Era | Cómo quedó |
 |---|---|---|

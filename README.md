@@ -22,14 +22,28 @@ puede cerrar dos, y eso sale de la aritmética del motor, no de un guion.
 
 ### Por dónde empezar
 
-| Si quieres… | Lee |
+**Tres documentos, en este orden.** No hace falta saber programar para ninguno.
+
+| | Lee | Para qué |
+|---|---|---|
+| **1** | [`docs/propuesta.md`](docs/propuesta.md) | **El diseño del juego.** Qué ve cada uno de los ocho, qué puede hacer y cómo se afectan. Incluye el modelo del mundo y un glosario |
+| **2** | [`docs/COMO_FUNCIONA.md`](docs/COMO_FUNCIONA.md) | **Cómo está construido.** Del juego al código: qué pasa en la sala, qué cálculo lo produce, y en qué archivo está |
+| **3** | [`PENDIENTES.md`](PENDIENTES.md) | **Qué falta y cómo probarlo.** Las cuatro pruebas en orden y las decisiones que esperan al equipo docente |
+
+Y dos más, según lo que busques:
+
+| Lee | Para qué |
 |---|---|
-| **entender cómo funciona el motor v2** | [`docs/COMO_FUNCIONA_2.md`](docs/COMO_FUNCIONA_2.md) — del juego al código: qué pasa en la sala, qué cálculo lo produce y en qué archivo está |
-| entender el motor **anterior** | [`docs/COMO_FUNCIONA.md`](docs/COMO_FUNCIONA.md) — la versión previa, con sus números |
-| saber **por qué** está diseñado así | [`docs/propuesta_simulacion_estallido_social.md`](docs/propuesta_simulacion_estallido_social.md) — el documento de diseño completo |
-| entender **el diseño del juego v2** | [`docs/propuesta_v2.md`](docs/propuesta_v2.md) — vista privada por rol, el modelo del mundo, 34 acciones y el turno sin moderador |
+| [`docs/guia_arquitectura_simulaciones.md`](docs/guia_arquitectura_simulaciones.md) | Montar **otro** caso con esta arquitectura. Describe la forma, no el caso |
+| [`docs/historial/`](docs/historial/) | De dónde salieron las decisiones actuales: la propuesta inicial, el primer motor, y el diagnóstico que produjo esta versión |
+
+---|---|
+| **entender cómo funciona el motor v2** | [`docs/COMO_FUNCIONA.md`](docs/COMO_FUNCIONA.md) — del juego al código: qué pasa en la sala, qué cálculo lo produce y en qué archivo está |
+| entender el motor **anterior** | [`docs/historial/como_funciona_motor_v1.md`](docs/historial/como_funciona_motor_v1.md) — la versión previa, con sus números |
+| saber **por qué** está diseñado así | [`docs/historial/propuesta_inicial.md`](docs/historial/propuesta_inicial.md) — el documento de diseño completo |
+| entender **el diseño del juego v2** | [`docs/propuesta.md`](docs/propuesta.md) — vista privada por rol, el modelo del mundo, 34 acciones y el turno sin moderador |
 | montar **otro** caso con esta arquitectura | [`docs/guia_arquitectura_simulaciones.md`](docs/guia_arquitectura_simulaciones.md) |
-| entender **el ejercicio como juego** — qué puede hacer cada rol y cómo se afectan | [`docs/mapa_de_palancas.md`](docs/mapa_de_palancas.md) — las reglas, las ocho fichas, el mapa de interdependencias, y qué de todo eso sostiene el motor |
+| entender **el ejercicio como juego** — qué puede hacer cada rol y cómo se afectan | [`docs/historial/mapa_de_palancas.md`](docs/historial/mapa_de_palancas.md) — las reglas, las ocho fichas, el mapa de interdependencias, y qué de todo eso sostiene el motor |
 | **empezar a probar**, y saber qué falta | [`PENDIENTES.md`](PENDIENTES.md) — las cuatro pruebas en orden, las decisiones abiertas, el código sin escribir y la calibración, en un solo sitio |
 
 ---
@@ -209,7 +223,7 @@ operar. `solo_fuerza` se queda sin nada.
 Los dos problemas que estaban medidos —la cohesión saturada en 0 y las muertes
 idénticas en cuatro de cinco estrategias— **no eran de coeficientes: eran piezas
 que faltaban.** El antes y el después está en
-[`docs/COMO_FUNCIONA_2.md` §12](docs/COMO_FUNCIONA_2.md).
+[`docs/COMO_FUNCIONA.md` §12](docs/COMO_FUNCIONA.md).
 
 ---
 
