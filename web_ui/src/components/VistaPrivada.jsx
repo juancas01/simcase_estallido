@@ -22,6 +22,7 @@
 
 import Ayuda, { Titulo } from './Ayuda'
 import { D } from '../definiciones.jsx'
+import { CHIP_CLASE, CLASE_ACCION, FRANJA, rotulo } from '../etiquetas.jsx'
 import { Cargando, ROLES, useDatos } from '../comun.jsx'
 
 export default function VistaPrivada({ rol }) {
@@ -39,11 +40,11 @@ export default function VistaPrivada({ rol }) {
         </div>
         <div style={{ textAlign: 'right' }}>
           <div className="num" style={{ fontSize: '1rem', fontWeight: 600 }}>
-            Turno {datos.turno} · {datos.franja}
+            Turno {datos.turno} · {rotulo(FRANJA, datos.franja)}
           </div>
           {datos.congelado && (
             <div className="congelado">
-              congelado
+              Congelado
               <Ayuda etiqueta="Qué significa congelado">{D.congelado}</Ayuda>
             </div>
           )}
@@ -85,11 +86,8 @@ export default function VistaPrivada({ rol }) {
                 {datos.acciones.map(a => (
                   <tr key={a.accion}>
                     <td style={{ width: '1%' }}>
-                      <span className={`chip chip-${
-                        a.clase === 'constitutiva' ? 'neutro'
-                        : a.clase === 'operativa' ? 'bien' : 'medio'}`}>
-                        {a.clase === 'constitutiva' ? 'constituye'
-                          : a.clase === 'operativa' ? 'toca el mundo' : 'informa'}
+                      <span className={`chip chip-${CHIP_CLASE[a.clase] || 'neutro'}`}>
+                        {rotulo(CLASE_ACCION, a.clase)}
                       </span>
                     </td>
                     <td style={{ color: 'var(--texto)' }}>{a.descripcion}</td>
@@ -201,12 +199,20 @@ function Simple({ clave, valor, color }) {
   )
 }
 
+/**
+ * El detalle de una vista llega tal como lo escribe el motor: `sin_verificar`,
+ * `no se sostiene`, `evaluando`. Son claves, no prosa, y pintarlas crudas deja
+ * la pantalla llena de guiones bajos y minúsculas.
+ *
+ * `rotulo()` sin mapa capitaliza y quita los guiones. Sobre un texto que ya
+ * viene bien escrito —el nombre de un punto, por ejemplo— no hace nada.
+ */
 function formatear(v) {
-  if (v === true) return 'sí'
-  if (v === false) return 'no'
+  if (v === true) return 'Sí'
+  if (v === false) return 'No'
   if (v === null || v === undefined) return '—'
   if (typeof v === 'number') return Number.isInteger(v) ? v : v.toFixed(2)
-  return String(v)
+  return rotulo(String(v))
 }
 
 /** Un número solo no dice nada. Lo que apremia se ve sin leerlo. */

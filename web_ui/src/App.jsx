@@ -1,72 +1,54 @@
 // ---------------------------------------------------------------------------
-// CUATRO SUPERFICIES
+// TRES SUPERFICIES
 //
-//   /tablero        PROYECTAR · lo que el Estado tiene por cierto, grano grueso
-//                   — lleva la esfera pública como barra lateral plegable
-//   /esfera         PROYECTAR · lo que se dice, como pantalla aparte
+//   /tablero        PROYECTAR · lo que el Estado tiene por cierto
+//                   — con la esfera pública como barra lateral plegable
 //   /vista/{rol}    el dispositivo de cada uno · su cartera en alta resolución
 //   /consola        donde se transcriben las órdenes · NO proyectar
 //
-// La distancia entre las dos proyecciones es el caso, y solo se percibe si se ven
-// A LA VEZ. De ahí los dos montajes:
+// LA ESFERA PÚBLICA YA NO TIENE RUTA PROPIA
+// ----------------------------------------
+// La tenía, para montajes de dos proyectores. Se ha retirado, y no por poda:
 //
-//   · con DOS proyectores, `/tablero` y `/esfera` en pantallas distintas
-//   · con UNO solo o un portátil, `/tablero` con su barra lateral abierta
+//     La distancia entre lo que el Estado tiene por cierto y lo que se dice
+//     es el caso, y SOLO SE PERCIBE SIMULTÁNEA.
 //
-// Lo que no se hace nunca es ponerla en una pestaña: una pestaña sustituye una
-// cosa por la otra y elimina justamente lo que hay que enseñar.
+// Mientras la esfera tuvo ruta propia, esa doctrina dependía de que quien monta
+// la sala hiciera lo correcto: bastaba proyectar una de las dos sola para perder
+// justamente lo que hay que enseñar. Ahora vive dentro del tablero y **el
+// montaje incorrecto deja de ser posible.**
+//
+// Una regla que el software garantiza vale más que una que el software
+// recomienda.
 //
 // Y NO HAY MODERADOR COMO FIGURA APARTE: quien opera la consola puede ser uno de
 // los ocho. El sistema conduce el turno.
 //
 // ESTA PORTADA ES UN LANZADOR, no un documento. Cada tarjeta dice su nombre y su
-// ruta; para qué sirve cada una está detrás de su marca de ayuda. Quien monta la
-// sala ya lo sabe y quien no, lo pide.
+// ruta; para qué sirve cada una está detrás de su marca de ayuda.
 // ---------------------------------------------------------------------------
 
 import Tablero from './components/Tablero'
-import EsferaPublica from './components/EsferaPublica'
 import Consola from './components/Consola'
 import VistaPrivada from './components/VistaPrivada'
 import Ayuda from './components/Ayuda'
 import { ROLES } from './comun.jsx'
 import LogoAiLab from '../logos/LOGO Ai Lab_blanco.png'
 
-const PROYECCIONES = [
-  {
-    ruta: '/tablero',
-    nombre: 'Tablero de situación',
-    ayuda: (
-      <>
-        <p>
-          <strong>Lo que el Estado tiene por cierto</strong>, en grano grueso:
-          reservas, mapa de corredores, semáforo de abastecimiento y pliego de
-          decisiones.
-        </p>
-        <p>
-          Lleva la esfera pública como barra lateral plegable, para montajes de
-          una sola pantalla.
-        </p>
-      </>
-    ),
-  },
-  {
-    ruta: '/esfera',
-    nombre: 'Esfera pública',
-    ayuda: (
-      <>
-        <p>
-          <strong>Lo que se dice:</strong> prensa nacional e internacional,
-          redes, gremios y denuncias graves sin verificar.
-        </p>
-        <p>
-          Esta ruta es para el montaje de dos proyectores. Con uno solo, la misma
-          información va en la barra lateral del tablero.
-        </p>
-      </>
-    ),
-  },
-]
+const AYUDA_TABLERO = (
+  <>
+    <p>
+      <strong>Lo que el Estado tiene por cierto</strong>, en grano grueso: el
+      reloj del ejercicio, las reservas, el mapa de corredores, el semáforo de
+      abastecimiento y el pliego de decisiones.
+    </p>
+    <p>
+      Lleva la <strong>esfera pública</strong> —lo que se dice— como barra
+      lateral plegable. Las dos se ven a la vez a propósito: la distancia entre
+      una y otra es el caso, y solo se percibe simultánea.
+    </p>
+  </>
+)
 
 const AYUDA_CONSOLA = (
   <>
@@ -116,19 +98,17 @@ function Portada() {
         <Seccion titulo="Proyectar a la sala">
           {/* La marca de ayuda va FUERA del enlace: un botón dentro de un ancla
               es HTML inválido, y pulsarlo navegaría en vez de explicar. */}
-          {PROYECCIONES.map(p => (
-            <div key={p.ruta} className="tarjeta">
-              <div style={{ display: 'flex', alignItems: 'baseline',
-                            justifyContent: 'space-between', gap: '0.5rem' }}>
-                <a href={p.ruta} style={{ fontWeight: 650, textDecoration: 'none',
+          <div className="tarjeta">
+            <div style={{ display: 'flex', alignItems: 'baseline',
+                          justifyContent: 'space-between', gap: '0.5rem' }}>
+              <a href="/tablero" style={{ fontWeight: 650, textDecoration: 'none',
                                           color: 'var(--texto)' }}>
-                  {p.nombre}
-                </a>
-                <Ayuda etiqueta={`Para qué sirve: ${p.nombre}`}>{p.ayuda}</Ayuda>
-              </div>
-              <code style={{ color: 'var(--texto-3)', fontSize: '0.78rem' }}>{p.ruta}</code>
+                Tablero de situación
+              </a>
+              <Ayuda etiqueta="Para qué sirve el tablero">{AYUDA_TABLERO}</Ayuda>
             </div>
-          ))}
+            <code style={{ color: 'var(--texto-3)', fontSize: '0.78rem' }}>/tablero</code>
+          </div>
         </Seccion>
 
         <Seccion titulo="Vista personal de cada rol" ayuda={AYUDA_VISTAS}>
@@ -176,8 +156,14 @@ export default function App() {
   const ruta = decodeURIComponent(window.location.pathname)
 
   if (ruta === '/tablero') return <Tablero />
-  if (ruta === '/esfera') return <EsferaPublica />
   if (ruta === '/consola') return <Consola />
+
+  // La esfera vivió aquí hasta que se metió dentro del tablero. Quien llegue por
+  // un enlace viejo aterriza donde está ahora, no en la portada.
+  if (ruta === '/esfera') {
+    window.location.replace('/tablero')
+    return null
+  }
 
   if (ruta.startsWith('/vista/')) {
     const rol = ruta.slice('/vista/'.length)

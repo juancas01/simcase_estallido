@@ -173,12 +173,19 @@ proyección**.
 | Superficie | Quién la ve | Qué responde |
 |---|---|---|
 | **Tablero general** | proyectado, toda la sala | **qué está pasando** |
+| **Esfera pública** | barra lateral del tablero | **qué se dice** |
 | **Vista privada** ×8 | cada uno en su dispositivo | **cuánto, dónde exactamente, desde cuándo** |
-| **Esfera pública** | proyectada junto al tablero | **qué se dice** |
 | **Consola** | quien transcribe | dónde entran las órdenes |
 
 **La distancia entre el tablero y la esfera pública es el caso**, y solo se
 percibe si se ven a la vez. Nunca en pestañas.
+
+> **Por eso la esfera no tiene ruta propia.** La tuvo, para montajes de dos
+> proyectores. Mientras la tuvo, la doctrina dependía de que quien monta la sala
+> hiciera lo correcto: bastaba proyectar una de las dos sola para perder lo que
+> hay que enseñar. Al vivir dentro del tablero, el montaje incorrecto deja de ser
+> posible — **una regla que el software garantiza vale más que una que el
+> software recomienda.**
 
 ### En el motor
 
@@ -204,8 +211,8 @@ porque el número cambió y solo él tiene el nuevo.
 | Superficie | Endpoint | Función |
 |---|---|---|
 | Tablero | `GET /api/tablero` | [`state.py:441`](../src/engine/state.py) · `Estado.vista_publica()` |
+| Esfera pública | `GET /api/esfera` | [`api/main.py`](../src/api/main.py) · la sirve el mismo tablero |
 | Vista privada | `GET /api/vista/{rol}` | [`views.py`](../src/engine/views.py) · `vista()` |
-| Esfera pública | `GET /api/esfera` | [`api/main.py`](../src/api/main.py) |
 | Consola | `POST /api/consola/*` | [`api/main.py`](../src/api/main.py) |
 
 **Tres pruebas custodian la separación** y están en
@@ -243,8 +250,8 @@ concertación que tarda dos turnos en rendir no cabe en la jornada 5. El reloj
 dice cuánto queda; qué hacer con eso es de la sala.
 
 `Estado.reloj()` vive en el motor y no en la interfaz. Cuatro superficies
-calculando cada una su propia hora son cuatro relojes, y con dos proyectores la
-discrepancia se ve el primer turno.
+calculando cada una su propia hora son cuatro relojes, y con el tablero
+proyectado junto a ocho dispositivos la discrepancia se ve el primer turno.
 
 **3 · El orden.** Corredores y regiones van **peor primero**. El ojo aterriza
 arriba a la izquierda y ahí está el problema, sin que nadie lo señale. La

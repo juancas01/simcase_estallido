@@ -30,6 +30,7 @@
 
 import Ayuda from './Ayuda'
 import { D } from '../definiciones.jsx'
+import { FRANJA, rotulo } from '../etiquetas.jsx'
 
 export default function Reloj({ reloj, pendientes }) {
   if (!reloj) return null
@@ -49,7 +50,7 @@ export default function Reloj({ reloj, pendientes }) {
         <div className="reloj-fecha">
           {reloj.fecha}
           <span className={`chip chip-${noche ? 'medio' : 'neutro'} reloj-franja`}>
-            {noche ? 'noche' : 'día'}
+            {rotulo(FRANJA, reloj.franja)}
           </span>
         </div>
         <div className="reloj-horas">

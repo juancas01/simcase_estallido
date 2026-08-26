@@ -19,6 +19,7 @@
 import { useState } from 'react'
 import Ayuda, { Titulo } from './Ayuda'
 import { D } from '../definiciones.jsx'
+import { FASE, FRANJA, rotulo } from '../etiquetas.jsx'
 import { api, FASES, useDatos } from '../comun.jsx'
 
 export default function Consola() {
@@ -74,9 +75,9 @@ export default function Consola() {
         </div>
         <div style={{ textAlign: 'right' }}>
           <div className="num" style={{ fontWeight: 600 }}>
-            Turno {tablero?.turno_decision ?? 0} · {tablero?.franja ?? '—'}
+            Turno {tablero?.turno_decision ?? 0} · {rotulo(FRANJA, tablero?.franja)}
           </div>
-          <div className="eyebrow">{tablero?.fase}</div>
+          <div className="eyebrow">{rotulo(FASE, tablero?.fase)}</div>
         </div>
       </header>
 
@@ -209,7 +210,7 @@ export default function Consola() {
             {resultado.resultados?.map((r, i) => (
               <div key={i} style={{ marginTop: '0.5rem' }}>
                 <span className={`chip chip-${r.ok ? 'bien' : 'mal'}`}>
-                  {r.ok ? 'ok' : 'no'}
+                  {r.ok ? 'Ejecutada' : 'No viable'}
                 </span>{' '}
                 <span style={{ fontSize: '0.9rem' }}>{r.mensaje}</span>
                 {r.datos?.p_incidente !== undefined && (

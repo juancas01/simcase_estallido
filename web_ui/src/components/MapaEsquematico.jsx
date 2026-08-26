@@ -171,10 +171,10 @@ export default function MapaEsquematico({ tablero, seleccionado, onSeleccionar }
 function Formas() {
   return (
     <div className="mapa-formas">
-      <span>● cerrado</span>
-      <span>◆ fuerza</span>
-      <span>■ pactado</span>
-      <span>? sin ver</span>
+      <span>● Cerrado</span>
+      <span>◆ Fuerza</span>
+      <span>■ Pactado</span>
+      <span>? Sin verificar</span>
       <Ayuda etiqueta="Qué significa cada forma">{D.formas_mapa}</Ayuda>
     </div>
   )

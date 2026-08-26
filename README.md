@@ -80,10 +80,15 @@ uv run python -m src.api.main        # http://localhost:8000
 
 | Superficie | Ruta | Para quién |
 |---|---|---|
-| Tablero de situación | `/tablero` | **proyectar** — lleva la esfera como barra lateral plegable |
-| Esfera pública | `/esfera` | **proyectar** aparte, si hay dos proyectores |
+| Tablero de situación | `/tablero` | **proyectar** — con la esfera pública en su barra lateral |
 | Vista privada | `/vista/Minas`, `/vista/Defensoría`… | el dispositivo de cada uno |
 | Consola | `/consola` | quien transcribe · no proyectar |
+
+> **La esfera pública no tiene ruta propia, y es a propósito.** La distancia
+> entre lo que el Estado tiene por cierto y lo que se dice solo se percibe
+> **simultánea**. Mientras tuvo pantalla aparte, esa doctrina dependía de que
+> quien monta la sala hiciera lo correcto; ahora el montaje incorrecto no es
+> posible.
 
 No hace falta clave de API para nada de lo anterior. **El motor corre entero sin
 llamar a ningún modelo de lenguaje.** Si algún día no puede, la arquitectura está

@@ -16,7 +16,44 @@
 // una filtración con otro nombre.
 // ---------------------------------------------------------------------------
 
+/**
+ * La notación ▲▼. NO es una entrada del catálogo: es un fragmento que se
+ * compone dentro de otras definiciones.
+ *
+ * El motivo es de interfaz, no de organización. Dos marcas de ayuda pegadas la
+ * una a la otra obligan a elegir cuál abrir antes de saber qué hay en cada una,
+ * y eso es peor que un globo largo. **Una marca, un globo, todo lo que hace
+ * falta saber de esa tarjeta.**
+ */
+const NOTA_DELTA = (
+  <>
+    <p>
+      <strong>Las flechas ▲▼</strong> dicen cuánto se movió la magnitud desde
+      la última vez que la sala miró, es decir, en la última ventana resuelta.
+    </p>
+    <p>
+      Una magnitud sin flecha no se movió. El color indica si el movimiento fue a
+      favor o en contra, no si la decisión que lo produjo fue acertada.
+    </p>
+  </>
+)
+
 export const D = {
+
+  reservas: (
+    <>
+      <p>
+        <strong>Las cuatro se leen igual: arriba es mejor.</strong> Cada una lleva
+        su propia definición en su marca de ayuda.
+      </p>
+      <p>
+        Se agotan y se recomponen con las decisiones de la mesa, no con el paso
+        del tiempo. Ninguna se recupera sola.
+      </p>
+      {NOTA_DELTA}
+    </>
+  ),
+
 
   // --- el reloj y el plazo --------------------------------------------------
 
@@ -28,9 +65,9 @@ export const D = {
         deliberación y cuatro interludios nocturnos.
       </p>
       <dl>
-        <dt>día</dt>
+        <dt>Día</dt>
         <dd>06:00 – 18:00 · se delibera, se ordena, la mesa está disponible</dd>
-        <dt>noche</dt>
+        <dt>Noche</dt>
         <dd>
           18:00 – 06:00 · no se delibera. Lo abierto por la fuerza vuelve a
           cerrarse y el riesgo de incidente se multiplica por 1,6
@@ -50,11 +87,11 @@ export const D = {
         cada columna es el día; la inferior, la noche que le sigue.
       </p>
       <dl>
-        <dt>llena</dt><dd>ventana ya resuelta</dd>
-        <dt>azul</dt><dd>la ventana en curso</dd>
-        <dt>vacía</dt><dd>pendiente</dd>
+        <dt>Llena</dt><dd>ventana ya resuelta</dd>
+        <dt>Azul</dt><dd>la ventana en curso</dd>
+        <dt>Vacía</dt><dd>pendiente</dd>
       </dl>
-      <p>La jornada 15 no tiene noche: el ejercicio cierra con ella.</p>
+      <p>La quinta jornada no tiene noche: el ejercicio cierra con ella.</p>
     </>
   ),
 
@@ -82,19 +119,7 @@ export const D = {
         nunca, hagan lo que hagan los turnos siguientes. La presión en la calle
         sí baja, pero solo con decisiones, y con rendimientos decrecientes.
       </p>
-    </>
-  ),
-
-  delta: (
-    <>
-      <p>
-        <strong>Cuánto se movió la magnitud</strong> desde la última vez que la
-        sala miró, es decir, en la última ventana resuelta.
-      </p>
-      <p>
-        Una magnitud sin marca no se movió. El color indica si el movimiento fue
-        a favor o en contra, no si la decisión que lo produjo fue acertada.
-      </p>
+      {NOTA_DELTA}
     </>
   ),
 
@@ -219,10 +244,10 @@ export const D = {
         es un dato accesorio: determina cuánto dura la apertura.
       </p>
       <dl>
-        <dt>◆</dt><dd>por la fuerza — se revierte en el interludio nocturno</dd>
-        <dt>■</dt><dd>concertada — se sostiene mientras el acuerdo se cumpla</dd>
-        <dt>●</dt><dd>cerrado, o abierto por desgaste</dd>
-        <dt>?</dt><dd>sin verificación en campo; su estado real se desconoce</dd>
+        <dt>◆</dt><dd>Fuerza — se revierte en el interludio nocturno</dd>
+        <dt>■</dt><dd>Pactado — se sostiene mientras el acuerdo se cumpla</dd>
+        <dt>●</dt><dd>Cerrado, o abierto por desgaste</dd>
+        <dt>?</dt><dd>Sin verificar — su estado real se desconoce</dd>
       </dl>
     </>
   ),
@@ -258,9 +283,9 @@ export const D = {
         medicinal, combustible y alimentos.
       </p>
       <dl>
-        <dt>verde</dt><dd>2,5 días o más</dd>
-        <dt>ámbar</dt><dd>entre 1 y 2,5 días</dd>
-        <dt>rojo</dt><dd>menos de 1 día</dd>
+        <dt>Verde</dt><dd>2,5 días o más</dd>
+        <dt>Ámbar</dt><dd>entre 1 y 2,5 días</dd>
+        <dt>Rojo</dt><dd>menos de 1 día</dd>
       </dl>
       <p>
         Las cifras exactas, y cuál de los tres insumos manda, corresponden al
@@ -410,11 +435,11 @@ export const D = {
 
   clases_accion: (
     <dl>
-      <dt>constituye</dt>
+      <dt>Constituye</dt>
       <dd>establece una figura o una regla que rige los turnos siguientes</dd>
-      <dt>toca el mundo</dt>
+      <dt>Toca el mundo</dt>
       <dd>modifica el estado del territorio, de la fuerza o del abastecimiento</dd>
-      <dt>informa</dt>
+      <dt>Informa</dt>
       <dd>obtiene o difunde información sin alterar el estado del mundo</dd>
     </dl>
   ),

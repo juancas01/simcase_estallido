@@ -1,30 +1,30 @@
 // ---------------------------------------------------------------------------
-// EL CONTENIDO DE LA ESFERA PÚBLICA — compartido por sus dos presentaciones.
+// LA ESFERA PÚBLICA — lo que se dice, dentro del tablero.
 //
-//   · como página propia, en `/esfera`, cuando hay dos proyectores
-//   · como barra lateral del tablero, cuando hay uno solo o una sola pantalla
+// **Ya no tiene ruta propia, y eso es una decisión de diseño, no una poda.**
 //
-// Vive aquí y no duplicado en los dos sitios: un dato en dos sitios se
-// desincroniza, y una lista propia en cada pantalla es el mismo error con otro
-// nombre.
+// Antes vivía en dos sitios: como página en `/esfera` para montajes de dos
+// proyectores, y como barra lateral del tablero para los de uno. Pero la
+// doctrina de este ejercicio siempre fue la misma:
 //
-// Las glosas —qué es una denuncia sin verificar, qué cuesta comprobarla, de
-// dónde sale el texto de las publicaciones— están en `definiciones.jsx` y solo
-// aparecen al pedirlas. Aquí se ve lo que se dice, no lo que hay que saber para
-// entenderlo.
+//     La distancia entre lo que el Estado tiene por cierto y lo que se dice
+//     es el caso, y SOLO SE PERCIBE SIMULTÁNEA.
+//
+// Mientras la esfera tuvo ruta propia, esa doctrina dependía de que quien monta
+// la sala hiciera lo correcto: bastaba proyectar `/esfera` sola, o `/tablero`
+// solo, para perder justamente lo que hay que enseñar. Al vivir dentro del
+// tablero, **el montaje incorrecto deja de ser posible.**
+//
+// Una regla que el software garantiza vale más que una que el software
+// recomienda.
+//
+// Sigue siendo plegable: quien la pliega toma una decisión explícita y el
+// contador de denuncias sin verificar se queda visible en el botón.
 // ---------------------------------------------------------------------------
 
 import Ayuda, { Titulo } from './Ayuda'
 import { D } from '../definiciones.jsx'
-
-export const FUENTES = {
-  prensa_nacional: 'Prensa nacional',
-  prensa_internacional: 'Prensa internacional',
-  redes: 'Redes sociales',
-  comite_del_paro: 'Comité Nacional del Paro',
-  gremios: 'Gremios',
-  alcaldes_entorno: 'Alcaldes de entorno',
-}
+import { ESTADO_DENUNCIA, FUENTE, POSICION_GREMIOS, rotulo } from '../etiquetas.jsx'
 
 export const ENCUADRE = {
   represion: { texto: 'Represión', chip: 'mal' },
@@ -37,37 +37,35 @@ export function sinVerificar(datos) {
   return (datos?.denuncias || []).filter(d => d.estado !== 'verificada')
 }
 
-export default function EsferaContenido({ datos, compacto = false }) {
+export default function EsferaContenido({ datos }) {
   if (!datos) return null
   const abiertas = sinVerificar(datos)
   const enc = ENCUADRE[datos.encuadre_dominante] || ENCUADRE.desorden
 
   return (
     <>
-      {compacto && (
-        <div className="tarjeta" style={{ marginBottom: '0.75rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between',
-                        alignItems: 'center', gap: '0.5rem' }}>
-            <span className="eyebrow">
-              Encuadre dominante
-              <Ayuda etiqueta="Definición de encuadre dominante">{D.encuadre}</Ayuda>
-            </span>
-            <span className={`chip chip-${enc.chip}`}>{enc.texto}</span>
-          </div>
+      <div className="tarjeta" style={{ marginBottom: '0.75rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between',
+                      alignItems: 'center', gap: '0.5rem' }}>
+          <span className="eyebrow">
+            Encuadre dominante
+            <Ayuda etiqueta="Definición de encuadre dominante">{D.encuadre}</Ayuda>
+          </span>
+          <span className={`chip chip-${enc.chip}`}>{enc.texto}</span>
         </div>
-      )}
+      </div>
 
       <div className="tarjeta" style={{ marginBottom: '0.75rem' }}>
         <h2>Publicaciones</h2>
         {datos.publicaciones?.length ? (
-          datos.publicaciones.slice(0, compacto ? 8 : 20).map((p, i) => (
+          datos.publicaciones.slice(0, 10).map((p, i) => (
             <div key={i} className={`publicacion${p.sin_verificar ? ' sin-verificar' : ''}`}>
               <span className="fuente">
-                {FUENTES[p.fuente] || p.fuente}
+                {rotulo(FUENTE, p.fuente)}
                 {p.turno ? ` · turno ${p.turno}` : ''}
                 {p.sin_verificar && ' · sin verificar'}
               </span>
-              <p style={compacto ? { fontSize: '0.88rem' } : undefined}>{p.texto}</p>
+              <p style={{ fontSize: '0.88rem' }}>{p.texto}</p>
             </div>
           ))
         ) : (
@@ -85,7 +83,8 @@ export default function EsferaContenido({ datos, compacto = false }) {
           abiertas.map(d => (
             <div key={d.denuncia_id} className="publicacion sin-verificar">
               <span className="fuente">
-                {d.denuncia_id} · desde el turno {d.turno} · {d.estado}
+                {d.denuncia_id} · desde el turno {d.turno}
+                {' · '}{rotulo(ESTADO_DENUNCIA, d.estado)}
               </span>
               <p style={{ fontSize: '0.88rem' }}>{d.texto}</p>
             </div>
@@ -103,7 +102,7 @@ export default function EsferaContenido({ datos, compacto = false }) {
               <td>Comité Nacional del Paro</td>
               <td style={{ textAlign: 'right' }}>
                 <span className={`chip chip-${datos.comite_disponible ? 'bien' : 'mal'}`}>
-                  {datos.comite_disponible ? 'se sienta' : 'suspendió'}
+                  {datos.comite_disponible ? 'Se sienta' : 'Suspendió'}
                 </span>
               </td>
             </tr>
@@ -113,7 +112,7 @@ export default function EsferaContenido({ datos, compacto = false }) {
                 <span className={`chip chip-${
                   datos.posicion_gremios === 'fuera' ? 'bien'
                     : datos.posicion_gremios === 'evaluando' ? 'medio' : 'mal'}`}>
-                  {datos.posicion_gremios}
+                  {rotulo(POSICION_GREMIOS, datos.posicion_gremios)}
                 </span>
               </td>
             </tr>

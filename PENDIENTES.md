@@ -98,18 +98,18 @@ cd ..
 uv run python -m src.api.main        # http://localhost:8000
 ```
 
-**Con dos proyectores:** uno con `/tablero`, otro con `/esfera`, un portátil con
-`/consola` y otro con una vista privada.
+**El montaje:** un proyector con `/tablero`, un portátil con `/consola` y otro
+con una vista privada. Con un segundo proyector, otra vista privada.
 
-**Con una sola pantalla o un portátil:** `/tablero` ya lleva la esfera pública
-como **barra lateral plegable** —el botón está arriba a la derecha— y con eso
-basta. Cuando está plegada, el botón sigue mostrando cuántas denuncias hay sin
-verificar, que es lo que hace que alguien la abra.
+`/tablero` lleva la esfera pública como **barra lateral plegable** —el botón
+está arriba a la derecha—. Cuando está plegada, el botón sigue mostrando
+cuántas denuncias hay sin verificar, que es lo que hace que alguien la abra.
 
-> **Barra y no pestaña.** La distancia entre lo que el Estado tiene por cierto y
-> lo que se dice solo se percibe **simultánea**. Una barra abierta se ve junto al
-> tablero; una pestaña sustituye una cosa por la otra y elimina justamente lo que
-> hay que enseñar.
+> **La esfera no tiene ruta propia, y es a propósito.** La distancia entre lo que
+> el Estado tiene por cierto y lo que se dice solo se percibe **simultánea**.
+> Mientras tuvo pantalla aparte, bastaba proyectar una de las dos sola para
+> perder justamente lo que hay que enseñar. **Una regla que el software
+> garantiza vale más que una que el software recomienda.**
 
 - ¿Se lee el tablero desde el fondo de la sala?
 - ¿El mapa enseña por sí solo que un corredor vale lo que su peor punto?
@@ -445,7 +445,7 @@ decisión de la simulación se delegó al modelo.
 
 | | Era | Cómo quedó |
 |---|---|---|
-| **—** | tres superficies contra la API antigua | Cuatro: `/tablero`, `/esfera`, `/vista/{rol}` ×8 y `/consola` |
+| **—** | tres superficies contra la API antigua | Tres: `/tablero` —con la esfera dentro—, `/vista/{rol}` ×8 y `/consola` |
 | **—** | el mapa no existía | [`MapaEsquematico.jsx`](web_ui/src/components/MapaEsquematico.jsx) · esquema de líneas, con la forma del nodo diciendo cómo se abrió y un `?` en lo que nadie ha mirado |
 | **—** | el reloj lo llevaba el moderador | Lo lleva el sistema, fase por fase |
 

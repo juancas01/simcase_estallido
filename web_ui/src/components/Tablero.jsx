@@ -53,13 +53,19 @@
 //
 // LA BARRA LATERAL DE LA ESFERA PÚBLICA
 // -------------------------------------
-// Con dos proyectores, la esfera va en `/esfera` y las dos pantallas se ven a la
-// vez. Con uno solo —o con un portátil—, vive aquí como barra que se pliega.
+// **La esfera pública ya no tiene ruta propia: vive aquí y solo aquí.**
 //
-// **Barra y no pestaña, y la diferencia importa.** La distancia entre lo que el
-// Estado tiene por cierto y lo que se dice es el caso, y solo se percibe
-// SIMULTÁNEA. Una pestaña sustituye una cosa por la otra y elimina justamente lo
-// que hay que enseñar.
+// La tenía, para montajes de dos proyectores. Pero la doctrina siempre fue que
+// la distancia entre lo que el Estado tiene por cierto y lo que se dice solo se
+// percibe SIMULTÁNEA — y mientras la esfera tuvo pantalla aparte, esa doctrina
+// dependía de que quien monta la sala hiciera lo correcto. Bastaba proyectar una
+// de las dos sola para perder justamente lo que hay que enseñar.
+//
+// Al vivir dentro del tablero, el montaje incorrecto deja de ser posible. **Una
+// regla que el software garantiza vale más que una que el software recomienda.**
+//
+// Sigue siendo barra y no pestaña: una pestaña sustituye una cosa por la otra y
+// vuelve a eliminar lo que hay que enseñar.
 //
 // LO QUE NUNCA MUESTRA: la mezcla real de un punto, ni si una denuncia es
 // cierta. Tampoco por la puerta de atrás de un delta. Si eso se filtrara, el
@@ -72,6 +78,7 @@ import EsferaContenido, { ENCUADRE, sinVerificar } from './EsferaContenido'
 import Reloj from './Reloj'
 import Ayuda, { Titulo } from './Ayuda'
 import { D } from '../definiciones.jsx'
+import { ESTADO_PUNTO, FASE, MODO_APERTURA, SEMAFORO, rotulo } from '../etiquetas.jsx'
 import {
   Barra, Cargando, Delta, nivelPresion, nivelReserva, useDatos,
 } from '../comun.jsx'
@@ -93,19 +100,6 @@ function usarPreferencia(clave, inicial) {
   }, [clave, valor])
   return [valor, setValor]
 }
-
-const AYUDA_RESERVAS = (
-  <>
-    <p>
-      <strong>Las cuatro se leen igual: arriba es mejor.</strong> Cada una lleva
-      su propia definición en su marca de ayuda.
-    </p>
-    <p>
-      Se agotan y se recomponen con las decisiones de la mesa, no con el paso del
-      tiempo. Ninguna se recupera sola.
-    </p>
-  </>
-)
 
 /** Peor primero. El ojo aterriza arriba y ahí está el problema. */
 const ORDEN_SEMAFORO = { rojo: 0, ambar: 1, verde: 2 }
@@ -153,7 +147,7 @@ export default function Tablero() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
           {datos.congelado && (
             <div className="congelado">
-              congelado · {datos.fase}
+              Congelado · {rotulo(FASE, datos.fase)}
               <Ayuda etiqueta="Qué significa congelado">{D.congelado}</Ayuda>
             </div>
           )}
@@ -178,11 +172,11 @@ export default function Tablero() {
         <Reloj
           reloj={datos.reloj}
           pendientes={[
-            { nombre: 'puntos sin verificar',
+            { nombre: 'Puntos sin verificar',
               n: sinVerificarPuntos, de: datos.puntos.length },
-            { nombre: 'denuncias abiertas',
+            { nombre: 'Denuncias abiertas',
               n: abiertas, de: esfera?.denuncias?.length ?? 0 },
-            { nombre: 'decisiones sin responsable',
+            { nombre: 'Decisiones sin responsable',
               n: sinResponsable, de: (datos.registro || []).length },
           ]}
         />
@@ -195,7 +189,7 @@ export default function Tablero() {
               {muertes}
               <Delta valor={d.muertes_evitables} sentido="arriba_peor" />
             </div>
-            <p className="pie-cifra">muertes evitables acumuladas</p>
+            <p className="pie-cifra">Muertes evitables acumuladas</p>
             <div style={{ marginTop: '0.9rem' }}>
               <Barra nombre="Presión en la calle" valor={datos.presion_calle}
                      nivel={nivelPresion(datos.presion_calle)}
@@ -205,13 +199,10 @@ export default function Tablero() {
           </div>
 
           <div className="tarjeta">
-            {/* Dos marcas: una define la tarjeta, otra la notación ▲▼. Es donde
-                se encuentran cuatro deltas juntos, o sea donde se pregunta. */}
-            <h2>
-              Reservas
-              <Ayuda etiqueta="Qué son las reservas">{AYUDA_RESERVAS}</Ayuda>
-              <Ayuda etiqueta="Qué significan las flechas">{D.delta}</Ayuda>
-            </h2>
+            {/* UNA marca, un globo. Dos marcas pegadas obligan a elegir cuál
+                abrir antes de saber qué hay en cada una: la notación ▲▼ va
+                dentro de este mismo globo. */}
+            <Titulo ayuda={D.reservas}>Reservas</Titulo>
             <div className="rejilla" style={{
               gridTemplateColumns: 'repeat(auto-fit, minmax(148px, 1fr))', gap: '0.75rem',
             }}>
@@ -237,7 +228,7 @@ export default function Tablero() {
               <span className="cifra-total">/ {datos.fuerza.esmad_total}</span>
               <Delta valor={d.esmad_sin_comprometer} />
             </div>
-            <p className="pie-cifra">escuadrones sin comprometer</p>
+            <p className="pie-cifra">Escuadrones sin comprometer</p>
             {datos.fuerza.frentes_rurales_descubiertos > 0 && (
               <p className="pie-aviso">
                 {datos.fuerza.frentes_rurales_descubiertos} frente(s) rural(es)
@@ -262,7 +253,7 @@ export default function Tablero() {
                     <span className={`chip chip-${punto.estado === 'abierto' ? 'bien'
                       : punto.estado === 'parcial' ? 'medio'
                       : punto.estado === 'sin_verificar' ? 'neutro' : 'mal'}`}>
-                      {punto.estado.replace('_', ' ')}
+                      {rotulo(ESTADO_PUNTO, punto.estado)}
                     </span>
                     {punto.estado === 'sin_verificar' && (
                       <Ayuda etiqueta="Qué significa sin verificar">
@@ -270,7 +261,7 @@ export default function Tablero() {
                       </Ayuda>
                     )}
                     {punto.modo_apertura !== 'cerrado'
-                      && ` · por ${punto.modo_apertura}`}
+                      && ` · por ${rotulo(MODO_APERTURA, punto.modo_apertura).toLowerCase()}`}
                   </div>
                 </div>
               )}
@@ -353,7 +344,7 @@ export default function Tablero() {
                     <td>
                       <span className={`chip chip-${g.semaforo === 'verde' ? 'bien'
                         : g.semaforo === 'ambar' ? 'medio' : 'mal'}`}>
-                        {g.semaforo}
+                        {rotulo(SEMAFORO, g.semaforo)}
                       </span>
                     </td>
                     <td className="num" style={{
@@ -413,7 +404,7 @@ export default function Tablero() {
             {enc && <span className={`chip chip-${enc.chip}`}>{enc.texto}</span>}
           </div>
           <div className="lateral-cuerpo">
-            <EsferaContenido datos={esfera} compacto />
+            <EsferaContenido datos={esfera} />
           </div>
         </aside>
       )}

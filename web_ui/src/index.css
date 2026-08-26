@@ -3,8 +3,8 @@
 
    Cuatro superficies, dos de ellas PROYECTADAS a una sala:
 
-     /tablero       proyectado · lo que el Estado tiene por cierto
-     /esfera        proyectado · lo que se dice
+     /tablero       proyectado · lo que el Estado tiene por cierto,
+                    con la esfera pública —lo que se dice— en su barra lateral
      /vista/{rol}   el dispositivo de cada uno · su cartera en alta resolución
      /consola       donde se transcriben las órdenes
 
@@ -280,10 +280,11 @@ a { color: var(--acento); }
 /* ---------------------------------------------------------------------------
    LA BARRA LATERAL DE LA ESFERA PÚBLICA
 
-   Con dos proyectores, la esfera va en su propia ruta y las dos pantallas se
-   ven a la vez. Con uno solo, vive aquí — pero SIEMPRE junto al tablero, nunca
-   en una pestaña que lo sustituya: la divergencia entre lo que el Estado tiene
-   por cierto y lo que se dice solo se percibe simultánea.
+   La esfera pública ya no tiene ruta propia: vive aquí y solo aquí. La
+   divergencia entre lo que el Estado tiene por cierto y lo que se dice solo se
+   percibe SIMULTÁNEA, y mientras la esfera tuvo pantalla aparte esa doctrina
+   dependía de que quien monta la sala hiciera lo correcto. Ahora el montaje
+   incorrecto no es posible.
    --------------------------------------------------------------------------- */
 
 .con-lateral {
@@ -638,20 +639,27 @@ a { color: var(--acento); }
 
 .territorio {
   display: grid;
-  grid-template-columns: minmax(0, 230px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
   gap: 1.5rem;
   align-items: start;
 }
-@media (max-width: 1000px) {
+@media (max-width: 1050px) {
   .territorio { grid-template-columns: 1fr; gap: 1rem; }
+  .mapa-svg { max-height: 46vh; }
 }
 
-/* El mapa tenía `height: auto` sobre un lienzo casi cuadrado: a ancho completo
-   se comía la pantalla. Acotarlo en alto es lo que lo devuelve a su sitio. */
+/* DOS AJUSTES SUCESIVOS, y el segundo corrige al primero.
+   Con `height: auto` sobre un lienzo casi cuadrado, a ancho completo el mapa se
+   comía la pantalla. Acotarlo lo devolvió a su sitio — y de paso lo dejó
+   ilegible: los identificadores de los 24 puntos no se leían.
+   El ancho de la columna (360 px) y el tope de alto (375 px) van emparejados a
+   propósito: el lienzo es 100×104, así que un hueco de esa proporción se llena
+   casi entero y no queda letterbox a los lados. */
 .mapa-svg {
   display: block;
   width: 100%;
-  height: clamp(150px, 21vh, 235px);
+  height: auto;
+  max-height: min(375px, 44vh);
 }
 
 .mapa-formas {
