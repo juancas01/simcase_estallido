@@ -1,15 +1,21 @@
 """
 main.py — API del ejercicio.
 
-Sirve las dos proyecciones y la consola del moderador. Deliberadamente delgada:
-toda la lógica vive en `src/engine`, que no sabe que esta capa existe.
+Sirve las tres clases de superficie del montaje v2 y nada más. Deliberadamente
+delgada: toda la lógica vive en `src/engine`, que no sabe que esta capa existe.
 
     El LLM traduce. El motor decide, valida, ejecuta y reporta.
 
-ESTADO: esqueleto funcional. El canal de órdenes en lenguaje natural (capa 4)
-todavía no está conectado; `/api/plan/interpretar` devuelve por ahora una
-interpretación determinista de prueba. El motor sí está completo y se puede
-conducir por API.
+LAS SUPERFICIES
+---------------
+    /api/tablero          el TABLERO GENERAL, proyectado para toda la sala
+    /api/vista/{rol}      la VISTA PRIVADA de un rol, en su propio dispositivo
+    /api/esfera           la ESFERA PÚBLICA, proyectada junto al tablero
+    /api/consola/*        la CONSOLA, donde se transcriben las órdenes
+
+NO HAY MODERADOR COMO FIGURA APARTE. La consola es una superficie más y quien la
+opera —puede ser uno de los ocho— solo transcribe: no conduce, no reparte
+información, no decide el ritmo y no sabe nada que los demás no sepan.
 """
 
 from __future__ import annotations
@@ -22,10 +28,13 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
+from src.agents import entorno, nlu
+from src.agents.config import config as cfg_llm
 from src.engine import parameters as P
+from src.engine import views
+from src.engine.actions import catalogo_por_rol
 from src.engine.loader import cargar_estado, catalogo_para_agente
 from src.engine.simulation import MotorCrisis
-from src.engine import force
 
 app = FastAPI(title="SIMCASE · Estallido Social")
 
@@ -33,25 +42,35 @@ app = FastAPI(title="SIMCASE · Estallido Social")
 _estado = cargar_estado()
 motor = MotorCrisis(_estado)
 
+FASES = ("parte_privado", "apertura", "deliberacion", "ordenes",
+         "resolucion", "consecuencias", "registro")
+
 sala = {
-    "fase": "instalacion",     # instalacion|deliberacion|ordenes|resolucion
-    "congelado": True,         # el tablero no se mueve durante la deliberación
-    "planes": {},              # planes interpretados pendientes de confirmación
+    "fase": "parte_privado",
+    # Las pantallas se congelan durante la deliberación. Si algo cambia mientras
+    # la gente habla, la gente mira la pantalla.
+    "congelado": True,
+    "planes": {},
+    "esfera": {"publicaciones": [], "generado_por": "aún no hay hechos"},
 }
 
 
+def _congelado_en(fase: str) -> bool:
+    return fase in ("parte_privado", "apertura", "deliberacion")
+
+
 # ===========================================================================
-# Proyección 1 · Tablero de situación
+# Superficie 1 · El tablero general
 # ===========================================================================
 
-@app.get("/api/estado")
-def estado_publico():
+@app.get("/api/tablero")
+def tablero():
     """
-    Vista de la CAPA 2, nunca de la capa 1.
+    Lo que ve toda la sala. Responde QUÉ ESTÁ PASANDO, en grano grueso.
 
-    `vista_publica()` no serializa `composicion_real`. Si algún día lo hiciera,
-    el motor de información se anularía y el dilema central del caso
-    desaparecería. Es la invariante más importante de esta capa.
+    `vista_publica()` no serializa la mezcla real de ningún punto ni la veracidad
+    de ninguna denuncia. Es la invariante más importante de esta capa: si eso se
+    filtrara, el dilema central del caso desaparecería.
     """
     d = _estado.vista_publica()
     d["congelado"] = sala["congelado"]
@@ -61,145 +80,245 @@ def estado_publico():
 
 
 # ===========================================================================
-# Proyección 2 · Esfera pública
+# Superficie 2 · Las ocho vistas privadas
+# ===========================================================================
+
+@app.get("/api/vista/{rol}")
+def vista_privada(rol: str):
+    """
+    La cartera de un rol en alta resolución. Es **personal, no confidencial**: el
+    sistema solo se la muestra a su titular, pero nadie está obligado a
+    callársela y el ejercicio quiere que se comparta.
+
+    Lo que la hace valiosa no es que esté oculta — es que hay una sola persona
+    que la tiene actualizada. Y el detalle **no migra al tablero**: aunque se diga
+    en voz alta, el número sigue viviendo aquí, así que cada turno el rol vuelve
+    a ser necesario.
+    """
+    try:
+        v = views.vista(_estado, rol, motor.rng)
+    except KeyError:
+        raise HTTPException(404, f"Rol desconocido: {rol}. Los ocho son {views.ROLES}")
+    v["congelado"] = sala["congelado"]
+    v["acciones"] = catalogo_por_rol().get(rol, [])
+    return v
+
+
+@app.get("/api/vistas")
+def todas_las_vistas():
+    """Solo para revisar el contenido al montar. No es una superficie del ejercicio."""
+    return views.todas(_estado, motor.rng)
+
+
+# ===========================================================================
+# Superficie 3 · La esfera pública
 # ===========================================================================
 
 @app.get("/api/esfera")
 def esfera_publica():
-    """Lo que se dice. La distancia con el tablero es el caso."""
+    """
+    Lo que se dice. La distancia con el tablero es el caso, y solo se percibe si
+    las dos se ven a la vez.
+
+    Las publicaciones las produce la CAPA 3 —los seis agentes de entorno— que
+    generan **contenido y solo contenido**: reaccionan a lo que el motor ya
+    calculó y lo narran desde su sesgo. Nunca deciden nada.
+
+    Sin llave de API, degradan a plantilla y el campo `generado_por` lo dice.
+    """
     return {
         "encuadre_dominante": _estado.encuadre_dominante,
-        "exposicion_internacional": round(_estado.reservas.exposicion_internacional, 1),
-        "cifras": _cifras_en_disputa(),
-        "publicaciones": _publicaciones_recientes(),
-        "denuncias": [],   # las llena la capa 3 cuando esté conectada
+        "respaldo_internacional": round(_estado.reservas.respaldo_internacional, 1),
+        "posicion_gremios": _estado.posicion_gremios,
+        "comite_disponible": _estado.comite_disponible,
+        "denuncias": [d.vista_publica() for d in _estado.denuncias],
+        **sala["esfera"],
     }
 
 
-def _cifras_en_disputa() -> dict:
-    """
-    Las tres cifras. Divergen porque las fuentes tienen sesgos opuestos, no
-    porque alguien mienta — que es justamente lo que hace difícil el problema.
-
-    PENDIENTE(B3): la divergencia sale hoy de aritmética cableada y no del motor
-    de información. Debe salir de `information.estimar_nodo()`, que ya existe y
-    ya produce la dispersión real. Ver PENDIENTES.md.
-    """
-    verificada = sum(1 for n in _estado.nodos.values() if not n.abierto)
-    return {
-        "oficial": max(0, verificada - 3),      # el parte subestima
-        "municipal": verificada + 2,            # el parte municipal sobreestima
-        "verificada": verificada,
+def _refrescar_esfera(eventos: list[dict]) -> None:
+    """Se llama después de cada paso, con los hechos que el motor produjo."""
+    previas = [p["texto"] for p in sala["esfera"].get("publicaciones", [])][-4:]
+    nuevas = entorno.publicaciones(_estado, eventos, previas)
+    sala["esfera"] = {
+        "publicaciones": (nuevas["publicaciones"] +
+                          sala["esfera"].get("publicaciones", []))[:20],
+        "generado_por": nuevas["generado_por"],
     }
-
-
-def _publicaciones_recientes() -> list[dict]:
-    """
-    PENDIENTE(B2): plantilla hasta conectar los seis agentes de entorno de la
-    capa 3 (§9) — Comité del Paro, prensa, redes, gremios, internacional y
-    alcaldes. Ver PENDIENTES.md.
-    """
-    out = []
-    for r in motor.historial[-2:]:
-        for ev in r.eventos:
-            if ev.get("evento") == "incidente_mortal":
-                out.append({
-                    "fuente": "prensa_nacional", "turno": r.turno,
-                    "texto": "Reportan víctima en operación de desbloqueo.",
-                    "sin_verificar": False,
-                })
-            elif ev.get("tipo") == "reapertura":
-                out.append({
-                    "fuente": "redes", "turno": r.turno,
-                    "texto": f"El punto {ev['nodo']} volvió a cerrarse durante la noche.",
-                    "sin_verificar": True,
-                })
-    return out
 
 
 # ===========================================================================
-# Consola del moderador
+# Superficie 4 · La consola
 # ===========================================================================
 
 class TextoOrden(BaseModel):
     texto: str
 
 
-@app.post("/api/plan/interpretar")
+@app.post("/api/consola/interpretar")
 def interpretar(orden: TextoOrden):
     """
-    Devuelve el plan para que el moderador LO LEA DE VUELTA a la sala, con su
-    banda de riesgo, antes de ejecutarlo.
+    CAPA 4 · traduce lo que la sala dijo a un plan tipado, y lo devuelve **para
+    que la sala lo lea junta antes de ejecutarlo**.
 
-    Ese momento no es un trámite: la sala oye su propia decisión reformulada,
-    con su riesgo, y con frecuencia la cambia.
+    Ese momento no es un trámite: es el mejor punto pedagógico del montaje. La
+    sala oye su propia decisión reformulada, con su riesgo, y con frecuencia la
+    cambia.
 
-    PENDIENTE(B1): aquí entra el NLU con herramientas tipadas de la capa 4. Por
-    ahora la interpretación ignora el texto y es determinista y de prueba. Ver
-    PENDIENTES.md.
+        El LLM traduce. El motor decide, valida, ejecuta y reporta.
+
+    El modelo solo hace el primer paso —texto a llamadas de herramienta—. La
+    resolución de entidades, la validación y la banda de riesgo son
+    deterministas, y el texto que se lee en voz alta también.
     """
     plan_id = f"plan-{len(sala['planes']) + 1}"
-    acciones = []
+    plan = nlu.interpretar(_estado, orden.texto, plan_id)
+    sala["planes"][plan_id] = plan
+    return plan.a_dict()
 
-    cerrados = [n for n in _estado.nodos.values() if not n.abierto]
-    if cerrados:
-        nodo = max(cerrados, key=lambda n: n.dureza)
-        ev = force.evaluar_riesgo(_estado, nodo, "esmad")
-        acciones.append({
-            "rol": "Ministro de Defensa",
-            "descripcion": f"Operación de desbloqueo sobre {nodo.nombre}",
-            "requisitos_faltantes": [],
-            "habilitada_por": [],
-            "riesgo": {
-                "banda": ev.banda,
-                "p_incidente": round(ev.p_incidente, 3),
-                "mitigadores_ausentes": ev.mitigadores_ausentes,
-            },
-        })
 
-    sala["planes"][plan_id] = acciones
-    return {"plan_id": plan_id, "acciones": acciones, "texto_original": orden.texto}
+class Eleccion(BaseModel):
+    plan_id: str
+    indice: int
+    campo: str
+    valor: str
+
+
+@app.post("/api/consola/elegir")
+def elegir(e: Eleccion):
+    """
+    Resolver una ambigüedad **con una elección tipada, no con texto libre**.
+
+    Sin esto aparecen las ejecuciones fantasma: la respuesta corta a una
+    repregunta —«no», «400», «sí, confirmo»— entra de nuevo por el canal como si
+    fuera una orden nueva. En la simulación anterior esas tres palabras
+    produjeron cada una una evacuación.
+    """
+    plan = sala["planes"].get(e.plan_id)
+    if plan is None:
+        raise HTTPException(404, "Ese plan ya se consumió o no existe.")
+    if not (0 <= e.indice < len(plan.acciones)):
+        raise HTTPException(400, "No existe esa acción en el plan.")
+
+    accion = plan.acciones[e.indice]
+    spec = nlu.herramientas.HERRAMIENTAS.get(accion.herramienta, {})
+    # Las elecciones solo pueden tocar campos DECLARADOS, o la reanudación sería
+    # una vía para inyectar argumentos arbitrarios.
+    if e.campo not in spec.get("esquema", {}):
+        raise HTTPException(400, f"Campo no declarado: {e.campo}")
+
+    accion.argumentos[e.campo] = e.valor
+    plan.acciones[e.indice] = nlu._a_accion_plan(
+        _estado, {"nombre": accion.herramienta, "argumentos": accion.argumentos})
+    return plan.a_dict()
 
 
 class Confirmacion(BaseModel):
     plan_id: str
 
 
-@app.post("/api/plan/ejecutar")
+@app.post("/api/consola/ejecutar")
 def ejecutar(c: Confirmacion):
-    if c.plan_id not in sala["planes"]:
+    """
+    Ejecuta el plan y **reporta después**, desde resultados reales.
+
+    Ninguna frase que la sala lea sobre el resultado de una orden puede haber
+    sido escrita antes de que la orden se ejecutara. Es el primero de los ocho
+    modos de falla, y el más difícil de detectar.
+    """
+    plan = sala["planes"].pop(c.plan_id, None)
+    if plan is None:
         raise HTTPException(404, "Ese plan ya se consumió o no existe.")
-    sala["planes"].pop(c.plan_id)   # se consume: reanudar dos veces ejecutaría dos veces
+
+    encoladas = 0
+    for a in plan.acciones:
+        if a.estado in ("no_viable", "ambigua"):
+            continue
+        spec = nlu.herramientas.HERRAMIENTAS.get(a.herramienta)
+        if spec is None:
+            continue
+        try:
+            motor.encolar(spec["construir"](a.argumentos))
+            encoladas += 1
+        except Exception:
+            continue
+
     r = motor.paso(franja="dia")
-    sala["fase"] = "resolucion"
+    _refrescar_esfera(r.eventos)
+    sala["fase"] = "consecuencias"
     sala["congelado"] = False
-    return {"turno": r.turno, "resumen": r.resumen,
-            "resultados": [{"accion": n, "ok": x.ok, "mensaje": x.mensaje}
+    return {"turno": r.turno, "resumen": r.resumen, "eventos": r.eventos,
+            "acciones_encoladas": encoladas,
+            "resultados": [{"accion": n, "ok": x.ok, "mensaje": x.mensaje,
+                            "datos": x.datos}
                            for n, x in r.resultados]}
 
 
-@app.post("/api/turno/noche")
+@app.post("/api/consola/noche")
 def interludio_nocturno():
-    """El interludio nocturno: no se delibera, se resuelve. Tres minutos."""
+    """El interludio nocturno: no se delibera, se sufre. Tres minutos."""
     r = motor.paso(franja="noche")
+    _refrescar_esfera(r.eventos)
     return {"turno": r.turno, "resumen": r.resumen, "eventos": r.eventos}
 
 
-@app.post("/api/sala/fase/{fase}")
+@app.post("/api/consola/fase/{fase}")
 def cambiar_fase(fase: str):
-    if fase not in ("instalacion", "deliberacion", "ordenes", "resolucion"):
-        raise HTTPException(400, f"Fase desconocida: {fase}")
+    if fase not in FASES:
+        raise HTTPException(400, f"Fase desconocida: {fase}. Las siete son {FASES}")
     sala["fase"] = fase
-    # El tablero se congela durante la deliberación. Si la pantalla se mueve
-    # mientras la gente habla, la gente mira la pantalla.
-    sala["congelado"] = fase in ("instalacion", "deliberacion")
-    return {"fase": fase, "congelado": sala["congelado"]}
+    sala["congelado"] = _congelado_en(fase)
+    return {"fase": fase, "congelado": sala["congelado"],
+            "minutos": _minutos_de(fase)}
 
+
+def _minutos_de(fase: str) -> float:
+    return {"parte_privado": P.MIN_PARTE_PRIVADO, "apertura": 1.0,
+            "deliberacion": 6.0, "ordenes": 2.5, "resolucion": 1.0,
+            "consecuencias": 1.0, "registro": 0.5}.get(fase, 0.0)
+
+
+class Linea(BaseModel):
+    rol: str
+    linea: str
+    condicion: str = ""
+
+
+@app.post("/api/consola/declarar_linea")
+def declarar_linea(d: Linea):
+    """
+    El turno 0: 60 segundos por rol, sin debate.
+
+    La métrica más reveladora del ejercicio es la distancia entre la línea que la
+    sala declaró y la que de hecho ejecutó.
+    """
+    motor.declarar_linea(d.rol, d.linea, d.condicion)
+    return {"declaradas": motor.lineas_declaradas}
+
+
+# ===========================================================================
+# Consultas
+# ===========================================================================
 
 @app.get("/api/catalogo")
 def catalogo():
     """Se GENERA desde el estado. Nunca se escribe a mano en un prompt."""
-    return catalogo_para_agente(_estado)
+    return {"mundo": catalogo_para_agente(_estado), "acciones": catalogo_por_rol()}
+
+
+@app.get("/api/config")
+def diagnostico():
+    """
+    Si hay modelo o no, y dónde se escribe la llave. La consola lo muestra al
+    montar, para que nadie descubra a mitad del ejercicio que estaba degradado.
+    """
+    return cfg_llm().diagnostico()
+
+
+@app.get("/api/consulta/{tema}")
+def consulta(tema: str):
+    """Hechos, no párrafos. Extraídos del motor y por tema."""
+    return nlu.hoja_de_datos(_estado, tema)
 
 
 @app.get("/api/metricas")

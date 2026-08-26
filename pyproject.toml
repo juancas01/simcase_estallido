@@ -10,10 +10,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Las dos capas de lenguaje natural. El motor NO las necesita para correr.
 agents = [
-    "langchain>=0.3",
-    "langchain-openai>=0.2",
-    "langgraph>=0.2",
+    "openai>=1.60",
 ]
 dev = [
     "pytest>=8.3",
