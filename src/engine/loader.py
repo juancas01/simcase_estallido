@@ -4,6 +4,11 @@ loader.py — Construye el estado heredado (t=0) desde datos.
 Regla de oro heredada de Macondo: si un dato aparece a la vez en un archivo y en
 el prompt de un modelo, se desincronizará. Siempre. Todo lo que define el caso
 vive en `data/`, y el catálogo que ve el modelo se GENERA desde aquí.
+
+AQUÍ NO ARRANCA EN CERO. El paro lleva quince días cuando los ocho entran a la
+sala: el PMU ya está convocado, la mesa ya se instaló y ya se rompió una vez, y
+la fuerza ya está desplegada y cansada. Lo que da inicio al ejercicio no es una
+acción: es un estado heredado más una exigencia con plazo.
 """
 
 from __future__ import annotations
@@ -14,6 +19,7 @@ from pathlib import Path
 from src.engine import parameters as P
 from src.engine.state import (
     Estado, Nodo, Corredor, Region, Unidad, Composicion, Reservas, Banderas,
+    Denuncia,
 )
 
 
@@ -30,6 +36,7 @@ def cargar_estado(ruta: str | Path | None = None) -> Estado:
         d = json.load(f)
 
     estado = Estado(turno=0, franja="dia")
+    estado.region_epicentro = d.get("region_epicentro", "")
 
     for r in d["regiones"]:
         estado.regiones[r["region_id"]] = Region(
@@ -57,6 +64,8 @@ def cargar_estado(ruta: str | Path | None = None) -> Estado:
             apoyo_local=n.get("apoyo_local", 0.7),
             control_voceria=n.get("control_voceria", 0.5),
             proximidad_infra_critica=n.get("proximidad_infra_critica", False),
+            x=n.get("x", 0.0),
+            y=n.get("y", 0.0),
             composicion_real=Composicion(*comp).normalizada(),
         )
 
@@ -70,11 +79,30 @@ def cargar_estado(ruta: str | Path | None = None) -> Estado:
             clases_prioridad=set(c.get("clases_prioridad", [])),
         )
 
+    # El hecho H2 del paquete detonante: dos denuncias graves sin verificar, una
+    # cierta y otra falsa, y nada las distingue.
+    for x in d.get("denuncias_iniciales", []):
+        estado.denuncias.append(Denuncia(
+            denuncia_id=x["denuncia_id"],
+            texto=x["texto"],
+            nodo_id=x.get("nodo_id"),
+            veraz=x["veraz"],
+            turno_aparicion=1,
+        ))
+
     estado.unidades = _construir_fuerza()
     estado.reservas = Reservas(**P.RESERVAS_T0)
     estado.banderas = Banderas()          # ningún mitigador activo en t=0
     estado.intensidad_nacional = P.INTENSIDAD_NACIONAL_T0
-    estado.posicion_gremios = "fuera"     # el ultimátum de H3 los activa, no el umbral
+    estado.duplas_disponibles = P.DUPLAS_TOTALES
+
+    # Los gremios arrancan FUERA y no evaluando: lo que los activa en el turno 1
+    # no es el umbral de legitimidad sino el ultimátum de 48 horas del paquete
+    # detonante, que es un disparador independiente. Los dos caminos hacia
+    # `evaluando` deben coexistir, porque son cosas distintas: una es que el país
+    # deje de respaldar al Gobierno y otra es que un gremio pida algo concreto.
+    estado.posicion_gremios = "fuera"
+    estado.ultimatum_gremios_turno = P.TURNO_ULTIMATUM_GREMIOS
 
     _verificar_invariantes(estado)
     return estado
@@ -105,11 +133,15 @@ def _construir_fuerza() -> list[Unidad]:
 
 
 def _verificar_invariantes(estado: Estado) -> None:
-    """Comprobaciones que deben cumplirse SIEMPRE al cargar."""
+    """
+    Comprobaciones que deben cumplirse SIEMPRE al cargar, y que fallan
+    ruidosamente. Cada una se descubrió rompiéndose.
+    """
     for c in estado.corredores.values():
         faltan = [n for n in c.nodos if n not in estado.nodos]
         if faltan:
             raise ValueError(f"Corredor {c.corredor_id} referencia nodos inexistentes: {faltan}")
+
     for n in estado.nodos.values():
         if n.region_id not in estado.regiones:
             raise ValueError(f"Nodo {n.nodo_id} referencia región inexistente: {n.region_id}")
@@ -118,6 +150,7 @@ def _verificar_invariantes(estado: Estado) -> None:
              + n.composicion_real.estructura_organizada)
         if abs(s - 1.0) > 1e-6:
             raise ValueError(f"Nodo {n.nodo_id}: composicion_real no suma 1 ({s})")
+
     if any(v for k, v in vars(estado.banderas).items()
            if isinstance(v, bool) and k not in ("defensoria_presente",)):
         raise ValueError("En t=0 no debe haber ninguna bandera activa salvo defensoria_presente")
@@ -126,22 +159,36 @@ def _verificar_invariantes(estado: Estado) -> None:
     #
     # Sin ella, una región sin vía de reposición de oxígeno acumula muertes
     # evitables HAGA LO QUE HAGA la sala. Eso no es un dilema: es un guion que
-    # castiga. Se detectó exactamente así en la primera corrida —Buenaventura no
-    # tenía ninguno y las cuatro estrategias daban las mismas 147 muertes—, y por
-    # eso la comprobación vive aquí y falla ruidosamente.
+    # castiga. Se detectó midiendo —una región no tenía ninguno y las cinco
+    # estrategias daban exactamente las mismas 147 muertes—, y por eso la
+    # comprobación vive aquí.
     for r in estado.regiones.values():
-        tiene = any(
-            "humanitario" in c.clases_prioridad
-            and any(estado.nodos[n].region_id == r.region_id
-                    for n in c.nodos if n in estado.nodos)
-            for c in estado.corredores.values()
-        )
-        if not tiene:
+        if not estado.corredores_que_sirven(r.region_id, "humanitario"):
             raise ValueError(
                 f"La región {r.nombre} no tiene ningún corredor de clase "
                 f"'humanitario'. Sus muertes evitables serían inevitables por "
-                f"construcción. Ver §4.5 de la propuesta."
+                f"construcción."
             )
+
+    # INVARIANTE DEL PAQUETE DETONANTE: nunca una sola denuncia sin verificar.
+    # Siempre al menos dos, con veracidad DISTINTA. Un ejercicio en el que la
+    # única denuncia grave resulta inventada enseña que las denuncias graves
+    # suelen serlo — y eso, sobre hechos con responsabilidad judicial viva, es
+    # tomar partido.
+    if estado.denuncias:
+        if len(estado.denuncias) < 2:
+            raise ValueError(
+                "Nunca una sola denuncia sin verificar: hacen falta al menos dos."
+            )
+        veracidades = {d.veraz for d in estado.denuncias}
+        if len(veracidades) < 2:
+            raise ValueError(
+                "Las denuncias iniciales deben tener veracidad DISTINTA: al menos "
+                "una cierta y una falsa, sin ninguna señal que las distinga."
+            )
+
+    if estado.region_epicentro and estado.region_epicentro not in estado.regiones:
+        raise ValueError(f"region_epicentro desconocida: {estado.region_epicentro}")
 
 
 def catalogo_para_agente(estado: Estado) -> dict:
@@ -151,8 +198,9 @@ def catalogo_para_agente(estado: Estado) -> dict:
     fue invisible para el agente durante todo un ejercicio.
     """
     return {
-        "nodos": [
-            {"id": n.nodo_id, "nombre": n.nombre, "region": estado.regiones[n.region_id].nombre,
+        "puntos": [
+            {"id": n.nodo_id, "nombre": n.nombre,
+             "region": estado.regiones[n.region_id].nombre,
              "corredor": n.corredor_id, "abierto": n.abierto}
             for n in estado.nodos.values()
         ],
@@ -163,4 +211,5 @@ def catalogo_para_agente(estado: Estado) -> dict:
         "regiones": [
             {"id": r.region_id, "nombre": r.nombre} for r in estado.regiones.values()
         ],
+        "denuncias": [d.vista_publica() for d in estado.denuncias],
     }

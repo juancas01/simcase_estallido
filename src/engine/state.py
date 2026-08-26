@@ -1,22 +1,21 @@
 """
 state.py — Las estructuras de estado del mundo.
 
+De qué está hecho el país dentro del ejercicio. Tres niveles espaciales, porque
+los ocho roles no deciden sobre lo mismo:
+
+    PUNTO DE CIERRE   un bloqueo concreto            24    Policía · Interior · Alcalde
+    CORREDOR          una secuencia de puntos         5    Transporte · Defensa
+    REGIÓN            un departamento o área          4    Minas · Interior
+
 DESVIACIÓN DELIBERADA RESPECTO DE MACONDO
 -----------------------------------------
-La guía de arquitectura recomienda arrays paralelos de NumPy sobre unidades
-espaciales, porque un paso de la inundación era una operación vectorizada sobre
-657 manzanas y con objetos el ejercicio no corría en tiempo real.
-
-Aquí se usan objetos, a propósito:
-
-  * N = 24 nodos, no 657. El coste de un bucle Python es irrelevante.
-  * La lógica por nodo es ramificada (¿tiene contraparte? ¿cómo se abrió?
-    ¿está contiguo a infraestructura crítica?), no aritmética uniforme.
-    Vectorizar ramas es más lento de escribir y más difícil de leer.
-  * El motor avanza 5 veces por ejercicio, no 288.
+La guía de arquitectura recomienda arrays paralelos de NumPy. Aquí se usan
+objetos, a propósito: 24 nodos y no 657, lógica ramificada y no aritmética
+uniforme, y 12 pasos por ejercicio y no 288.
 
 La regla que SÍ se conserva: identificador estable y opaco (`nodo_id`), y los
-nombres legibles fuera del motor, en la capa de resolución de entidades.
+nombres legibles fuera del motor.
 """
 
 from __future__ import annotations
@@ -32,12 +31,23 @@ Franja = Literal["dia", "noche"]
 
 
 # ---------------------------------------------------------------------------
-# Nodo de cierre
+# Punto de cierre
 # ---------------------------------------------------------------------------
 
 @dataclass
 class Composicion:
-    """Qué hay realmente en un punto de cierre. El Estado NUNCA ve esto."""
+    """
+    Qué hay realmente en un punto de cierre. El Estado NUNCA lo ve.
+
+    Desde la v2 esta mezcla SÍ tiene consecuencias, por dos vías y solo dos
+    (§P1 de `docs/propuesta_v2.md`):
+
+      1 · operar sobre un punto mayoritariamente de protesta legítima cuesta más
+      2 · concertar donde hay estructura organizada produce un acuerdo que se rompe
+
+    Sigue sin salir jamás del motor: `vista_publica()` y las ocho vistas por rol
+    solo entregan estimaciones sesgadas.
+    """
     protesta_legitima: float
     vandalismo_oportunista: float
     estructura_organizada: float
@@ -71,9 +81,14 @@ class Nodo:
     modo_apertura: ModoApertura = "cerrado"
     turnos_desde_apertura: int = 0
     turnos_en_negociacion: int = 0      # progreso hacia una apertura concertada
-    turnos_apoyo_bajo: int = 0          # cuántos turnos lleva el apoyo por el suelo
+    turnos_apoyo_bajo: int = 0
 
-    # --- capa 1: la verdad. No se serializa hacia la interfaz. ---
+    # Posición en el mapa esquemático (§3.2 de la v2). No es geografía: es la
+    # disposición del diagrama de líneas, como un plano de metro.
+    x: float = 0.0
+    y: float = 0.0
+
+    # --- capa 1: la verdad. No se serializa hacia ninguna interfaz. ---
     composicion_real: Composicion = field(
         default_factory=lambda: Composicion(0.75, 0.15, 0.10)
     )
@@ -108,12 +123,21 @@ class Corredor:
     clases_prioridad: set[str] = field(default_factory=set)
     anunciado_abierto: bool = False
     anunciado_en_turno: int | None = None
+    anunciado_verificado: bool = False      # si se anunció como hecho verificado
 
     def caudal_efectivo(self, nodos: dict[str, Nodo]) -> float:
         """Un corredor es tan bueno como su peor punto."""
         if not self.nodos:
             return 1.0
         return min(nodos[n].caudal for n in self.nodos if n in nodos)
+
+    def punto_que_bloquea(self, nodos: dict[str, Nodo]) -> str | None:
+        """Cuál de sus puntos lo está cerrando. Es el dato fino de Transporte."""
+        candidatos = [nodos[n] for n in self.nodos if n in nodos]
+        if not candidatos:
+            return None
+        peor = min(candidatos, key=lambda n: n.caudal)
+        return peor.nodo_id if not peor.abierto else None
 
 
 # ---------------------------------------------------------------------------
@@ -133,6 +157,18 @@ class Region:
     nodos_secundarios_activos: int = 100
     muertes_evitables: int = 0          # acumulador; solo crece
     panico: float = 0.0                 # sube si se difunde el calendario
+
+    @property
+    def semaforo(self) -> str:
+        """El grano grueso que ve toda la sala. Los días exactos son de Minas."""
+        peor = min(self.dias_autonomia_oxigeno,
+                   self.dias_autonomia_combustible,
+                   self.dias_autonomia_alimentos)
+        if peor < 1.0:
+            return "rojo"
+        if peor < 2.5:
+            return "ambar"
+        return "verde"
 
 
 # ---------------------------------------------------------------------------
@@ -159,16 +195,23 @@ class Unidad:
 
 @dataclass
 class Reservas:
+    """
+    Las cuatro reservas. Se consumen rápido y se recuperan despacio, y a
+    diferencia del dinero NO se pueden pedir prestadas.
+
+    Las cuatro se leen igual: arriba es mejor. En la versión anterior la
+    exposición internacional iba invertida y obligaba a explicar el tablero.
+    """
     legitimidad: float = P.RESERVAS_T0["legitimidad"]
     credibilidad_mesa: float = P.RESERVAS_T0["credibilidad_mesa"]
-    exposicion_internacional: float = P.RESERVAS_T0["exposicion_internacional"]
+    respaldo_internacional: float = P.RESERVAS_T0["respaldo_internacional"]
     cohesion_mesa: float = P.RESERVAS_T0["cohesion_mesa"]
 
-    def aplicar(self, deltas: dict[str, float]) -> None:
+    def aplicar(self, deltas: dict[str, float], escala: float = 1.0) -> None:
         for k, v in deltas.items():
             if not hasattr(self, k):
                 raise KeyError(f"reserva desconocida: {k}")
-            setattr(self, k, min(100.0, max(0.0, getattr(self, k) + v)))
+            setattr(self, k, min(100.0, max(0.0, getattr(self, k) + v * escala)))
 
     def umbrales_cruzados(self) -> list[str]:
         """Los umbrales son duros: un deterioro gradual no produce decisiones."""
@@ -182,7 +225,7 @@ class Reservas:
             out.append("comite_se_retira_definitivo")
         elif self.credibilidad_mesa < U["credibilidad_comite_suspende"]:
             out.append("comite_suspende")
-        if self.exposicion_internacional > U["exposicion_pronunciamientos"]:
+        if self.respaldo_internacional < U["respaldo_pronunciamientos"]:
             out.append("pronunciamientos_internacionales")
         if self.cohesion_mesa < U["cohesion_contradicciones"]:
             out.append("contradicciones_publicas")
@@ -190,7 +233,7 @@ class Reservas:
 
 
 # ---------------------------------------------------------------------------
-# Banderas constitutivas (§5.5)
+# Banderas constitutivas
 # ---------------------------------------------------------------------------
 
 @dataclass
@@ -206,12 +249,13 @@ class Banderas:
     lineas_rojas_fijadas: bool = False
     plazo_suspensivo: bool = False
     nodo_unico: bool = False
+    concertacion_previa_cali: bool = False   # el Alcalde condicionó el empleo de la fuerza
+    prioridad_combustible_fijada: bool = False
 
     asistencia_militar_firmada: bool = False
-    asistencia_militar_delimitada: bool = False   # con territorio, plazo y reglas
-    defensoria_presente: bool = True
+    asistencia_militar_delimitada: bool = False
+    defensoria_presente: bool = True         # decisión A3: no se retira nunca
 
-    # turno en que se activó cada bandera, para medir si llegó antes o después
     activada_en_turno: dict[str, int] = field(default_factory=dict)
 
     def activar(self, nombre: str, turno: int) -> bool:
@@ -224,6 +268,7 @@ class Banderas:
         return True
 
     def mitigadores_activos(self) -> dict[str, bool]:
+        """Los tres persistentes. Los otros tres son parámetros de cada operación."""
         return {
             "reglas_escritas": self.reglas_escritas,
             "identificacion_agentes": self.identificacion_agentes,
@@ -232,7 +277,69 @@ class Banderas:
 
 
 # ---------------------------------------------------------------------------
-# Registro de decisiones (el pliego físico, §10.5)
+# Denuncias sin verificar
+# ---------------------------------------------------------------------------
+
+@dataclass
+class Denuncia:
+    """
+    El hecho H2 del paquete detonante, hecho mecánica.
+
+    REGLA DE DISEÑO: nunca una sola denuncia sin verificar. Siempre al menos dos,
+    con veracidad distinta y sin ninguna señal que las distinga. Un ejercicio
+    sobre el paro de 2021 en el que la única denuncia grave resulta inventada le
+    enseña a ocho futuros funcionarios que las denuncias graves suelen serlo — y
+    eso, sobre hechos con responsabilidad judicial viva, es tomar partido.
+
+    La lección correcta no es «desconfíe» sino «usted no puede saberlo sin
+    verificar, y verificar cuesta una dupla que no tiene».
+    """
+    denuncia_id: str
+    texto: str
+    nodo_id: str | None
+    veraz: bool                    # capa 1 — el motor lo sabe, nadie más
+    turno_aparicion: int = 0
+    verificada: bool = False
+    declarada_en_verificacion: bool = False
+    estallo: bool = False
+
+    def vista_publica(self) -> dict:
+        """Sale sin `veraz`. Si se filtra, el diseño entero pierde sentido."""
+        estado = "sin verificar"
+        if self.verificada:
+            estado = "verificada"
+        elif self.declarada_en_verificacion:
+            estado = "declarada en verificación"
+        return {
+            "denuncia_id": self.denuncia_id,
+            "texto": self.texto,
+            "nodo_id": self.nodo_id,
+            "estado": estado,
+            "turno": self.turno_aparicion,
+        }
+
+
+# ---------------------------------------------------------------------------
+# Acuerdos de la mesa
+# ---------------------------------------------------------------------------
+
+@dataclass
+class Acuerdo:
+    """
+    Lo que Interior trae de la mesa. Vale mientras se cumpla — y cumplirlo
+    significa no operar sobre los puntos pactados mientras esté vigente.
+    """
+    acuerdo_id: str
+    nodos: list[str]
+    turno_firmado: int
+    turno_limite: int
+    cumplido: bool = False
+    roto: bool = False
+    motivo_ruptura: str | None = None
+
+
+# ---------------------------------------------------------------------------
+# Registro de decisiones (el pliego)
 # ---------------------------------------------------------------------------
 
 @dataclass
@@ -270,16 +377,32 @@ class Estado:
 
     intensidad_nacional: float = P.INTENSIDAD_NACIONAL_T0
     posicion_gremios: str = "fuera"      # fuera|evaluando|sumados
+    ultimatum_gremios_turno: int | None = None
     comite_disponible: bool = True
     encuadre_dominante: str = "desorden"  # represion|desorden|negociacion|abandono
 
     instalaciones_criticas: list[str] = field(default_factory=list)
     frentes_rurales_descubiertos: int = 0
 
+    # UN SOLO BOLSILLO DE TRES: verificar un punto, verificar una denuncia o
+    # acompañar una operación salen de aquí. Se repone al empezar cada turno.
+    duplas_disponibles: int = P.DUPLAS_TOTALES
+    duplas_usadas_en: list[str] = field(default_factory=list)
+    dudas_permanencia: int = 0           # cuántas veces la Defensoría lo ha dicho
+
+    denuncias: list[Denuncia] = field(default_factory=list)
+    acuerdos: list[Acuerdo] = field(default_factory=list)
+
+    # Región epicentro: la jurisdicción del Alcalde de la mesa
+    region_epicentro: str = ""
+
+    # El orden de prioridad del combustible, cuando Minas lo fija. Es un criterio
+    # PERMANENTE: mientras esté puesto se aplica en cada paso, no una sola vez.
+    prioridad_combustible: list[str] = field(default_factory=list)
+
     registro: list[Decision] = field(default_factory=list)
     eventos_turno: list[dict] = field(default_factory=list)
 
-    # contadores para rendimientos decrecientes
     _conteo_eventos: dict[str, int] = field(default_factory=dict)
 
     # ------------------------------------------------------------------
@@ -290,12 +413,7 @@ class Estado:
         return [u for u in self.unidades if u.tipo == tipo]
 
     def esmad_disponible(self) -> list[Unidad]:
-        """Redesplegables a una operación: incluye las que hoy hacen contención.
-
-        Sacarlas de la contención estática es legítimo —es lo que significa
-        «concentrar el ESMAD»— pero deja sin cubrir los puntos que sostenían,
-        que es el precio de la acción A1 del Director de la Policía.
-        """
+        """Redesplegables: incluye las que hoy hacen contención estática."""
         return [u for u in self.unidades if u.tipo == "esmad" and u.disponible]
 
     def esmad_en_reserva(self) -> list[Unidad]:
@@ -313,6 +431,9 @@ class Estado:
     def nodos_abiertos(self) -> list[Nodo]:
         return [n for n in self.nodos.values() if n.abierto]
 
+    def nodos_de_region(self, region_id: str) -> list[Nodo]:
+        return [n for n in self.nodos.values() if n.region_id == region_id]
+
     def muertes_evitables_total(self) -> int:
         return sum(r.muertes_evitables for r in self.regiones.values())
 
@@ -323,22 +444,42 @@ class Estado:
         )
         return peor.nombre, min(peor.dias_autonomia_oxigeno, peor.dias_autonomia_combustible)
 
+    def acuerdo_vigente_sobre(self, nodo_id: str) -> Acuerdo | None:
+        for a in self.acuerdos:
+            if not a.roto and not a.cumplido and nodo_id in a.nodos:
+                return a
+        return None
+
+    def corredores_que_sirven(self, region_id: str, clase: str) -> list[Corredor]:
+        out = []
+        for c in self.corredores.values():
+            if clase not in c.clases_prioridad:
+                continue
+            if any(self.nodos[n].region_id == region_id
+                   for n in c.nodos if n in self.nodos):
+                out.append(c)
+        return out
+
     # ------------------------------------------------------------------
-    # Serialización — la capa 2, nunca la capa 1
+    # Serialización — la capa 2 (grano grueso), nunca la capa 1
     # ------------------------------------------------------------------
 
     def vista_publica(self) -> dict:
         """
-        Lo que puede salir hacia la interfaz.
+        El TABLERO GENERAL: lo que ve toda la sala.
 
-        NUNCA incluye `composicion_real`. Si esto se filtra, el motor de
-        información (§4.4) se anula y el dilema central del caso desaparece.
+        Responde QUÉ ESTÁ PASANDO. El cuánto, el dónde exactamente y el desde
+        cuándo son las ocho vistas privadas (`views.py`).
+
+        NUNCA incluye `composicion_real` ni la veracidad de una denuncia. Si eso
+        se filtrara, el dilema central del caso desaparecería.
         """
         return {
             "turno": self.turno,
+            "turno_decision": self.turno_decision,
             "franja": self.franja,
             "reservas": asdict(self.reservas),
-            "intensidad_nacional": round(self.intensidad_nacional, 1),
+            "presion_calle": round(self.intensidad_nacional, 1),
             "posicion_gremios": self.posicion_gremios,
             "comite_disponible": self.comite_disponible,
             "encuadre_dominante": self.encuadre_dominante,
@@ -351,11 +492,9 @@ class Estado:
                 {
                     "region_id": r.region_id,
                     "nombre": r.nombre,
-                    "dias_oxigeno": round(r.dias_autonomia_oxigeno, 2),
-                    "dias_combustible": round(r.dias_autonomia_combustible, 2),
-                    "dias_alimentos": round(r.dias_autonomia_alimentos, 2),
-                    "intensidad": round(r.intensidad_movilizacion, 1),
+                    "semaforo": r.semaforo,          # grano grueso: los días son de Minas
                     "muertes_evitables": r.muertes_evitables,
+                    "epicentro": r.region_id == self.region_epicentro,
                 }
                 for r in self.regiones.values()
             ],
@@ -367,14 +506,40 @@ class Estado:
                     "poblacion": c.poblacion_aguas_abajo,
                     "clases": sorted(c.clases_prioridad),
                     "anunciado_abierto": c.anunciado_abierto,
+                    "nodos": list(c.nodos),
                 }
                 for c in self.corredores.values()
             ],
+            "puntos": [
+                {
+                    "nodo_id": n.nodo_id,
+                    "nombre": n.nombre,
+                    "region_id": n.region_id,
+                    "corredor_id": n.corredor_id,
+                    "estado": self._estado_punto(n),
+                    "modo_apertura": n.modo_apertura,
+                    "verificado_turno": n.ultima_verificacion_turno,
+                    "x": n.x,
+                    "y": n.y,
+                }
+                for n in self.nodos.values()
+            ],
             "fuerza": {
                 "esmad_total": len(self.unidades_por_tipo("esmad")),
+                "esmad_sin_comprometer": len(self.esmad_en_reserva()),
                 "esmad_disponible": len(self.esmad_disponible()),
-                "fatiga_media_esmad": round(self.fatiga_media("esmad"), 2),
                 "instalaciones_criticas": len(self.instalaciones_criticas),
                 "frentes_rurales_descubiertos": self.frentes_rurales_descubiertos,
             },
+            "denuncias": [d.vista_publica() for d in self.denuncias],
         }
+
+    def _estado_punto(self, n: Nodo) -> str:
+        """Abierto, parcial, cerrado — o sin verificar, que es una petición de decisión."""
+        if n.ultima_verificacion_turno is None and self.turno > 1:
+            return "sin_verificar"
+        if n.caudal > 0.6:
+            return "abierto"
+        if n.caudal > 0.05:
+            return "parcial"
+        return "cerrado"

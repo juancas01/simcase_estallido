@@ -1,15 +1,19 @@
 """
-aperture.py — Apertura y reapertura de nodos (§4.3).
+aperture.py — Las tres formas de abrir un camino.
 
-El corazón pedagógico del caso. Tres vías de abrir un corredor con economías
-radicalmente distintas:
+El corazón pedagógico del caso. Tres vías con economías radicalmente distintas:
 
-    Fuerza        rápida    reabre en 1-2 turnos     consume tres reservas
-    Concertación  lenta     se sostiene              caudal = 0,9 × control_voceria
-    Desgaste      lentísima no reabre                no consume nada
+    Fuerza        1 turno    mucho                 REABRE esa misma noche
+    Concertación  2 turnos   0,9 × control_voceria  se sostiene si se cumple
+    Desgaste      4+ turnos  medio                  no reabre, y es gratis
 
     «Un corredor pactado se sostiene y uno abierto por la fuerza vuelve a
      cerrarse esa misma noche.» — el motor debe hacerla cierta, no citarla.
+
+Y desde la v2 hay una cuarta cosa que este módulo resuelve: **la segunda vía por
+la que la mezcla real de un punto tiene consecuencia.** Pactar donde hay
+estructura organizada produce un acuerdo que se incumple, porque quien firmó no
+controla el punto. Es la otra mitad del error doble.
 """
 
 from __future__ import annotations
@@ -28,6 +32,7 @@ class ResultadoApertura:
     abierto: bool
     caudal: float
     mensaje: str
+    fragil: bool = False        # el acuerdo se firmó donde no controlan el punto
 
 
 def abrir_por_fuerza(nodo: Nodo, rng: random.Random, turno: int) -> ResultadoApertura:
@@ -37,18 +42,26 @@ def abrir_por_fuerza(nodo: Nodo, rng: random.Random, turno: int) -> ResultadoApe
     nodo.turnos_desde_apertura = 0
     return ResultadoApertura(
         nodo.nodo_id, "fuerza", True, nodo.caudal,
-        f"{nodo.nombre} abierto por la fuerza (caudal {nodo.caudal:.0%}). "
-        f"Reabrirá si la movilización lo sostiene.",
+        f"{nodo.nombre} abierto por la fuerza (deja pasar {nodo.caudal:.0%}). "
+        f"Volverá a cerrarse si la movilización lo sostiene.",
     )
 
 
-def avanzar_concertacion(nodo: Nodo, turno: int) -> ResultadoApertura | None:
+def avanzar_concertacion(
+    nodo: Nodo, turno: int, rng: random.Random
+) -> ResultadoApertura | None:
     """
     La concertación tarda 2 turnos. Devuelve None mientras está en curso.
 
-    LA TRAMPA, y es la mejor del caso: el caudal logrado es proporcional a
-    `control_voceria`. Negociar con un vocero que controla el 40 % del nodo
-    produce una apertura del 36 % que se anuncia como éxito y se desmiente sola.
+    LA TRAMPA, y es la mejor del caso: lo que se logra abrir es proporcional a
+    `control_voceria`. Pactar con quien controla el 40 % del punto produce una
+    apertura del 36 % que se anuncia como éxito y se desmiente sola en
+    veinticuatro horas.
+
+    Y hay una segunda trampa, invisible: si el punto tiene estructura organizada
+    alta, **el acuerdo se rompe aunque la vocería fuera buena** — porque quien
+    firmó no manda sobre quien sostiene el cierre. La sala no puede saberlo sin
+    haber gastado una dupla ahí.
     """
     nodo.turnos_en_negociacion += 1
     if nodo.turnos_en_negociacion < P.TURNOS_APERTURA["concertacion"]:
@@ -60,28 +73,30 @@ def avanzar_concertacion(nodo: Nodo, turno: int) -> ResultadoApertura | None:
     nodo.turnos_desde_apertura = 0
     nodo.turnos_en_negociacion = 0
 
+    organizada = nodo.composicion_real.normalizada().estructura_organizada
+    fragil = rng.random() < organizada * P.FACTOR_INCUMPLIMIENTO_POR_ESTRUCTURA
+
     aviso = ""
     if nodo.control_voceria < 0.6:
-        aviso = (
-            f" ATENCIÓN: la vocería solo controla el {nodo.control_voceria:.0%} "
-            f"del punto. El acuerdo no cubre el resto."
-        )
+        aviso = (f" ATENCIÓN: la vocería solo controla el {nodo.control_voceria:.0%} "
+                 f"del punto. El acuerdo no cubre el resto.")
+
     return ResultadoApertura(
         nodo.nodo_id, "concertacion", caudal > 0.05, caudal,
-        f"{nodo.nombre} abierto por concertación (caudal {caudal:.0%}).{aviso}",
+        f"{nodo.nombre} abierto por concertación (deja pasar {caudal:.0%}).{aviso}",
+        fragil=fragil,
     )
 
 
 def revisar_desgaste(nodo: Nodo, rng: random.Random) -> ResultadoApertura | None:
     """
-    Si el apoyo local cae lo suficiente Y SE SOSTIENE, el cierre se deshace solo.
-    Es la única vía que no consume ninguna reserva — y la que el esquema
-    humanitario municipal del Alcalde de Cali habilita.
+    Si el apoyo del barrio cae lo suficiente Y SE SOSTIENE, el cierre se deshace
+    solo. Es la única vía que no consume ninguna reserva — y la que el esquema
+    humanitario municipal del Alcalde habilita.
 
     Tiene que ser LENTA. Si el desgaste es barato y rápido domina a las otras dos
     vías, y entonces ni la fuerza ni la concertación importan: la sala descubre
-    que basta con esperar. Requiere apoyo bajo sostenido varios turnos y aun así
-    no es automático.
+    que basta con esperar.
     """
     if nodo.abierto:
         nodo.turnos_apoyo_bajo = 0
@@ -95,6 +110,7 @@ def revisar_desgaste(nodo: Nodo, rng: random.Random) -> ResultadoApertura | None
         return None
     if rng.random() > P.P_DESGASTE_POR_TURNO:
         return None
+
     lo, hi = P.CAUDAL_APERTURA_DESGASTE
     nodo.caudal = rng.uniform(lo, hi)
     nodo.modo_apertura = "desgaste"
@@ -109,7 +125,7 @@ def step(estado: Estado, rng: random.Random) -> dict:
     """
     Avanza aperturas, reaperturas y desgastes.
 
-    La reapertura de los nodos abiertos por la fuerza ocurre DE NOCHE. Es lo que
+    La reapertura de los puntos abiertos por la fuerza ocurre DE NOCHE. Es lo que
     da su sentido literal a la frase del caso, y lo que la sala ve pasar sin
     poder intervenir durante el interludio nocturno.
     """
@@ -122,7 +138,6 @@ def step(estado: Estado, rng: random.Random) -> dict:
         if nodo.abierto and nodo.modo_apertura == "fuerza":
             nodo.turnos_desde_apertura += 1
             if estado.franja == "noche":
-                # Cuanto mayor la intensidad y el apoyo local, antes reabre
                 region = estado.regiones.get(nodo.region_id)
                 intensidad = region.intensidad_movilizacion if region else 60.0
                 p_reabre = min(0.95, (intensidad / 100.0) * (0.4 + nodo.apoyo_local))
@@ -134,8 +149,8 @@ def step(estado: Estado, rng: random.Random) -> dict:
                     reaperturas.append(nodo.nodo_id)
 
         elif nodo.abierto and nodo.modo_apertura == "concertacion":
-            # Se sostiene mientras el acuerdo se cumpla. Si la credibilidad de
-            # la mesa se hunde, el acuerdo se rompe.
+            # Se sostiene mientras el acuerdo se cumpla. Si la credibilidad de la
+            # mesa se hunde, el acuerdo se rompe.
             if estado.reservas.credibilidad_mesa < P.UMBRALES["credibilidad_comite_suspende"]:
                 if rng.random() < 0.35:
                     nodo.caudal = 0.0
@@ -143,8 +158,7 @@ def step(estado: Estado, rng: random.Random) -> dict:
                     reaperturas.append(nodo.nodo_id)
 
         else:
-            r = revisar_desgaste(nodo, rng)
-            if r:
+            if revisar_desgaste(nodo, rng):
                 desgastes.append(nodo.nodo_id)
 
         nodo.clamp()
@@ -155,6 +169,52 @@ def step(estado: Estado, rng: random.Random) -> dict:
         estado.eventos_turno.append({"tipo": "desgaste", "nodo": nid})
 
     return {"reaperturas": len(reaperturas), "desgastes": len(desgastes)}
+
+
+def revisar_acuerdos(estado: Estado, rng: random.Random) -> dict:
+    """
+    Un acuerdo vale mientras se cumpla, y cumplirlo significa no operar sobre lo
+    pactado. Si se rompe, se rompe visiblemente:
+
+      * la credibilidad de la mesa cae y el Comité endurece condiciones;
+      * la movilización sube, porque el Gobierno prometió y no cumplió;
+      * y los puntos pactados vuelven a cerrarse.
+    """
+    rotos, cumplidos = [], []
+    for a in estado.acuerdos:
+        if a.roto or a.cumplido:
+            continue
+        if estado.turno_decision < a.turno_limite:
+            continue
+
+        # ¿Se operó sobre algún punto pactado mientras el acuerdo estaba vigente?
+        if a.motivo_ruptura:
+            a.roto = True
+            rotos.append(a)
+        else:
+            a.cumplido = True
+            cumplidos.append(a)
+
+    for a in rotos:
+        from src.engine import mobilization
+        for nid in a.nodos:
+            n = estado.nodos.get(nid)
+            if n and n.modo_apertura == "concertacion":
+                n.caudal = 0.0
+                n.modo_apertura = "cerrado"
+        estado.reservas.aplicar(P.COSTO_RESERVAS["acuerdo_incumplido"])
+        mobilization.registrar_evento(estado, "acuerdo_incumplido")
+        estado.eventos_turno.append({
+            "tipo": "acuerdo_roto", "acuerdo": a.acuerdo_id, "motivo": a.motivo_ruptura,
+        })
+
+    for a in cumplidos:
+        from src.engine import mobilization
+        estado.reservas.aplicar(P.COSTO_RESERVAS["acuerdo_verificable_cumplido"])
+        mobilization.registrar_evento(estado, "acuerdo_verificable")
+        estado.eventos_turno.append({"tipo": "acuerdo_cumplido", "acuerdo": a.acuerdo_id})
+
+    return {"rotos": len(rotos), "cumplidos": len(cumplidos)}
 
 
 def aperturas_netas(estado: Estado) -> int:
