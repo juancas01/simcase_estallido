@@ -948,11 +948,10 @@ arquitectura de cuatro capas se respeta.
 
 | | Qué | Dónde |
 |---|---|---|
-| **B1** | El canal de órdenes en lenguaje natural (capa 4) | `POST /api/consola/interpretar` devuelve una interpretación de prueba |
-| **B2** | Los seis agentes de entorno (capa 3) | `_publicaciones_recientes()` es plantilla |
-| **B5** | Persistencia de la corrida | el historial vive en memoria |
-| **—** | El mapa esquemático en pantalla | las 24 posiciones ya están en los datos |
-| **—** | Las tres superficies web contra la API nueva | `web_ui/` apunta a los endpoints antiguos |
+| **B1** | Persistencia de la corrida | el historial vive en memoria; reiniciar el servidor la borra |
+| **B2** | Las ocho fichas de rol como dato | hoy van en papel, fuera del motor |
+| **B3** | Telemetría por turno | no se mide dónde se va el tiempo de la sala |
+| **P1–P4** | **La primera corrida con ocho personas** | ninguna prueba de código la sustituye |
 
 Los stubs están marcados donde viven: `grep -rn "PENDIENTE" src/`
 

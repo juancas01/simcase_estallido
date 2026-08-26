@@ -9,6 +9,14 @@
 //   · las cuatro regiones con SEMÁFORO, sin números — los días son de Minas
 //   · la fuerza sin comprometer, sin decir dónde está — eso es de la Policía
 //
+// LA GLOSA NO SE IMPRIME
+// ----------------------
+// Nada de lo que hay aquí lleva su explicación debajo. Cada magnitud lleva una
+// marca de ayuda de 14 px, y la definición formal —con sus umbrales y sus
+// coeficientes, tomados del motor— vive en `definiciones.jsx` y aparece al
+// pedirla. Proyectado a una pared, el texto que ya se leyó una vez solo estorba
+// para llegar al número que cambió.
+//
 // LA BARRA LATERAL DE LA ESFERA PÚBLICA
 // -------------------------------------
 // Con dos proyectores, la esfera va en `/esfera` y las dos pantallas se ven a la
@@ -29,6 +37,8 @@
 import { useEffect, useRef, useState } from 'react'
 import MapaEsquematico from './MapaEsquematico'
 import EsferaContenido, { ENCUADRE, sinVerificar } from './EsferaContenido'
+import Ayuda, { Titulo } from './Ayuda'
+import { D } from '../definiciones.jsx'
 import {
   Barra, Cargando, nivelPresion, nivelReserva, useDatos,
 } from '../comun.jsx'
@@ -50,6 +60,20 @@ function usarPreferencia(clave, inicial) {
   }, [clave, valor])
   return [valor, setValor]
 }
+
+/** La glosa de las cuatro reservas juntas. Cada una tiene además la suya. */
+const AYUDA_RESERVAS = (
+  <>
+    <p>
+      <strong>Las cuatro se leen igual: arriba es mejor.</strong> Cada una lleva
+      su propia definición en su marca de ayuda.
+    </p>
+    <p>
+      Se agotan y se recomponen con las decisiones de la mesa, no con el paso del
+      tiempo. Ninguna se recupera sola.
+    </p>
+  </>
+)
 
 export default function Tablero() {
   const { datos, error } = useDatos('/tablero', 4000)
@@ -86,14 +110,16 @@ export default function Tablero() {
               Turno {datos.turno_decision || 0} · {datos.franja}
             </div>
             {datos.congelado && (
-              <div className="congelado">congelado · {datos.fase}</div>
+              <div className="congelado">
+                congelado · {datos.fase}
+                <Ayuda etiqueta="Qué significa congelado">{D.congelado}</Ayuda>
+              </div>
             )}
           </div>
           <button
             onClick={() => setAbierta(a => !a)}
             aria-expanded={abierta}
             aria-controls="esfera-lateral"
-            title="La distancia entre el tablero y la esfera pública es el caso"
             style={{ position: 'relative', whiteSpace: 'nowrap' }}
           >
             {abierta ? 'Ocultar' : 'Mostrar'} esfera pública
@@ -112,33 +138,31 @@ export default function Tablero() {
             gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
           }}>
             <div className="tarjeta">
-              <h2>Presión en la calle</h2>
+              <Titulo ayuda={D.presion_calle}>Presión en la calle</Titulo>
               <Barra nombre="Movilización" valor={datos.presion_calle}
                      nivel={nivelPresion(datos.presion_calle)} />
-              <p style={{ margin: '0.5rem 0 0', fontSize: '0.78rem',
-                          color: 'var(--texto-3)' }}>
-                La única que va al revés: arriba es peor. Es el adversario.
-              </p>
             </div>
 
             <div className="tarjeta" style={{ gridColumn: 'span 2' }}>
-              <h2>Las cuatro reservas · arriba es mejor</h2>
+              <Titulo ayuda={AYUDA_RESERVAS}>Reservas</Titulo>
               <div className="rejilla" style={{
                 gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem',
               }}>
                 <Barra nombre="Legitimidad" valor={r.legitimidad}
-                       nivel={nivelReserva(r.legitimidad)} />
+                       nivel={nivelReserva(r.legitimidad)} ayuda={D.legitimidad} />
                 <Barra nombre="Credibilidad de la mesa" valor={r.credibilidad_mesa}
-                       nivel={nivelReserva(r.credibilidad_mesa)} />
+                       nivel={nivelReserva(r.credibilidad_mesa)}
+                       ayuda={D.credibilidad_mesa} />
                 <Barra nombre="Respaldo internacional" valor={r.respaldo_internacional}
-                       nivel={nivelReserva(r.respaldo_internacional)} />
+                       nivel={nivelReserva(r.respaldo_internacional)}
+                       ayuda={D.respaldo_internacional} />
                 <Barra nombre="Cohesión del PMU" valor={r.cohesion_mesa}
-                       nivel={nivelReserva(r.cohesion_mesa)} />
+                       nivel={nivelReserva(r.cohesion_mesa)} ayuda={D.cohesion_mesa} />
               </div>
             </div>
 
             <div className="tarjeta">
-              <h2>Fuerza</h2>
+              <Titulo ayuda={D.fuerza}>Fuerza</Titulo>
               <div className="num" style={{ fontSize: '2rem', fontWeight: 650, lineHeight: 1 }}>
                 {datos.fuerza.esmad_sin_comprometer}
                 <span style={{ fontSize: '1rem', color: 'var(--texto-3)' }}>
@@ -171,24 +195,38 @@ export default function Tablero() {
                   : punto.estado === 'sin_verificar' ? 'neutro' : 'mal'}`}>
                   {punto.estado.replace('_', ' ')}
                 </span>
+                {punto.estado === 'sin_verificar' && (
+                  <Ayuda etiqueta="Qué significa sin verificar">
+                    {D.punto_sin_verificar}
+                  </Ayuda>
+                )}
                 {punto.modo_apertura !== 'cerrado' && ` · abierto por ${punto.modo_apertura}`}
               </p>
-              {punto.estado === 'sin_verificar' && (
-                <p style={{ margin: '0.5rem 0 0', fontSize: '0.85rem', color: 'var(--medio)' }}>
-                  Nadie ha mirado este punto. La Defensoría puede gastar una dupla aquí
-                  — y entonces no la gasta en otro sitio.
-                </p>
-              )}
             </div>
           )}
 
           {/* --- Corredores y regiones -------------------------------------- */}
           <div className="rejilla">
             <div className="tarjeta">
-              <h2>Corredores · un corredor vale lo que su peor punto</h2>
+              <Titulo ayuda={D.corredores}>Corredores</Titulo>
               <table>
                 <thead>
-                  <tr><th>Corredor</th><th>Flujo</th><th>Población</th><th>Sirve para</th></tr>
+                  <tr>
+                    <th>Corredor</th>
+                    <th>Flujo</th>
+                    <th>
+                      Población
+                      <Ayuda etiqueta="Definición de población aguas abajo">
+                        {D.poblacion_corredor}
+                      </Ayuda>
+                    </th>
+                    <th>
+                      Prioridad
+                      <Ayuda etiqueta="Definición de clases de prioridad">
+                        {D.clases_corredor}
+                      </Ayuda>
+                    </th>
+                  </tr>
                 </thead>
                 <tbody>
                   {datos.corredores.map(c => (
@@ -209,10 +247,19 @@ export default function Tablero() {
             </div>
 
             <div className="tarjeta">
-              <h2>Regiones · abastecimiento</h2>
+              <Titulo ayuda={D.semaforo}>Regiones · abastecimiento</Titulo>
               <table>
                 <thead>
-                  <tr><th>Región</th><th>Estado</th><th style={{ textAlign: 'right' }}>Muertes evitables</th></tr>
+                  <tr>
+                    <th>Región</th>
+                    <th>Estado</th>
+                    <th style={{ textAlign: 'right' }}>
+                      Muertes evitables
+                      <Ayuda etiqueta="Definición de muertes evitables">
+                        {D.muertes_evitables}
+                      </Ayuda>
+                    </th>
+                  </tr>
                 </thead>
                 <tbody>
                   {datos.regiones.map(g => (
@@ -237,16 +284,12 @@ export default function Tablero() {
                   ))}
                 </tbody>
               </table>
-              <p style={{ margin: '0.6rem 0 0', fontSize: '0.78rem', color: 'var(--texto-3)' }}>
-                Los días exactos los tiene el Ministro de Minas. Hasta que los diga, la
-                mesa sabe que hay un problema y no sabe cuánto tiempo tiene.
-              </p>
             </div>
           </div>
 
           {/* --- El pliego -------------------------------------------------- */}
           <div className="tarjeta">
-            <h2>Pliego de decisiones · el renglón vacío es más elocuente que una advertencia</h2>
+            <Titulo ayuda={D.pliego}>Pliego de decisiones</Titulo>
             {datos.registro?.length ? (
               <table>
                 <thead>
@@ -267,7 +310,7 @@ export default function Tablero() {
               </table>
             ) : (
               <p style={{ margin: 0, color: 'var(--texto-3)' }}>
-                Todavía no se ha registrado ninguna decisión.
+                Sin decisiones registradas.
               </p>
             )}
           </div>
@@ -280,17 +323,15 @@ export default function Tablero() {
           <div className="lateral-cabecera">
             <div>
               <span className="eyebrow">Esfera pública</span>
-              <div style={{ fontWeight: 650, fontSize: '0.95rem' }}>Lo que se dice</div>
+              <div style={{ fontWeight: 650, fontSize: '0.95rem' }}>
+                Lo que se dice
+                <Ayuda etiqueta="Qué es la esfera pública">{D.esfera}</Ayuda>
+              </div>
             </div>
             {enc && <span className={`chip chip-${enc.chip}`}>{enc.texto}</span>}
           </div>
           <div className="lateral-cuerpo">
             <EsferaContenido datos={esfera} compacto />
-            <p style={{ fontSize: '0.72rem', color: 'var(--texto-3)',
-                        marginTop: '0.75rem' }}>
-              La distancia entre esta columna y el tablero es el caso. Con dos
-              proyectores, esto va aparte en <code>/esfera</code>.
-            </p>
           </div>
         </aside>
       )}

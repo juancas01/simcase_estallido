@@ -7,7 +7,15 @@
 // Vive aquí y no duplicado en los dos sitios: un dato en dos sitios se
 // desincroniza, y una lista propia en cada pantalla es el mismo error con otro
 // nombre.
+//
+// Las glosas —qué es una denuncia sin verificar, qué cuesta comprobarla, de
+// dónde sale el texto de las publicaciones— están en `definiciones.jsx` y solo
+// aparecen al pedirlas. Aquí se ve lo que se dice, no lo que hay que saber para
+// entenderlo.
 // ---------------------------------------------------------------------------
+
+import Ayuda, { Titulo } from './Ayuda'
+import { D } from '../definiciones.jsx'
 
 export const FUENTES = {
   prensa_nacional: 'Prensa nacional',
@@ -40,7 +48,10 @@ export default function EsferaContenido({ datos, compacto = false }) {
         <div className="tarjeta" style={{ marginBottom: '0.75rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between',
                         alignItems: 'center', gap: '0.5rem' }}>
-            <span className="eyebrow">Encuadre dominante</span>
+            <span className="eyebrow">
+              Encuadre dominante
+              <Ayuda etiqueta="Definición de encuadre dominante">{D.encuadre}</Ayuda>
+            </span>
             <span className={`chip chip-${enc.chip}`}>{enc.texto}</span>
           </div>
         </div>
@@ -60,36 +71,27 @@ export default function EsferaContenido({ datos, compacto = false }) {
             </div>
           ))
         ) : (
-          <p style={{ margin: 0, color: 'var(--texto-3)' }}>
-            Todavía no hay hechos que narrar.
-          </p>
+          <p style={{ margin: 0, color: 'var(--texto-3)' }}>Sin publicaciones.</p>
         )}
-        <p style={{ marginTop: '0.9rem', paddingTop: '0.6rem',
-                    borderTop: '1px solid var(--borde-suave)',
-                    fontSize: '0.72rem', color: 'var(--texto-3)' }}>
+        <p className="procedencia">
           Generado por: {datos.generado_por}
+          <Ayuda etiqueta="Origen del texto mostrado">{D.generado_por}</Ayuda>
         </p>
       </div>
 
       <div className="tarjeta" style={{ marginBottom: '0.75rem' }}>
-        <h2>Denuncias graves sin verificar</h2>
+        <Titulo ayuda={D.denuncias}>Denuncias graves sin verificar</Titulo>
         {abiertas.length ? (
-          <>
-            {abiertas.map(d => (
-              <div key={d.denuncia_id} className="publicacion sin-verificar">
-                <span className="fuente">
-                  {d.denuncia_id} · desde el turno {d.turno} · {d.estado}
-                </span>
-                <p style={{ fontSize: '0.88rem' }}>{d.texto}</p>
-              </div>
-            ))}
-            <p style={{ margin: '0.6rem 0 0', fontSize: '0.8rem', color: 'var(--medio)' }}>
-              Desde fuera son idénticas. Ninguna señal distingue una cierta de una
-              falsa — y verificar cuesta una dupla que hace falta en otro sitio.
-            </p>
-          </>
+          abiertas.map(d => (
+            <div key={d.denuncia_id} className="publicacion sin-verificar">
+              <span className="fuente">
+                {d.denuncia_id} · desde el turno {d.turno} · {d.estado}
+              </span>
+              <p style={{ fontSize: '0.88rem' }}>{d.texto}</p>
+            </div>
+          ))
         ) : (
-          <p style={{ margin: 0, color: 'var(--texto-3)' }}>Ninguna abierta ahora mismo.</p>
+          <p style={{ margin: 0, color: 'var(--texto-3)' }}>Ninguna abierta.</p>
         )}
       </div>
 
@@ -116,7 +118,12 @@ export default function EsferaContenido({ datos, compacto = false }) {
               </td>
             </tr>
             <tr>
-              <td>Respaldo internacional</td>
+              <td>
+                Respaldo internacional
+                <Ayuda etiqueta="Definición de respaldo internacional">
+                  {D.respaldo_internacional}
+                </Ayuda>
+              </td>
               <td className="num" style={{ textAlign: 'right' }}>
                 {Math.round(datos.respaldo_internacional)}
               </td>

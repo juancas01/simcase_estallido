@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// CUATRO SUPERFICIES (v2)
+// CUATRO SUPERFICIES
 //
 //   /tablero        PROYECTAR · lo que el Estado tiene por cierto, grano grueso
 //                   — lleva la esfera pública como barra lateral plegable
@@ -18,12 +18,17 @@
 //
 // Y NO HAY MODERADOR COMO FIGURA APARTE: quien opera la consola puede ser uno de
 // los ocho. El sistema conduce el turno.
+//
+// ESTA PORTADA ES UN LANZADOR, no un documento. Cada tarjeta dice su nombre y su
+// ruta; para qué sirve cada una está detrás de su marca de ayuda. Quien monta la
+// sala ya lo sabe y quien no, lo pide.
 // ---------------------------------------------------------------------------
 
 import Tablero from './components/Tablero'
 import EsferaPublica from './components/EsferaPublica'
 import Consola from './components/Consola'
 import VistaPrivada from './components/VistaPrivada'
+import Ayuda from './components/Ayuda'
 import { ROLES } from './comun.jsx'
 import LogoAiLab from '../logos/LOGO Ai Lab_blanco.png'
 
@@ -31,14 +36,65 @@ const PROYECCIONES = [
   {
     ruta: '/tablero',
     nombre: 'Tablero de situación',
-    detalle: 'Qué está pasando: reservas, mapa, corredores y pliego. Lleva la esfera pública como barra lateral, para montajes de una sola pantalla.',
+    ayuda: (
+      <>
+        <p>
+          <strong>Lo que el Estado tiene por cierto</strong>, en grano grueso:
+          reservas, mapa de corredores, semáforo de abastecimiento y pliego de
+          decisiones.
+        </p>
+        <p>
+          Lleva la esfera pública como barra lateral plegable, para montajes de
+          una sola pantalla.
+        </p>
+      </>
+    ),
   },
   {
     ruta: '/esfera',
     nombre: 'Esfera pública',
-    detalle: 'Qué se dice: prensa, redes, gremios y denuncias sin verificar. Para el montaje de dos proyectores.',
+    ayuda: (
+      <>
+        <p>
+          <strong>Lo que se dice:</strong> prensa nacional e internacional,
+          redes, gremios y denuncias graves sin verificar.
+        </p>
+        <p>
+          Esta ruta es para el montaje de dos proyectores. Con uno solo, la misma
+          información va en la barra lateral del tablero.
+        </p>
+      </>
+    ),
   },
 ]
+
+const AYUDA_CONSOLA = (
+  <>
+    <p>
+      <strong>Se transcribe lo que la mesa acordó</strong> y la pantalla devuelve
+      el plan interpretado con su banda de riesgo, para leerlo en voz alta antes
+      de ejecutar.
+    </p>
+    <p>
+      No proyectar. Puede operarla cualquiera de los ocho: quien la opera
+      transcribe, no conduce ni decide el ritmo.
+    </p>
+  </>
+)
+
+const AYUDA_VISTAS = (
+  <>
+    <p>
+      <strong>Cada rol en su propio dispositivo.</strong> Responde cuánto, dónde
+      exactamente y desde cuándo, con un grado de resolución que el tablero
+      general no tiene.
+    </p>
+    <p>
+      Personal, no confidencial: el sistema la muestra solo a su titular, y el
+      ejercicio busca que su contenido se comunique a la mesa.
+    </p>
+  </>
+)
 
 function Portada() {
   return (
@@ -53,26 +109,29 @@ function Portada() {
             SIMCASE · El Estado frente al Estallido Social
           </h1>
           <p style={{ color: 'var(--texto-2)', marginTop: '0.75rem' }}>
-            Puesto de Mando Unificado · segunda semana de mayo.
-            Ocho personas, dos horas, y un motor que calcula las consecuencias de
-            lo que la sala decide.
+            Puesto de Mando Unificado · segunda semana de mayo
           </p>
         </div>
 
-        <Seccion titulo="Proyectar a la sala" nota="a la vez · con una sola pantalla, use la barra del tablero">
+        <Seccion titulo="Proyectar a la sala">
+          {/* La marca de ayuda va FUERA del enlace: un botón dentro de un ancla
+              es HTML inválido, y pulsarlo navegaría en vez de explicar. */}
           {PROYECCIONES.map(p => (
-            <a key={p.ruta} href={p.ruta} className="tarjeta"
-               style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
-              <div style={{ fontWeight: 650 }}>{p.nombre}</div>
-              <div style={{ color: 'var(--texto-2)', fontSize: '0.88rem',
-                            marginTop: '0.15rem' }}>{p.detalle}</div>
+            <div key={p.ruta} className="tarjeta">
+              <div style={{ display: 'flex', alignItems: 'baseline',
+                            justifyContent: 'space-between', gap: '0.5rem' }}>
+                <a href={p.ruta} style={{ fontWeight: 650, textDecoration: 'none',
+                                          color: 'var(--texto)' }}>
+                  {p.nombre}
+                </a>
+                <Ayuda etiqueta={`Para qué sirve: ${p.nombre}`}>{p.ayuda}</Ayuda>
+              </div>
               <code style={{ color: 'var(--texto-3)', fontSize: '0.78rem' }}>{p.ruta}</code>
-            </a>
+            </div>
           ))}
         </Seccion>
 
-        <Seccion titulo="Vista personal de cada rol"
-                 nota="en su propio dispositivo · personal, no confidencial">
+        <Seccion titulo="Vista personal de cada rol" ayuda={AYUDA_VISTAS}>
           {ROLES.map(r => (
             <a key={r.id} href={`/vista/${encodeURIComponent(r.id)}`} className="tarjeta"
                style={{ textDecoration: 'none', color: 'inherit', display: 'block',
@@ -83,15 +142,10 @@ function Portada() {
           ))}
         </Seccion>
 
-        <Seccion titulo="Consola" nota="no proyectar · puede operarla uno de los ocho">
+        <Seccion titulo="Consola" ayuda={AYUDA_CONSOLA}>
           <a href="/consola" className="tarjeta"
              style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
             <div style={{ fontWeight: 650 }}>Transcripción de órdenes</div>
-            <div style={{ color: 'var(--texto-2)', fontSize: '0.88rem',
-                          marginTop: '0.15rem' }}>
-              Se escribe lo que la mesa acordó y la pantalla devuelve el plan con su
-              banda de riesgo, para leerlo en voz alta antes de ejecutar.
-            </div>
             <code style={{ color: 'var(--texto-3)', fontSize: '0.78rem' }}>/consola</code>
           </a>
         </Seccion>
@@ -100,14 +154,14 @@ function Portada() {
   )
 }
 
-function Seccion({ titulo, nota, children }) {
+function Seccion({ titulo, ayuda, children }) {
   return (
     <div style={{ width: '100%', maxWidth: '52rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between',
-                    alignItems: 'baseline', marginBottom: '0.5rem' }}>
-        <span className="eyebrow">{titulo}</span>
-        <span className="eyebrow" style={{ letterSpacing: '0.06em',
-                                           textTransform: 'none' }}>{nota}</span>
+      <div style={{ marginBottom: '0.5rem' }}>
+        <span className="eyebrow">
+          {titulo}
+          {ayuda && <Ayuda etiqueta={`Para qué sirve: ${titulo}`}>{ayuda}</Ayuda>}
+        </span>
       </div>
       <div className="rejilla" style={{
         gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0.6rem',

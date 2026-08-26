@@ -15,6 +15,8 @@
 // ---------------------------------------------------------------------------
 
 import EsferaContenido, { ENCUADRE } from './EsferaContenido'
+import Ayuda from './Ayuda'
+import { D } from '../definiciones.jsx'
 import { Cargando, useDatos } from '../comun.jsx'
 
 export default function EsferaPublica() {
@@ -31,7 +33,10 @@ export default function EsferaPublica() {
           <h1>Lo que se dice</h1>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <span className="eyebrow">Encuadre dominante</span>
+          <span className="eyebrow">
+            Encuadre dominante
+            <Ayuda etiqueta="Definición de encuadre dominante">{D.encuadre}</Ayuda>
+          </span>
           <span className={`chip chip-${enc.chip}`}>{enc.texto}</span>
         </div>
       </header>

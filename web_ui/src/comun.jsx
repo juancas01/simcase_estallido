@@ -8,6 +8,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import Ayuda from './components/Ayuda'
+
 export const ROLES = [
   { id: 'Presidente', nombre: 'Presidente de la República', frente: 'Estrategia' },
   { id: 'Interior', nombre: 'Ministro del Interior', frente: 'Estrategia' },
@@ -73,7 +75,7 @@ export function useDatos(ruta, ms = 4000) {
   return { datos, error, recargar: cargar }
 }
 
-/** Arriba es mejor en las cuatro reservas. La presión en la calle va al revés. */
+/** Umbrales de color. Arriba es mejor en las cuatro reservas. */
 export function nivelReserva(v) {
   if (v >= 55) return 'bien'
   if (v >= 35) return 'medio'
@@ -112,11 +114,14 @@ export function Cargando({ error }) {
   )
 }
 
-export function Barra({ nombre, valor, nivel }) {
+export function Barra({ nombre, valor, nivel, ayuda }) {
   return (
     <div className="reserva">
       <div className="reserva-fila">
-        <span className="reserva-nombre">{nombre}</span>
+        <span className="reserva-nombre">
+          {nombre}
+          {ayuda && <Ayuda etiqueta={`Definición de ${nombre}`}>{ayuda}</Ayuda>}
+        </span>
         <span className="reserva-valor" style={{ color: COLOR_NIVEL[nivel] }}>
           {Math.round(valor)}
         </span>

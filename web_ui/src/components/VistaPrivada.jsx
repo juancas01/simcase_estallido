@@ -20,6 +20,8 @@
 // está mirando su pantalla, una de estas cinco se rompió.
 // ---------------------------------------------------------------------------
 
+import Ayuda, { Titulo } from './Ayuda'
+import { D } from '../definiciones.jsx'
 import { Cargando, ROLES, useDatos } from '../comun.jsx'
 
 export default function VistaPrivada({ rol }) {
@@ -39,20 +41,28 @@ export default function VistaPrivada({ rol }) {
           <div className="num" style={{ fontSize: '1rem', fontWeight: 600 }}>
             Turno {datos.turno} · {datos.franja}
           </div>
-          {datos.congelado && <div className="congelado">congelado</div>}
+          {datos.congelado && (
+            <div className="congelado">
+              congelado
+              <Ayuda etiqueta="Qué significa congelado">{D.congelado}</Ayuda>
+            </div>
+          )}
         </div>
       </header>
 
       <div className="cuerpo" style={{ maxWidth: 900, width: '100%', margin: '0 auto' }}>
         {/* --- BLOQUE 1 · su alerta -------------------------------------- */}
         <div className="alerta">
-          <span className="eyebrow">Lo más urgente ahora, según su cartera</span>
+          <span className="eyebrow">
+            Lo más urgente
+            <Ayuda etiqueta="Cómo se calcula esta alerta">{D.alerta_privada}</Ayuda>
+          </span>
           <p>{datos.alerta}</p>
         </div>
 
         {/* --- BLOQUE 2 · su detalle ------------------------------------- */}
         <div className="tarjeta">
-          <h2>Su detalle · lo que solo usted ve con este grano</h2>
+          <Titulo ayuda={D.detalle_privado}>Su detalle</Titulo>
           <Detalle datos={datos.detalle} />
         </div>
 
@@ -60,8 +70,17 @@ export default function VistaPrivada({ rol }) {
             control: nadie ordena desde su pantalla. */}
         {datos.acciones?.length > 0 && (
           <div className="tarjeta" style={{ marginTop: '1rem' }}>
-            <h2>Su repertorio · se pide en voz alta, no se pulsa aquí</h2>
+            <Titulo ayuda={D.repertorio}>Su repertorio</Titulo>
             <table>
+              <thead>
+                <tr>
+                  <th>
+                    Clase
+                    <Ayuda etiqueta="Qué significa cada clase">{D.clases_accion}</Ayuda>
+                  </th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
               <tbody>
                 {datos.acciones.map(a => (
                   <tr key={a.accion}>
@@ -81,13 +100,12 @@ export default function VistaPrivada({ rol }) {
           </div>
         )}
 
-        <p style={{ marginTop: '1.25rem', fontSize: '0.8rem', color: 'var(--texto-3)',
+        <p style={{ marginTop: '1.25rem', fontSize: '0.78rem', color: 'var(--texto-3)',
                     textAlign: 'center' }}>
-          Esta vista es personal, no confidencial. Puede leerla en voz alta o girar
-          la pantalla — el ejercicio quiere que la comparta.
-          <br />
-          Lo que dice aquí <strong>no se escribe en el tablero</strong>: el turno que
-          viene, el número habrá cambiado y solo usted tendrá el nuevo.
+          Personal, no confidencial · solo lectura
+          <Ayuda etiqueta="Qué significa personal, no confidencial">
+            {D.vista_personal}
+          </Ayuda>
         </p>
       </div>
     </div>

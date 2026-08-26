@@ -21,6 +21,9 @@
 //   3 · Se congela durante la deliberación, igual que todo lo demás.
 // ---------------------------------------------------------------------------
 
+import Ayuda from './Ayuda'
+import { D } from '../definiciones.jsx'
+
 const COLOR_CORREDOR = {
   'C-PUE': '#7aa5e8',
   'C-SUR': '#4fb286',
@@ -62,8 +65,10 @@ export default function MapaEsquematico({ tablero, seleccionado, onSeleccionar }
         display: 'flex', justifyContent: 'space-between',
         alignItems: 'baseline', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem',
       }}>
-        <h2 style={{ margin: 0 }}>Mapa de corredores</h2>
-        <span className="eyebrow">esquema · sin escala ni distancias</span>
+        <h2 style={{ margin: 0 }}>
+          Mapa de corredores
+          <Ayuda etiqueta="Qué representa este esquema">{D.mapa}</Ayuda>
+        </h2>
       </div>
 
       <svg
@@ -177,11 +182,13 @@ function Leyenda({ corredores }) {
           {c.nombre}
         </span>
       ))}
-      <span style={{ marginLeft: 'auto', display: 'flex', gap: '0.75rem' }}>
+      <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center',
+                     gap: '0.75rem' }}>
         <span>● cerrado</span>
         <span>◆ por fuerza</span>
         <span>■ pactado</span>
         <span>? sin verificar</span>
+        <Ayuda etiqueta="Qué significa cada forma">{D.formas_mapa}</Ayuda>
       </span>
     </div>
   )

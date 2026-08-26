@@ -116,6 +116,20 @@ verificar, que es lo que hace que alguien la abra.
 - ¿La alerta de la vista privada se entiende en menos de diez segundos?
 - ¿El plan de vuelta de la consola es legible en voz alta?
 
+**Y la que mide la capa de ayuda:** ninguna cifra lleva ya su glosa impresa
+debajo. Cada una tiene una marca **(?)** de 14 px y la definición formal
+—con sus umbrales y coeficientes, tomados del motor— aparece al pasar por
+encima, al llegar con el tabulador o al tocarla.
+
+- ¿Alguien busca una definición y **no** encuentra la marca donde esperaba?
+- ¿Alguna definición hace falta **dos veces** en el mismo turno? Si sí, ese dato
+  debería estar impreso y no en el globo.
+- ¿Alguna marca interrumpe la lectura del número en vez de acompañarla?
+
+> Las 30 definiciones viven en un solo archivo,
+> [`definiciones.jsx`](web_ui/src/definiciones.jsx). Si un umbral cambia en
+> `parameters.py`, hay exactamente un párrafo que corregir.
+
 **Es la prueba más barata y la que más va a cambiar el diseño.**
 
 ### P3 · En seco, con tres personas — 45 min

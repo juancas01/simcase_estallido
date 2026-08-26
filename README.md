@@ -124,7 +124,7 @@ src/engine/          EL MOTOR. Único dueño del estado. Sin IA, determinista sa
 src/api/             capa delgada · sirve las cuatro superficies
 src/agents/          capas 3 y 4 · agentes y órdenes en LN (sin escribir)
 data/escenario/      el caso, en datos y no en código
-web_ui/              las superficies (pendiente de apuntar a la API v2)
+web_ui/              las cuatro superficies · React + Vite
 scripts/             corredor sin interfaz, para calibrar
 tests/               verificadores sin modelo
 ```
@@ -185,11 +185,11 @@ serlo — y eso, sobre hechos con responsabilidad judicial viva, es tomar partid
 
 **Falta** — la lista completa está en [`PENDIENTES.md`](PENDIENTES.md):
 
-- **capa 4** — el canal de órdenes en lenguaje natural (hoy, un stub determinista)
-- **capa 3** — los seis agentes de entorno (hoy, plantilla)
-- **el mapa esquemático en pantalla** — las 24 posiciones ya están en los datos
-- **las superficies web** — `web_ui/` apunta todavía a los endpoints antiguos
+- **la primera corrida con ocho personas.** Nada de lo de arriba está probado
+  con gente: es la única prueba que no se puede sustituir por código
 - **persistencia** de la corrida, para repetirla con una decisión cambiada
+- **telemetría por turno**, para saber dónde se fue el tiempo
+- cinco decisiones que esperan al equipo docente (A1–A5 en `PENDIENTES.md`)
 
 Los stubs están marcados donde viven: `grep -rn "PENDIENTE" src/`
 

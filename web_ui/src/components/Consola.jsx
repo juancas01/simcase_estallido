@@ -17,6 +17,8 @@
 // ---------------------------------------------------------------------------
 
 import { useState } from 'react'
+import Ayuda, { Titulo } from './Ayuda'
+import { D } from '../definiciones.jsx'
 import { api, FASES, useDatos } from '../comun.jsx'
 
 export default function Consola() {
@@ -81,17 +83,31 @@ export default function Consola() {
       <div className="cuerpo" style={{ maxWidth: 1000, width: '100%', margin: '0 auto' }}>
         {cfg && !cfg.llave_presente && (
           <div className="tarjeta" style={{ borderColor: 'var(--medio)', marginBottom: '1rem' }}>
-            <h2 style={{ color: 'var(--medio)' }}>Sin llave de API</h2>
+            {/* El diagnóstico del motor no se borra: se retira al globo. Es un
+                dato, y además el único sitio donde consta qué falta exactamente. */}
+            <h2 style={{ color: 'var(--medio)' }}>
+              Sin llave de API
+              <Ayuda etiqueta="Qué implica correr sin llave">
+                <>
+                  <p>{cfg.mensaje}</p>
+                  <p>
+                    Las capas de lenguaje natural quedan en modo determinista. El
+                    ejercicio se desarrolla completo: ninguna decisión de la
+                    simulación está delegada al modelo.
+                  </p>
+                </>
+              </Ayuda>
+            </h2>
             <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--texto-2)' }}>
-              {cfg.mensaje} Para activarlas, escriba <code>OPENAI_API_KEY</code> en{' '}
-              <code>{cfg.archivo_env}</code> y reinicie el servidor.
+              Escriba <code>OPENAI_API_KEY</code> en <code>{cfg.archivo_env}</code> y
+              reinicie el servidor.
             </p>
           </div>
         )}
 
         {/* --- El reloj de fases: lo lleva el sistema, no una persona ------- */}
         <div className="tarjeta" style={{ marginBottom: '1rem' }}>
-          <h2>Fase del turno · el reloj lo lleva el sistema</h2>
+          <Titulo ayuda={D.fases}>Fase del turno</Titulo>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
             {FASES.map(f => (
               <button
@@ -107,15 +123,15 @@ export default function Consola() {
           </div>
           {tablero?.congelado && (
             <p style={{ margin: '0.6rem 0 0', fontSize: '0.8rem', color: 'var(--medio)' }}>
-              Las pantallas están congeladas. Nada cambia mientras la gente habla —
-              así no hay ninguna razón para volver a mirarlas.
+              Pantallas congeladas
+              <Ayuda etiqueta="Qué significa congelado">{D.congelado}</Ayuda>
             </p>
           )}
         </div>
 
         {/* --- Paso 3 · órdenes ------------------------------------------- */}
         <div className="tarjeta">
-          <h2>Lo que la mesa acordó</h2>
+          <Titulo ayuda={D.ordenes}>Lo que la mesa acordó</Titulo>
           <textarea
             rows={3}
             value={texto}
@@ -141,7 +157,7 @@ export default function Consola() {
         {/* --- El plan de vuelta ------------------------------------------- */}
         {plan && (
           <div className="tarjeta" style={{ marginTop: '1rem', borderColor: 'var(--acento)' }}>
-            <h2>Léalo en voz alta antes de ejecutar</h2>
+            <Titulo ayuda={D.plan_interpretado}>Plan interpretado · léalo en voz alta</Titulo>
             <pre className="lectura">{plan.lectura_en_voz_alta}</pre>
 
             {plan.avisos?.map((a, i) => (
@@ -170,14 +186,15 @@ export default function Consola() {
 
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
               <button className="primario" onClick={ejecutar} disabled={ocupado}>
-                La sala confirma · ejecutar
+                Ejecutar
               </button>
               <button onClick={() => setPlan(null)} disabled={ocupado}>
-                La sala corrige
+                Corregir
               </button>
             </div>
-            <p style={{ margin: '0.6rem 0 0', fontSize: '0.75rem', color: 'var(--texto-3)' }}>
+            <p className="procedencia">
               Interpretado por: {plan.interpretado_por}
+              <Ayuda etiqueta="Qué capa tradujo la orden">{D.interpretado_por}</Ayuda>
             </p>
           </div>
         )}
@@ -196,11 +213,14 @@ export default function Consola() {
                 </span>{' '}
                 <span style={{ fontSize: '0.9rem' }}>{r.mensaje}</span>
                 {r.datos?.p_incidente !== undefined && (
-                  <span className="num" style={{ fontSize: '0.78rem',
-                                                 color: 'var(--texto-3)' }}>
-                    {' '}· riesgo mostrado {Math.round(r.datos.p_incidente * 100)} %
-                    · atribuible {r.datos.atribuible ? 'sí' : 'no'}
-                  </span>
+                  <>
+                    <span className="num" style={{ fontSize: '0.78rem',
+                                                   color: 'var(--texto-3)' }}>
+                      {' '}· riesgo {Math.round(r.datos.p_incidente * 100)} %
+                      · atribuible {r.datos.atribuible ? 'sí' : 'no'}
+                    </span>
+                    <Ayuda etiqueta="Cómo se calcula el riesgo">{D.riesgo_mostrado}</Ayuda>
+                  </>
                 )}
               </div>
             ))}
