@@ -1029,14 +1029,26 @@ arquitectura de cuatro capas se respeta.
 
 ### Qué falta todavía
 
+**Sin convocar a nadie** — se puede hacer hoy:
+
 | | Qué | Dónde |
 |---|---|---|
-| **B1** | Persistencia de la corrida | el historial vive en memoria; reiniciar el servidor la borra |
-| **B2** | Las ocho fichas de rol como dato | hoy van en papel, fuera del motor |
-| **B3** | Telemetría por turno | no se mide dónde se va el tiempo de la sala |
-| **P1–P4** | **La primera corrida con ocho personas** | ninguna prueba de código la sustituye |
+| **B1** | El archivo de la corrida · persistencia y telemetría en uno | el historial vive en memoria; reiniciar el servidor lo borra |
+| **B7** | El debriefing | veinte minutos de sesión sin nada que proyectar. Depende de **B1** |
+| **B4** | El hecho H1 del paquete detonante | propuesta escrita; falta implementarla en `N013` |
+| **B2** | La identidad de los ocho roles, en datos | hoy duplicada en `comun.jsx`. Las **fichas** siguen en papel, y así se quedan |
 
-Los stubs están marcados donde viven: `grep -rn "PENDIENTE" src/`
+**Con personas en una sala** — lo que ninguna prueba de código sustituye:
+
+| | Qué | Por qué no lo ve el motor |
+|---|---|---|
+| **P2–P4** | Las tres corridas con gente | el motor puede estar perfecto y el ejercicio no funcionar |
+| **B3** | La hoja de observación | «¿quién compartió primero algo de su vista?» ocurre en voz alta y no pasa por ninguna pantalla |
+| **C1–C3** | Tres calibraciones | solo se ven con ocho personas dentro |
+
+La lista completa, con sus propuestas de diseño, en
+[`PENDIENTES.md`](../PENDIENTES.md). Los stubs están marcados donde viven:
+`grep -rn "PENDIENTE" src/`
 
 ---
 

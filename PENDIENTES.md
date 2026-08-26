@@ -4,35 +4,44 @@ Lo que falta para correr esto con ocho personas en una sala. **Este es el único
 sitio donde se lleva la cuenta**: si algo está pendiente y no está aquí, es que
 se me pasó.
 
-Va ordenado por lo que bloquea. Hay cuatro clases y no se resuelven igual:
+La división que manda es una sola, porque es la que decide qué se puede hacer el
+lunes por la mañana:
 
-| Clase | Quién lo resuelve | Sección |
+| Parte | Qué es | Quién |
 |---|---|---|
-| **Probar** — lo que se puede hacer ya, sin decidir nada | cualquiera, hoy | [P](#p--lo-que-se-puede-probar-ya) |
-| **Decisiones** — no son técnicas y no son mías | el equipo docente | [A](#a--decisiones-que-no-son-mías) |
-| **Código** — está diseñado y no escrito | yo | [B](#b--código-que-falta) |
-| **Calibración** — solo se resuelve midiendo | la primera corrida | [C](#c--calibración) |
+| **[1 · Sin convocar a nadie](#parte-1--sin-convocar-a-nadie)** | código y verificación · se puede hacer hoy | yo |
+| **[2 · Con personas en una sala](#parte-2--con-personas-en-una-sala)** | lo que **ninguna prueba de código sustituye** | el equipo, con gente |
+| **[3 · Decisiones que no son mías](#parte-3--decisiones-que-no-son-mías)** | no son técnicas | el equipo docente |
+
+> **Los identificadores no cambian aunque el documento se reordene.** Están
+> citados desde el código (`PENDIENTE(B1)`), desde `COMO_FUNCIONA.md` y desde
+> aquí mismo. Renumerarlos por estética rompería la navegación en los dos
+> sentidos que este documento promete — y ya se rompió una vez.
 
 ---
 
 ## En una mirada
 
-| | Pendiente | Bloquea | Estado |
+| | Pendiente | ¿Necesita gente? | Estado |
 |---|---|---|---|
-| **P1–P4** | las cuatro pruebas, en orden | nada — se pueden hacer hoy | listas para correr |
-| **A1** | cuántos dispositivos, o papel | el montaje de la sala | esperando |
-| **A2** | quién opera la consola | el guion de la sesión | esperando |
-| **A3** | ¿con llave o sin llave la primera vez? | qué se está midiendo | esperando |
-| **A4** | el contenido exacto de las ocho vistas | la versión definitiva | se decide probando |
-| **A5** | cerrar el territorio ficticio | las fichas impresas | nombres provisionales puestos |
-| **A6** | ¿el mapa muestra dónde está la fuerza? | el papel de la Policía en la mesa | **esperando — nuevo** |
-| **B1** | persistencia de la corrida | el debriefing | no existe |
-| **B2** | las ocho fichas de rol, en datos | imprimir los sobres | `data/roles/` vacío |
-| **B3** | telemetría por turno | medir el ejercicio | no existe |
-| **B4** | el hecho H1 del paquete detonante | el turno 1 completo | falta 1 de 4 |
-| **B5** | presupuesto de latencia medido | la fase de consecuencias | hay timeout, falta medirlo |
-| **B6** | el guion de la sesión | conducir la sala | fuera del código |
-| **C1–C3** | tres cosas que solo se ven con personas | la primera corrida real | esperando |
+| **B1** | el archivo de la corrida — persistencia y telemetría | no | **no existe** · bloquea B7 |
+| **B2** | la identidad de los ocho roles, en datos | no | `data/roles/` vacío · hoy duplicada en el frontend |
+| **B4** | el hecho H1 del paquete detonante | no | **propuesta escrita**, falta implementar |
+| **B7** | el debriefing, la superficie que falta | no | **no existe** · depende de B1 |
+| **B5** | presupuesto de latencia medido | se mide en P2 | hay timeout, falta medirlo |
+| **B6** | el guion de la sesión | no | fuera del código |
+| **P1** | correr el motor solo y leer la traza | **no** — una persona, 20 min | listo para correr |
+| **P2** | las pantallas | **sí** — dos personas, 30 min | listo |
+| **P3** | en seco, tres roles | **sí** — tres personas, 45 min | listo |
+| **P4** | la corrida completa | **sí** — ocho personas, 2 h | listo |
+| **B3** | la hoja de observación | **sí** — se llena en P3 y P4 | no existe |
+| **C1–C3** | tres calibraciones que solo se ven con gente | **sí** | esperando P3/P4 |
+| **A1** | cuántos dispositivos, o papel | — | esperando |
+| **A2** | quién opera la consola | — | esperando |
+| **A3** | ¿con llave o sin llave la primera vez? | — | esperando |
+| **A4** | el contenido exacto de las ocho vistas | se decide probando | esperando |
+| **A5** | cerrar el territorio ficticio | — | nombres provisionales puestos |
+| **A6** | ¿el mapa muestra dónde está la fuerza? | se decide tras P3 | esperando |
 
 Lo que **sí** funciona está en el README, sección «Estado actual», y en
 [`docs/COMO_FUNCIONA.md`](docs/COMO_FUNCIONA.md).
@@ -42,19 +51,23 @@ Lo que **sí** funciona está en el README, sección «Estado actual», y en
 ## Cómo verlos desde el código
 
 ```bash
-grep -rn "PENDIENTE\|TODO" src/
+grep -rn "PENDIENTE" src/
 ```
 
 Cada marca lleva el identificador de esta lista (`PENDIENTE(B1)`), así que se
 puede ir en las dos direcciones: del código a la explicación y de la explicación
-al código.
+al código. Lo custodia
+`test_cada_marca_del_codigo_apunta_a_un_pendiente_que_existe`.
 
 ---
+---
 
-## P · Lo que se puede probar ya
+# PARTE 1 · Sin convocar a nadie
 
-**Nada de esto depende de ninguna decisión pendiente.** Cuatro pruebas, cada una
-responde una pregunta distinta, y ninguna necesita la siguiente para ser útil.
+Todo esto se puede hacer hoy, solo, sin reservar una sala. **Nada de ello depende
+de ninguna decisión pendiente.**
+
+## La verificación que corre hoy
 
 ### P1 · El motor, solo — 20 min, una persona
 
@@ -87,6 +100,222 @@ el debriefing.
 reservas: son las tiradas. **No cambian `cohes` ni `muert`**, porque la cohesión
 depende de qué banderas se adoptaron y el reloj de qué corredores se abrieron —
 no del azar. Si algún día empezaran a bailar, algo se rompió.
+
+
+---
+
+## El código que falta
+
+### B1 · El archivo de la corrida — persistencia y telemetría, un solo archivo
+
+**Dónde:** `src/engine/bitacora.py` (por escribir) ·
+[`simulation.py`](src/engine/simulation.py) lleva la marca `PENDIENTE(B1)`
+
+**Estaban separados y por eso no se movió ninguno.** B1 quería que la corrida
+sobreviviera al proceso; B3 quería poder medirla. Son **el mismo artefacto visto
+desde dos lados**, y escribirlo dos veces garantiza que se desincronicen.
+
+Un archivo por corrida, **JSONL y solo de anexado**:
+
+```
+corridas/2026-08-26-1430/corrida.jsonl
+```
+
+```jsonc
+{"t":"apertura",  "semilla":20210511, "reloj":{...}, "indicadores":{...}}
+{"t":"linea",     "rol":"Defensa", "linea":"..."}          // turno 0
+{"t":"orden",     "ventana":3, "dictado":"...", "interpretado_por":"...", "acciones":[...]}
+{"t":"decision",  "ventana":3, "rol":"...", "accion":"...", "responsable":"..."}
+{"t":"cargo",     "ventana":3, "motivo":"incidente_con_victima", "por":"OperarNodo", "deltas":{...}}
+{"t":"ventana",   "n":3, "franja":"dia", "indicadores":{...}, "deltas":{...}, "eventos":[...]}
+{"t":"cierre",    "metricas":{...}, "proyeccion":{...}}
+```
+
+**Por qué de anexado y no un volcado al final.** Si el proceso se cae a mitad del
+ejercicio, sobrevive todo lo anterior. Un volcado final lo pierde todo — y una
+caída durante la corrida es exactamente cuando más falta hace el registro.
+
+**Lo que esto habilita, y que hoy es imposible:**
+
+| | Cómo |
+|---|---|
+| Debriefing con el proceso cerrado | se lee el archivo, no la memoria |
+| **Repetir la corrida cambiando una decisión** | el motor es determinista dada la semilla: se reproducen las órdenes del archivo con una editada, y todo lo demás sale igual |
+| Comparar dos salas con el mismo escenario | dos archivos, mismas claves |
+| Medir dónde se fue el tiempo | cada línea lleva su marca temporal |
+
+> **Ojo, y es la trampa de la simulación anterior:** que el código anote el dato
+> no basta. Hay que comprobar que **llega al archivo**. Allí dos campos se
+> perdían en la serialización y ninguna prueba lo detectó, porque las pruebas
+> miraban el código y no el archivo de salida. La prueba tiene que leer el
+> `.jsonl` escrito.
+
+**Nota de alcance:** esto permite **volver a contar** la corrida, no
+*reanudarla*. Reanudar exigiría serializar el estado entero. Y no hace falta: con
+la semilla y las órdenes, reproducirla es exacto.
+
+
+### B2 · La identidad de los ocho roles, en datos
+
+**Dónde:** [`data/roles/`](data/roles/) (vacío) ·
+[`web_ui/src/comun.jsx`](web_ui/src/comun.jsx) tiene hoy la lista duplicada
+
+**Esta entrada era más grande de lo que debía.** Decía «las ocho fichas de rol,
+en datos», y eso no hace falta: las fichas del *Manual de Roles con RADs* son un
+entregable del GovLab, se entregan **impresas** por decisión de diseño
+(`propuesta.md` §6, regla 4: *papel para lo que no cambia*), y **nadie calcula
+con su texto biográfico**. Meterlo en el motor sería duplicar el documento del
+GovLab dentro del repositorio, con el problema de sincronización que eso trae.
+
+Lo que sí falta es pequeño y sí es necesario:
+
+| | Qué | Por qué |
+|---|---|---|
+| **1** | `id`, título completo y frente de cada rol | hoy viven **solo** en `comun.jsx`, o sea duplicados fuera del motor. `views.py` tiene los `id` y no los títulos |
+| **2** | el nombre ficticio que aparece en la ficha impresa | tiene que coincidir con el de las pantallas, o la sala ve dos mundos (**A5**) |
+| **3** | un puntero al apartado de la ficha del GovLab | para ir del rol al documento sin buscarlo |
+
+La **agenda reservada** (apartado 11 del Manual) **no entra al repositorio**: va
+en sobre sellado, se juega y no se enuncia. Ponerla en un archivo que el motor
+lee es la manera más fácil de que se filtre.
+
+Depende de **A5** (nombres).
+
+
+### B4 · El hecho H1 del paquete detonante — propuesta
+
+**Dónde:** [`data/escenario/estado_inicial.json`](data/escenario/estado_inicial.json)
+y [`loader.py`](src/engine/loader.py), que ya lleva la marca `PENDIENTE(B4)`
+
+De los cuatro hechos que abren el turno 1 hay tres: **H2** (dos denuncias, una
+cierta y una falsa), **H3** (el ultimátum gremial) y **H4** (la región que cruza
+los dos días de oxígeno). Falta H1.
+
+**La propuesta: el incidente ya ocurrió, en la noche anterior al turno 1.** No es
+algo que la sala provoque — es lo que la sala **recibe**, y esa diferencia es el
+punto. Llega en el parte heredado, con un herido grave de la fuerza pública junto
+a una instalación de combustible.
+
+**Dónde: `N013`, Portería de la refinería.** No es una elección arbitraria: el
+punto ya está en los datos con todo lo que hace falta.
+
+| Dato de `N013` | Valor | Qué produce |
+|---|---|---|
+| `dureza` | **0,77** | la más alta de los tres puntos junto a infraestructura |
+| `control_voceria` | **0,28** | casi no hay con quién concertar: la vía pactada apenas existe aquí |
+| `composicion_real` | **51 % protesta legítima** | apenas por encima del umbral de 0,50 → **operar cuesta el doble** |
+| `region_id` | `R-BEL` | la región **epicentro** |
+| `corredor_id` | `C-REF` | el corredor de la refinería, que es **justo el que Minas necesita** |
+
+**La trampa, y por eso funciona como hecho detonante:** responder con fuerza es la
+jugada evidente —hay un herido de la fuerza pública— y es el punto donde más
+cuesta, donde menos se puede negociar, y cuyo corredor otra cartera necesita
+intacto. La sala aún no se ha constituido: no hay registro escrito, ni protocolo
+de vocería, ni criterio de priorización, así que los mitigadores están al mínimo.
+
+**Qué mueve al arrancar**, todo con maquinaria que ya existe:
+
+```jsonc
+"hecho_h1": {
+  "nodo": "N013",
+  "dureza_extra": 0.06,          // el punto se endurece tras el incidente
+  "intensidad_region": 6,        // registrar_evento en R-BEL
+  "custodia_inmovilizada": 3,    // unidades pegadas a la instalación
+  "publicacion": { "fuente": "prensa_nacional", "encuadre": "desorden" }
+}
+```
+
+**Va en los datos y no en el código**, como el resto del caso: `loader.py` lo lee
+y lo aplica. Así se puede apagar para una corrida de prueba sin tocar el motor.
+
+> **Lo que H1 NO hace:** matar a nadie ni abrir el punto. Es una condición
+> inicial, no un resultado. Si el hecho detonante ya resolviera algo, el turno 1
+> empezaría con menos decisiones y no con más.
+
+
+### B7 · El debriefing — la superficie que falta
+
+**Dónde:** `/debriefing` en [`App.jsx`](web_ui/src/App.jsx) y
+`GET /api/debriefing` · **depende de B1**
+
+Veinte minutos, más que cualquier turno, y hoy no hay nada que proyectar. El
+motor ya tiene los datos; lo que falta es **el relato**.
+
+**El criterio: hechos y contraste, no un volcado de variables.** Nadie aprende
+mirando veinte números. Se aprende viendo qué se decidió y qué pasó después.
+
+Cinco paneles, en el orden en que se conduce un debriefing:
+
+**1 · El país que se recibió y el que se entrega.** Seis magnitudes, lado a lado,
+apertura contra cierre, más la proyección a 72 horas. No las veinte: las seis que
+significan algo.
+
+**2 · La línea declarada contra la ejecutada.** Por cada rol, lo que dijo en el
+turno 0 y lo que el pliego dice que hizo. Los datos ya existen
+(`lineas_declaradas` + `registro` filtrado por rol). **Es el panel más cargado
+del ejercicio** y ya está nombrado como una de las tres lecturas del debriefing.
+
+**3 · Las decisiones y lo que costaron.** Aquí hay una decisión de honestidad que
+conviene tomar por adelantado:
+
+> **El motor no sabe hoy qué decisión causó qué.** Varias caen en la misma
+> ventana y el mundo además se mueve solo. Decir «esta orden costó 9 puntos de
+> legitimidad» sería **fabricar causalidad**.
+
+Dos etapas, y la primera es barata:
+
+| | Qué | Qué se puede afirmar |
+|---|---|---|
+| **a** | hoy, con B1 | *«en la ventana en que se ordenó esto, la legitimidad bajó 9»* — correlación, y se dice que lo es |
+| **b** | `Reservas.aplicar()` gana un `motivo` y un libro de cargos | *«esta operación costó 9 por incidente con víctima»* — **causalidad real**, porque `COSTO_RESERVAS` ya tiene las claves con nombre |
+
+La etapa **b** es media hora y convierte el panel de correlacional en causal. Es
+la que hace que el debriefing responda de verdad a *«¿qué consecuencias tuvo lo
+que decidimos?»*. Sale al archivo como líneas `{"t":"cargo", ...}`.
+
+**4 · Los tres momentos.** El turno en que la mesa dejó de ser una mesa
+(credibilidad bajo 30), el turno del primer registro escrito, y el turno en que
+una región cruzó el reloj de oxígeno. Los cruces de umbral ya se calculan en
+`umbrales_cruzados`.
+
+**5 · Las agendas reservadas**, que se revelan y **no se puntúan**.
+
+
+### B5 · Presupuesto de latencia, medido
+
+**Dónde:** [`src/agents/entorno.py`](src/agents/entorno.py) y
+[`src/agents/nlu.py`](src/agents/nlu.py)
+
+Hay timeout duro y degradación a plantilla, que es lo importante. Lo que falta es
+**medir cuánto tarda de verdad** con el modelo puesto: la fase de consecuencias
+dura sesenta segundos con ocho personas mirando la pantalla.
+
+Se mide en la prueba **P2**, cronómetro en mano.
+
+
+### B6 · El guion de la sesión
+
+**Dónde:** fuera del código
+
+Qué se dice en el turno 0 —incluida la declaración expresa sobre el alcance del
+ejercicio—, cómo se abre el debriefing, y qué se hace si la sala se queda sin
+órdenes al terminar los seis minutos.
+
+---
+
+
+
+---
+---
+
+# PARTE 2 · Con personas en una sala
+
+**Esto es lo que ninguna prueba de código sustituye.** El motor puede estar
+perfecto y el ejercicio no funcionar: lo que se mide aquí es si ocho personas
+discuten, no si el código calcula.
+
+Van en orden. Cada una responde una pregunta distinta y ninguna necesita la
+siguiente para ser útil.
 
 ### P2 · Las pantallas — 30 min, dos personas
 
@@ -182,10 +411,93 @@ reglas de §6.3 de la propuesta se rompió.
 
 ---
 
-## A · Decisiones que no son mías
 
-Van con recomendación porque tener una es más útil que no tenerla, pero las cinco
-son del equipo docente.
+---
+
+### B3 · La hoja de observación — lo que el motor no puede ver
+
+**Dónde:** fuera del código · se llena durante **P3** y **P4**
+
+Con **B1** el archivo de la corrida responde casi todo. Pero las dos métricas
+más importantes de la v2 **no son estados del mundo: son conductas de la sala**,
+y ningún motor las puede registrar solo.
+
+| Pregunta | ¿La ve el motor? |
+|---|---|
+| ¿En qué turno cada rol compartió por primera vez algo de su vista privada? | **No.** Ocurre en voz alta y no pasa por ninguna pantalla |
+| ¿Cuántas decisiones se tomaron habiendo en la sala un dato que las desaconsejaba? | **No.** El motor sabe que el dato existía; no sabe si alguien lo dijo |
+| ¿Cuánto duró cada fase de verdad? | Sí, con **B1** |
+| ¿Alguien miró su pantalla en el minuto 4 de la deliberación? | **No** |
+
+Las tres filas con «No» son de una persona con un papel y un reloj. Es la parte
+del ejercicio que **no se automatiza**, y conviene decirlo en vez de fingir que
+un archivo la va a resolver.
+
+La hoja es una rejilla de ocho filas por cinco turnos y tres marcas:
+*habló de su vista* · *preguntó por la de otro* · *miró la pantalla mientras se
+deliberaba*.
+
+Depende de **A2**: probablemente quien opera la consola no puede además observar.
+
+
+---
+
+## Calibración — lo que solo se ve con gente dentro
+
+**Ningún coeficiente está medido.** Son convenciones declaradas, elegidas para
+que ninguna estrategia pura gane. El criterio es **por comportamiento, no por
+realismo**: no hay respuesta empírica a cuánta legitimidad cuesta un muerto, y no
+la va a haber.
+
+Medición actual con `--comparar`:
+
+```
+  estrategia      netas  reap  muert  legit  cohes  credib   resp
+  ---------------------------------------------------------------------
+  solo_fuerza         1     2     64     15      0      21     24
+  solo_mesa           5     4     64     59     56      29     49
+  constituida         3     1     48     24     74      21     38
+  humanitaria         3     0     16     32     28      35     50
+  logistica           3     1     24     41     40      26     39
+  pasiva              0     0     64     23     28      45     43
+```
+
+**Ninguna domina, que es el criterio.** `solo_mesa` abre más caminos y conserva
+las reservas — y deja morir a la misma gente que `pasiva`. `humanitaria` salva al
+75 % y lo paga en cohesión y en caminos. `constituida` tiene la mejor mesa y
+gasta legitimidad al operar. `solo_fuerza` se queda sin nada.
+
+**Los dos problemas que estaban medidos ya no lo están** — y no eran de
+coeficientes, eran piezas que faltaban. Ver «Lo que ya NO está pendiente».
+
+Quedan **tres cosas que solo se ven con personas dentro**:
+
+### C1 · ¿24 puntos son demasiados para 5 decisiones?
+
+Si la sala toca menos de diez, bajar a 16. El mapa esquemático puede cambiar esto
+en las dos direcciones: hace los 24 más manejables, o hace evidente que sobran.
+
+### C2 · ¿Da tiempo a que la mesa se rompa?
+
+Si la cohesión termina por encima de 55 casi siempre, subir la sensibilidad — o
+aceptar que un ejercicio de dos horas **mide la constitución de la mesa y no su
+desgaste**, que también es un objeto legítimo.
+
+### C3 · ¿Se cumplen los 13 minutos por turno?
+
+Con el minuto 0 de parte privado añadido, el turno es más apretado. Si no
+cuadra, el problema es de conducción y se corrige con guion, no con diseño.
+
+---
+
+
+---
+---
+
+# PARTE 3 · Decisiones que no son mías
+
+No son técnicas y no me corresponden. Cada una tiene consecuencias sobre el
+diseño, así que van con lo que se gana y lo que se pierde.
 
 ### A1 · ¿Cuántos dispositivos, o papel?
 
@@ -261,8 +573,6 @@ porque el motor identifica por código y no por nombre.
 
 ---
 
-## B · Código que falta
-
 ### A6 · ¿El mapa muestra dónde está la fuerza?
 
 **Quién decide:** el equipo docente. **Bloquea:** el papel de la Policía en la
@@ -291,132 +601,10 @@ Se decide mejor **después de P3**: si con tres personas nadie le pregunta nunca
 la Policía dónde tiene los escuadrones, la asimetría no está funcionando y da
 igual mostrarla.
 
-### B1 · Persistencia de la corrida
-
-**Dónde:** [`src/engine/simulation.py`](src/engine/simulation.py), en el
-constructor de `MotorCrisis`.
-
-El motor guarda `historial` en memoria y la semilla en el objeto. Al cerrar el
-proceso se pierde todo — y el debriefing dura veinte minutos, más que cualquier
-turno.
-
-Hace falta escribir a disco la semilla, el estado inicial, el log de acciones y
-los resultados por turno. Con eso **la corrida se repite con una decisión
-cambiada**, que es la mejor herramienta que este diseño ofrece y ahora mismo no
-se puede usar.
-
-### B2 · Las ocho fichas de rol, en datos
-
-**Dónde:** [`data/roles/`](data/roles/) (vacío)
-
-Las fichas del Manual y sus RADs viven hoy fuera del repositorio. Deben entrar
-como datos, no como código, por la misma razón que el escenario: **lo que se
-duplique entre los datos y el prompt de un modelo se desincroniza. Siempre.**
-
-Incluye la **agenda reservada** de cada rol —el apartado 11 del Manual—, que va
-en sobre sellado y en papel: se juega, no se enuncia.
-
-Depende de **A5** (nombres).
-
-### B3 · Telemetría por turno
-
-**Dónde:** no existe
-
-Un evento canónico por turno, en JSONL. Sin eso, medir el ejercicio es
-arqueología: cruzar a mano dos archivos que nunca se diseñaron para cruzarse.
-
-Con la v2 hay dos métricas nuevas que solo existen si esto existe: **en qué turno
-cada rol compartió por primera vez algo de su vista**, y **cuántas decisiones se
-tomaron habiendo en la sala un dato que las desaconsejaba**.
-
-> **Cuidado:** anotar el dato en el código no basta. Hay que comprobar que
-> **llega al archivo**. En la simulación anterior, dos campos se perdían en la
-> serialización sin que ninguna prueba lo detectara, porque las pruebas miraban
-> el código y no el dato de salida.
-
-### B4 · El hecho H1 del paquete detonante
-
-**Dónde:** [`src/engine/loader.py`](src/engine/loader.py) ·
-`proximidad_infra_critica` en el escenario
-
-De los cuatro hechos que abren el turno 1, tres están: **H2** (las dos denuncias,
-una cierta y una falsa), **H3** (el ultimátum gremial de 48 horas) y **H4** (la
-región que cruza los dos días de oxígeno).
-
-Falta **H1**: el incidente nocturno junto a una instalación de combustible, con
-un herido grave de la fuerza pública. Los tres puntos contiguos a infraestructura
-crítica ya están marcados en los datos; falta el evento que los active.
-
-### B5 · Presupuesto de latencia, medido
-
-**Dónde:** [`src/agents/entorno.py`](src/agents/entorno.py) y
-[`src/agents/nlu.py`](src/agents/nlu.py)
-
-Hay timeout duro y degradación a plantilla, que es lo importante. Lo que falta es
-**medir cuánto tarda de verdad** con el modelo puesto: la fase de consecuencias
-dura sesenta segundos con ocho personas mirando la pantalla.
-
-Se mide en la prueba **P2**, cronómetro en mano.
-
-### B6 · El guion de la sesión
-
-**Dónde:** fuera del código
-
-Qué se dice en el turno 0 —incluida la declaración expresa sobre el alcance del
-ejercicio—, cómo se abre el debriefing, y qué se hace si la sala se queda sin
-órdenes al terminar los seis minutos.
 
 ---
 
-## C · Calibración
-
-**Ningún coeficiente está medido.** Son convenciones declaradas, elegidas para
-que ninguna estrategia pura gane. El criterio es **por comportamiento, no por
-realismo**: no hay respuesta empírica a cuánta legitimidad cuesta un muerto, y no
-la va a haber.
-
-Medición actual con `--comparar`:
-
-```
-  estrategia      netas  reap  muert  legit  cohes  credib   resp
-  ---------------------------------------------------------------------
-  solo_fuerza         1     2     64     15      0      21     24
-  solo_mesa           5     4     64     59     56      29     49
-  constituida         3     1     48     24     74      21     38
-  humanitaria         3     0     16     32     28      35     50
-  logistica           3     1     24     41     40      26     39
-  pasiva              0     0     64     23     28      45     43
-```
-
-**Ninguna domina, que es el criterio.** `solo_mesa` abre más caminos y conserva
-las reservas — y deja morir a la misma gente que `pasiva`. `humanitaria` salva al
-75 % y lo paga en cohesión y en caminos. `constituida` tiene la mejor mesa y
-gasta legitimidad al operar. `solo_fuerza` se queda sin nada.
-
-**Los dos problemas que estaban medidos ya no lo están** — y no eran de
-coeficientes, eran piezas que faltaban. Ver «Lo que ya NO está pendiente».
-
-Quedan **tres cosas que solo se ven con personas dentro**:
-
-### C1 · ¿24 puntos son demasiados para 5 decisiones?
-
-Si la sala toca menos de diez, bajar a 16. El mapa esquemático puede cambiar esto
-en las dos direcciones: hace los 24 más manejables, o hace evidente que sobran.
-
-### C2 · ¿Da tiempo a que la mesa se rompa?
-
-Si la cohesión termina por encima de 55 casi siempre, subir la sensibilidad — o
-aceptar que un ejercicio de dos horas **mide la constitución de la mesa y no su
-desgaste**, que también es un objeto legítimo.
-
-### C3 · ¿Se cumplen los 13 minutos por turno?
-
-Con el minuto 0 de parte privado añadido, el turno es más apretado. Si no
-cuadra, el problema es de conducción y se corrige con guion, no con diseño.
-
----
-
-## D · Fuera del código
+## Fuera del código
 
 - **El protocolo de los sobres.** La agenda reservada en papel depende de que
   nadie pase la hoja. Con ocho personas y un facilitador es sostenible; no
@@ -426,6 +614,7 @@ cuadra, el problema es de conducción y se corrige con guion, no con diseño.
 - **Qué se dice sobre el azar.** *«El azar nunca decide si algo era buena idea;
   decide si esta vez salió mal, y la probabilidad se muestra antes.»*
 
+---
 ---
 
 ## Lo que ya NO está pendiente
