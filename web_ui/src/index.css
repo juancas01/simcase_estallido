@@ -470,3 +470,254 @@ a { color: var(--acento); }
   font-size: 0.72rem;
   color: var(--texto-3);
 }
+
+/* ---------------------------------------------------------------------------
+   LA FRANJA DE RELOJ
+
+   Tres zonas: la fecha, las nueve ventanas del ejercicio y los cabos sueltos.
+   Va arriba del todo porque el plazo condiciona la jugada tanto como el dato:
+   una concertación tarda dos turnos y no cabe en la jornada 5.
+   --------------------------------------------------------------------------- */
+
+.reloj {
+  display: grid;
+  grid-template-columns: minmax(200px, auto) minmax(170px, 1fr) minmax(235px, auto);
+  gap: 1rem 2.25rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 0.8rem 1.15rem;
+  border: 1px solid var(--borde);
+  border-left: 3px solid var(--acento);
+  border-radius: 8px;
+  background: var(--superficie);
+}
+
+/* De noche no se delibera: se sufre. Lo abierto por la fuerza vuelve a
+   cerrarse y el riesgo se multiplica por 1,6. Si la franja cambia de color,
+   nadie tiene que explicarlo dos veces. */
+.reloj.es-noche {
+  border-left-color: var(--medio);
+  background: linear-gradient(110deg, #12141c, var(--superficie) 45%);
+}
+
+.reloj-fecha {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: 0.15rem;
+  font-size: 1.35rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+.reloj-franja { font-size: 0.6rem; }
+
+.reloj-horas {
+  margin-top: 0.15rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--texto-2);
+}
+.reloj-transcurrido {
+  margin-left: 0.6rem;
+  padding-left: 0.6rem;
+  border-left: 1px solid var(--borde);
+  color: var(--texto-3);
+}
+
+/* --- las nueve ventanas ---------------------------------------------------- */
+
+.jornadas { display: flex; gap: 0.4rem; }
+
+.jornada { flex: 1 1 0; min-width: 26px; max-width: 78px; }
+
+.jornada-barras { display: flex; flex-direction: column; gap: 3px; }
+
+.ventana {
+  display: block;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--superficie-2);
+  border: 1px solid var(--borde-suave);
+}
+.ventana.cumplida { background: var(--texto-3); border-color: var(--texto-3); }
+.ventana.actual {
+  background: var(--acento);
+  border-color: var(--acento);
+  box-shadow: 0 0 0 2px var(--acento-suave);
+}
+/* La jornada 5 no tiene noche: el ejercicio termina con ella. */
+.ventana.vacia { visibility: hidden; }
+
+.jornada-fecha {
+  margin-top: 0.3rem;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  text-align: center;
+  color: var(--texto-3);
+}
+.jornada.es-actual .jornada-fecha { color: var(--texto); font-weight: 700; }
+
+/* --- los cabos sueltos ----------------------------------------------------- */
+
+.pendientes { display: flex; flex-direction: column; gap: 0.1rem; }
+
+.pendiente {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.9rem;
+  font-size: 0.78rem;
+  color: var(--texto-3);
+}
+.pendiente.hay { color: var(--texto-2); }
+
+.pendiente-n {
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--texto-3);
+}
+.pendiente.hay .pendiente-n { color: var(--medio); }
+
+.pendiente-de { font-size: 0.76rem; font-weight: 400; color: var(--texto-3); }
+
+@media (max-width: 1000px) {
+  .reloj { grid-template-columns: 1fr; }
+}
+
+/* ---------------------------------------------------------------------------
+   EL DELTA — cuánto se movió desde la última vez que la sala miró
+   --------------------------------------------------------------------------- */
+
+.delta {
+  margin-left: 0.35rem;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  vertical-align: 0.08em;
+}
+.delta-bien { color: var(--bien); }
+.delta-mal  { color: var(--mal); }
+
+/* ---------------------------------------------------------------------------
+   LAS CIFRAS DESTACADAS
+   --------------------------------------------------------------------------- */
+
+.cifra-grave,
+.cifra-recurso {
+  font-family: var(--mono);
+  font-size: 2.1rem;
+  font-weight: 650;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--texto);
+}
+/* Cero no es un logro que celebrar: es la línea de partida. Solo se tiñe
+   cuando deja de serlo. */
+.cifra-grave.hay { color: var(--mal); }
+
+.cifra-total { font-size: 1rem; color: var(--texto-3); margin-left: 0.2rem; }
+
+.pie-cifra {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  color: var(--texto-2);
+}
+.pie-aviso {
+  margin: 0.4rem 0 0;
+  font-size: 0.78rem;
+  color: var(--medio);
+}
+
+/* ---------------------------------------------------------------------------
+   EL TERRITORIO — mapa acotado, y la tabla de al lado como leyenda
+   --------------------------------------------------------------------------- */
+
+.territorio {
+  display: grid;
+  grid-template-columns: minmax(0, 230px) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+@media (max-width: 1000px) {
+  .territorio { grid-template-columns: 1fr; gap: 1rem; }
+}
+
+/* El mapa tenía `height: auto` sobre un lienzo casi cuadrado: a ancho completo
+   se comía la pantalla. Acotarlo en alto es lo que lo devuelve a su sitio. */
+.mapa-svg {
+  display: block;
+  width: 100%;
+  height: clamp(150px, 21vh, 235px);
+}
+
+.mapa-formas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.7rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--borde-suave);
+  font-size: 0.7rem;
+  color: var(--texto-3);
+}
+
+/* La tinta del corredor, la misma del mapa. */
+.tinta {
+  display: inline-block;
+  width: 12px;
+  height: 3px;
+  border-radius: 2px;
+  margin-right: 0.5rem;
+  vertical-align: 0.18em;
+}
+
+.punto-detalle {
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--acento);
+  border-radius: 6px;
+  background: var(--acento-suave);
+}
+.punto-nombre { font-size: 0.88rem; font-weight: 650; }
+.punto-sub { margin-top: 0.2rem; font-size: 0.82rem; color: var(--texto-2); }
+
+/* ---------------------------------------------------------------------------
+   LA FRANJA DE SEVERIDAD DE UNA FILA
+
+   Peor primero ordena; la franja marca. Codificar el estado en la FORMA y no
+   solo en el número es lo que hace que una tabla se lea de un vistazo desde el
+   fondo de una sala.
+   --------------------------------------------------------------------------- */
+
+tr.grave > td:first-child { box-shadow: inset 3px 0 0 var(--mal); }
+tr.aviso > td:first-child { box-shadow: inset 3px 0 0 var(--medio); }
+tr.grave > td:first-child,
+tr.aviso > td:first-child { padding-left: 0.65rem; }
+
+.mapa-titulo { display: block; margin-bottom: 0.4rem; }
+
+/* ---------------------------------------------------------------------------
+   LA BANDA DE MAGNITUDES
+
+   Tres anchos distintos a propósito: lo irreversible y las reservas son lo que
+   se lee, la fuerza es un recuento. Rejilla propia y no `.rejilla`, porque
+   `auto-fit` reparte a partes iguales y aquí las partes no son iguales.
+   --------------------------------------------------------------------------- */
+
+.banda {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 2fr) minmax(0, 0.62fr);
+  gap: 1rem;
+}
+@media (max-width: 1150px) {
+  .banda { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .banda > :nth-child(2) { grid-column: 1 / -1; order: -1; }
+}
+@media (max-width: 620px) {
+  .banda { grid-template-columns: 1fr; }
+}

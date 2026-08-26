@@ -114,7 +114,32 @@ export function Cargando({ error }) {
   )
 }
 
-export function Barra({ nombre, valor, nivel, ayuda }) {
+/**
+ * Cuánto se movió la magnitud en el último paso.
+ *
+ * **Es la señal más barata del tablero y la que más señala.** `Legitimidad 41`
+ * no le dice nada a quien no memorizó el punto de partida. `41 ▼9` le dice que
+ * algo de lo que se hizo anoche costó nueve puntos: apunta al problema y no
+ * nombra el remedio, que es exactamente lo que el tablero tiene que hacer.
+ *
+ * Si no se movió, NO se dibuja nada. Una fila de guiones en una pared es ruido,
+ * y la ausencia de marca ya significa «esto sigue igual».
+ */
+export function Delta({ valor, sentido = 'arriba_mejor', decimales = 0 }) {
+  if (valor === undefined || valor === null) return null
+  const v = Number(valor)
+  if (!Number.isFinite(v) || Math.abs(v) < 0.05) return null
+
+  const sube = v > 0
+  const bueno = sentido === 'arriba_mejor' ? sube : !sube
+  return (
+    <span className={`delta delta-${bueno ? 'bien' : 'mal'}`}>
+      {sube ? '▲' : '▼'}{Math.abs(v).toFixed(decimales)}
+    </span>
+  )
+}
+
+export function Barra({ nombre, valor, nivel, ayuda, delta, sentido }) {
   return (
     <div className="reserva">
       <div className="reserva-fila">
@@ -124,6 +149,7 @@ export function Barra({ nombre, valor, nivel, ayuda }) {
         </span>
         <span className="reserva-valor" style={{ color: COLOR_NIVEL[nivel] }}>
           {Math.round(valor)}
+          <Delta valor={delta} sentido={sentido} />
         </span>
       </div>
       <div className="barra">

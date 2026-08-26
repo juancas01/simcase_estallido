@@ -687,3 +687,104 @@ def test_los_puntos_duros_no_tienen_con_quien_hablar():
     voc_duros = sum(n.control_voceria for n in duros) / 5
     voc_blandos = sum(n.control_voceria for n in blandos) / 5
     assert voc_duros < voc_blandos - 0.2
+
+
+# ===========================================================================
+# El reloj y los deltas — las dos señales que orientan el tablero
+# ===========================================================================
+
+def test_el_reloj_recorre_las_cinco_jornadas_de_mayo():
+    """
+    Cinco jornadas del 11 al 15 de mayo en turnos de doce horas que alternan día
+    y noche (docs/propuesta.md § 2.7). La noche cruza la medianoche.
+
+    Vive en el motor y no en la interfaz porque cuatro superficies calculando
+    cada una su propia hora son cuatro relojes, y en una sala con dos proyectores
+    la discrepancia se ve el primer turno.
+    """
+    e = cargar_estado()
+    m = MotorCrisis(e)
+
+    assert e.reloj()["fecha"] == "11 de mayo"
+    assert e.reloj()["jornada"] == 0            # antes de la apertura
+
+    esperado = [
+        ("dia",   1, "11 de mayo", "06:00", 0),
+        ("noche", 1, "11 de mayo", "18:00", 12),
+        ("dia",   2, "12 de mayo", "06:00", 24),
+        ("noche", 2, "12 de mayo", "18:00", 36),
+        ("dia",   3, "13 de mayo", "06:00", 48),
+    ]
+    for franja, jornada, fecha, hora, horas in esperado:
+        m.paso(franja)
+        r = e.reloj()
+        assert (r["franja"], r["jornada"], r["fecha"], r["hora_inicio"]) == \
+               (franja, jornada, fecha, hora)
+        assert r["horas_transcurridas"] == horas
+
+    # La noche cruza la medianoche; el día no.
+    m.paso("noche")
+    assert e.reloj()["cruza_medianoche"] is True
+    assert e.reloj()["fecha_fin"] == "14 de mayo"
+
+
+def test_la_ultima_jornada_no_tiene_noche():
+    """
+    Nueve ventanas y no diez: el ejercicio cierra con la jornada 5. Si la línea
+    dibujara una décima, la sala contaría con un interludio que no existe.
+    """
+    e = cargar_estado()
+    linea = e.reloj()["linea"]
+    assert len(linea) == P.TURNOS_DECISION
+    assert linea[-1]["noche"] is None
+    assert all(j["noche"] is not None for j in linea[:-1])
+    assert e.reloj()["ventanas_totales"] == P.VENTANAS_TOTALES == 9
+
+
+def test_el_delta_mide_el_ultimo_paso_y_no_la_corrida():
+    """
+    `Legitimidad 41` no le dice nada a quien no memorizó el punto de partida.
+    `41 ▼9` le dice que algo de anoche costó nueve puntos.
+
+    La propiedad que importa: el delta es la diferencia contra el paso ANTERIOR,
+    no contra el arranque. Si acumulara, dejaría de señalar en el turno 3.
+    """
+    e = cargar_estado()
+    m = MotorCrisis(e)
+    assert m.deltas() == {}, "sin historial no hay contra qué comparar"
+
+    m.paso("dia")
+    antes = e.reservas.cohesion_mesa
+    d1 = m.deltas()
+    assert d1["cohesion_mesa"] != 0, "el primer turno compara contra la línea base"
+
+    m.paso("dia")
+    d2 = m.deltas()
+    assert d2["cohesion_mesa"] == pytest.approx(
+        e.reservas.cohesion_mesa - antes, abs=0.05)
+
+
+def test_el_delta_no_abre_una_puerta_trasera_a_lo_oculto():
+    """
+    **La invariante más importante de esta capa.** El tablero no muestra la
+    mezcla real de un punto ni la veracidad de una denuncia; un delta calculado
+    sobre esas magnitudes las filtraría igual de bien que mostrarlas.
+
+    Por eso `_indicadores()` se restringe a lo que `vista_publica()` ya serializa.
+    """
+    e = cargar_estado()
+    m = MotorCrisis(e)
+    m.paso("dia")
+    m.paso("noche")
+
+    prohibido = ("composicion", "veraz", "veracidad", "estructura",
+                 "protesta", "infiltra", "dureza")
+    for clave in {**m.deltas(), **m.historial[-1].indicadores}:
+        assert not any(p in clave.lower() for p in prohibido), clave
+
+    # Y lo que sí lleva es exactamente lo que la sala ya ve.
+    publicas = {"legitimidad", "credibilidad_mesa", "respaldo_internacional",
+                "cohesion_mesa", "presion_calle", "muertes_evitables",
+                "esmad_sin_comprometer", "puntos_abiertos"}
+    caudales = {f"caudal:{c}" for c in e.corredores}
+    assert set(m.historial[-1].indicadores) == publicas | caudales

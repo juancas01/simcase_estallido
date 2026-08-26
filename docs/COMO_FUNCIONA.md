@@ -215,6 +215,53 @@ porque el número cambió y solo él tiene el nuevo.
 - `test_las_ocho_vistas_privadas_tampoco_la_exponen`
 - `test_solo_minas_ve_los_dias_exactos`
 
+### Cómo el tablero señala un problema sin decir qué hacer
+
+Es la tensión que gobierna el diseño de la superficie 1, y no tiene término
+medio posible:
+
+| Si el tablero… | Lo que pasa |
+|---|---|
+| dice «abra el corredor hospitalario» | el ejercicio se acabó: el tablero pensó por la sala |
+| es un muro de números iguales | nadie se entera de nada en seis minutos de deliberación |
+
+La salida no es un punto intermedio: es **cambiar de mecanismo**.
+
+> **SALIENCIA, NO INSTRUCCIÓN.**
+
+Cuatro palancas, y las cuatro enuncian hechos. Ninguna nombra un remedio.
+
+**1 · El cambio, no el nivel.** `Legitimidad 41` no le dice nada a quien no
+memorizó el punto de partida. `41 ▼9` le dice que algo de anoche costó nueve
+puntos. Es la señal más barata del tablero y la que más apunta.
+
+`MotorCrisis.deltas()` compara contra el paso **anterior**, no contra el arranque:
+si acumulara, dejaría de señalar en el turno 3.
+
+**2 · El plazo.** «Turno 3» es neutro. «Jornada 3 de 5» es una presión — y una
+concertación que tarda dos turnos en rendir no cabe en la jornada 5. El reloj
+dice cuánto queda; qué hacer con eso es de la sala.
+
+`Estado.reloj()` vive en el motor y no en la interfaz. Cuatro superficies
+calculando cada una su propia hora son cuatro relojes, y con dos proyectores la
+discrepancia se ve el primer turno.
+
+**3 · El orden.** Corredores y regiones van **peor primero**. El ojo aterriza
+arriba a la izquierda y ahí está el problema, sin que nadie lo señale. La
+memoria espacial que se pierde la devuelve el mapa.
+
+**4 · Lo que falta, contado.** Puntos que nadie ha verificado, denuncias
+abiertas, decisiones sin responsable — en fracción, porque `24` no dice si la
+sala avanza y `9/24` tres turnos después sí.
+
+> **La distancia entre «3 puntos sin verificar» y «verifique P7» es la distancia
+> entre un ejercicio y un tutorial.**
+
+**Y el delta no abre una puerta trasera.** `_indicadores()` se restringe a lo que
+`vista_publica()` ya serializa: un delta calculado sobre la mezcla real de un
+punto la filtraría igual de bien que mostrarla. Lo custodia
+`test_el_delta_no_abre_una_puerta_trasera_a_lo_oculto`.
+
 ---
 ---
 

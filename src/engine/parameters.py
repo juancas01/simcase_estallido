@@ -22,6 +22,15 @@ TURNOS_DECISION = 5          # turnos de día, con deliberación
 HORAS_POR_TURNO = 12         # cada turno cubre media jornada
 FECHA_INICIO = "2021-05-11T06:00"
 
+# Cinco jornadas del 11 al 15 de mayo, en turnos de doce horas que alternan día
+# y noche (docs/propuesta.md § 2.7). De ahí que el ejercicio tenga DIEZ ventanas
+# de tiempo y no cinco: cinco de deliberación y cuatro interludios que se sufren.
+#
+# El reloj se calcula en `Estado.reloj()` y no en la interfaz. Un reloj calculado
+# en cada pantalla es un reloj por pantalla, y en una sala con cuatro
+# proyecciones eso se nota el primer turno.
+VENTANAS_TOTALES = TURNOS_DECISION * 2 - 1   # 5 días + 4 noches
+
 # Minutos de mundo real por fase (el presupuesto de 120 min, §6.2 de la v2)
 MIN_PARTE_PRIVADO = 1
 MIN_INSTALACION = 12

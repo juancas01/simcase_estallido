@@ -38,6 +38,9 @@ class ResultadoTurno:
     resultados: list[tuple[str, Resultado]] = field(default_factory=list)
     eventos: list[dict] = field(default_factory=list)
     reservas: dict = field(default_factory=dict)
+    # Foto de TODAS las magnitudes del tablero al cerrar el paso. Es lo que
+    # permite decir qué cambió, y un número solo nunca dice eso.
+    indicadores: dict = field(default_factory=dict)
     umbrales_cruzados: list[str] = field(default_factory=list)
     resumen: str = ""
 
@@ -69,6 +72,11 @@ class MotorCrisis:
         # cambiada — que es la mejor herramienta del debriefing.
         self.historial: list[ResultadoTurno] = []
         self.lineas_declaradas: dict[str, str] = {}
+
+        # La foto de partida. Sin ella el primer turno no tendría contra qué
+        # compararse, y el primer turno es justo donde la sala aún no sabe qué
+        # es normal en este tablero.
+        self._indicadores_t0 = self._indicadores()
 
     # ------------------------------------------------------------------
     # Turno 0 — instalación
@@ -182,11 +190,45 @@ class MotorCrisis:
 
         res.eventos = list(e.eventos_turno)
         res.reservas = self._reservas_dict()
+        res.indicadores = self._indicadores()
         res.resumen = self._resumen(res)
         self.historial.append(res)
         return res
 
     # ------------------------------------------------------------------
+
+    def _indicadores(self) -> dict:
+        """
+        Foto de las magnitudes que ve la sala, para poder restarlas después.
+
+        No incluye nada que el tablero no muestre: sin mezcla real de un punto y
+        sin veracidad de ninguna denuncia. Un delta también filtra.
+        """
+        e = self.estado
+        d = self._reservas_dict()
+        d["presion_calle"] = round(e.intensidad_nacional, 1)
+        d["muertes_evitables"] = float(e.muertes_evitables_total())
+        d["esmad_sin_comprometer"] = float(len(e.esmad_en_reserva()))
+        d["puntos_abiertos"] = float(len(e.nodos_abiertos()))
+        for c in e.corredores.values():
+            d[f"caudal:{c.corredor_id}"] = round(c.caudal_efectivo(e.nodos), 3)
+        return d
+
+    def deltas(self) -> dict:
+        """
+        Cuánto se movió cada magnitud en el último paso.
+
+        Es la señal más barata del tablero y la que más señala. `Legitimidad 41`
+        no le dice nada a quien no memorizó el punto de partida; `41 ▼9` le dice
+        que algo de lo que hizo anoche costó nueve puntos. **Apunta al problema
+        sin nombrar el remedio**, que es exactamente lo que el tablero debe hacer.
+        """
+        if not self.historial:
+            return {}
+        ahora = self.historial[-1].indicadores
+        antes = (self.historial[-2].indicadores if len(self.historial) >= 2
+                 else self._indicadores_t0)
+        return {k: round(v - antes[k], 2) for k, v in ahora.items() if k in antes}
 
     def _reservas_dict(self) -> dict:
         r = self.estado.reservas

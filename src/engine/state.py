@@ -21,6 +21,7 @@ nombres legibles fuera del motor.
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
+from datetime import datetime, timedelta
 from typing import Literal
 
 from src.engine import parameters as P
@@ -434,6 +435,67 @@ class Estado:
     def nodos_de_region(self, region_id: str) -> list[Nodo]:
         return [n for n in self.nodos.values() if n.region_id == region_id]
 
+    # ---------------------------------------------------------------- reloj
+
+    def reloj(self) -> dict:
+        """
+        Qué hora es dentro del ejercicio.
+
+        Cinco jornadas del 11 al 15 de mayo en turnos de doce horas que alternan
+        día y noche. La noche cruza la medianoche: la de la jornada 2 va del 12 a
+        las 18:00 al 13 a las 06:00.
+
+        VIVE EN EL MOTOR, no en la interfaz. Cuatro superficies calculando cada
+        una su propia hora son cuatro relojes, y en una sala con dos proyectores
+        la discrepancia se ve el primer turno.
+
+        Y no es adorno. Con cinco jornadas, **saber cuántas quedan cambia lo que
+        se decide**: una concertación tarda dos turnos, de modo que abrirla en la
+        jornada 5 es no abrirla. El reloj dice el plazo; qué hacer con él es de
+        la sala.
+        """
+        de_dia = self.franja == "dia"
+        jornada = max(1, self.turno_decision)
+
+        # Ventana actual: turno 1 = día 1, turno 2 = noche 1, turno 3 = día 2…
+        horas = max(0, self.turno - 1) * P.HORAS_POR_TURNO
+        inicio = datetime.fromisoformat(P.FECHA_INICIO) + timedelta(hours=horas)
+        fin = inicio + timedelta(hours=P.HORAS_POR_TURNO)
+
+        return {
+            "jornada": self.turno_decision,      # 0 antes de empezar
+            "jornadas_totales": P.TURNOS_DECISION,
+            "jornadas_restantes": max(0, P.TURNOS_DECISION - self.turno_decision),
+            "franja": self.franja,
+            "fecha": _fecha_larga(inicio),
+            "fecha_fin": _fecha_larga(fin),
+            "cruza_medianoche": inicio.day != fin.day,
+            "hora_inicio": inicio.strftime("%H:%M"),
+            "hora_fin": fin.strftime("%H:%M"),
+            "horas_transcurridas": horas,
+            "ventana": self.turno,               # 1..9; 0 antes de empezar
+            "ventanas_totales": P.VENTANAS_TOTALES,
+            # Para pintar la barra de jornadas sin que la interfaz reconstruya
+            # el calendario por su cuenta.
+            "linea": [
+                {
+                    "jornada": j,
+                    "fecha": _fecha_corta(
+                        datetime.fromisoformat(P.FECHA_INICIO) + timedelta(days=j - 1)),
+                    "dia": _estado_ventana(self.turno, 2 * j - 1),
+                    "noche": (_estado_ventana(self.turno, 2 * j)
+                              if j < P.TURNOS_DECISION else None),
+                }
+                for j in range(1, P.TURNOS_DECISION + 1)
+            ],
+            # Redundante con `jornada` y `franja`, pero es la línea que se lee en
+            # voz alta y no conviene que cada pantalla la componga a su manera.
+            "etiqueta": (
+                "antes de la apertura" if self.turno_decision == 0
+                else f"jornada {jornada} · {'día' if de_dia else 'noche'}"
+            ),
+        }
+
     def muertes_evitables_total(self) -> int:
         return sum(r.muertes_evitables for r in self.regiones.values())
 
@@ -478,6 +540,7 @@ class Estado:
             "turno": self.turno,
             "turno_decision": self.turno_decision,
             "franja": self.franja,
+            "reloj": self.reloj(),
             "reservas": asdict(self.reservas),
             "presion_calle": round(self.intensidad_nacional, 1),
             "posicion_gremios": self.posicion_gremios,
@@ -543,3 +606,32 @@ class Estado:
         if n.caudal > 0.05:
             return "parcial"
         return "cerrado"
+
+
+# ---------------------------------------------------------------------------
+# Formato de fechas
+# ---------------------------------------------------------------------------
+#
+# Sin año y sin día de la semana, a propósito. El año anclaría un territorio
+# ficticio a un expediente real; el día de la semana sería una señal falsa,
+# porque el motor no distingue un martes de un domingo.
+
+MESES = ("enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
+         "agosto", "septiembre", "octubre", "noviembre", "diciembre")
+
+
+def _fecha_larga(t: datetime) -> str:
+    return f"{t.day} de {MESES[t.month - 1]}"
+
+
+def _fecha_corta(t: datetime) -> str:
+    return f"{t.day}"
+
+
+def _estado_ventana(actual: int, ventana: int) -> str:
+    """`cumplida`, `actual` o `pendiente`. Es lo que hace legible el plazo."""
+    if actual == 0:
+        return "pendiente"
+    if ventana < actual:
+        return "cumplida"
+    return "actual" if ventana == actual else "pendiente"

@@ -24,7 +24,7 @@
 import Ayuda from './Ayuda'
 import { D } from '../definiciones.jsx'
 
-const COLOR_CORREDOR = {
+export const COLOR_CORREDOR = {
   'C-PUE': '#7aa5e8',
   'C-SUR': '#4fb286',
   'C-HOS': '#c98ae0',
@@ -60,20 +60,19 @@ export default function MapaEsquematico({ tablero, seleccionado, onSeleccionar }
   const regiones = Object.fromEntries((tablero.regiones || []).map(r => [r.region_id, r]))
 
   return (
-    <div className="tarjeta" style={{ padding: '0.9rem 1rem 0.6rem' }}>
-      <div style={{
-        display: 'flex', justifyContent: 'space-between',
-        alignItems: 'baseline', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem',
-      }}>
-        <h2 style={{ margin: 0 }}>
-          Mapa de corredores
-          <Ayuda etiqueta="Qué representa este esquema">{D.mapa}</Ayuda>
-        </h2>
+    <div className="mapa">
+      <div className="eyebrow mapa-titulo">
+        Esquema
+        <Ayuda etiqueta="Qué representa este esquema">{D.mapa}</Ayuda>
       </div>
-
+      {/* La altura está ACOTADA a propósito. Con `height: auto` y un lienzo casi
+          cuadrado, el mapa ocupaba el ancho entero del tablero y se comía la
+          pantalla: era la pieza más grande y no es la más importante.
+          `preserveAspectRatio` lo centra dentro del hueco sin deformarlo. */}
       <svg
         viewBox={`${-VB.pad} ${-VB.pad} ${VB.w + VB.pad * 2} ${VB.h + VB.pad * 2}`}
-        style={{ width: '100%', height: 'auto', display: 'block' }}
+        className="mapa-svg"
+        preserveAspectRatio="xMidYMid meet"
         role="img"
         aria-label="Esquema de los cinco corredores y sus puntos de cierre"
       >
@@ -160,36 +159,23 @@ export default function MapaEsquematico({ tablero, seleccionado, onSeleccionar }
         })}
       </svg>
 
-      <Leyenda corredores={corredores} />
+      <Formas />
     </div>
   )
 }
 
-function Leyenda({ corredores }) {
+/**
+ * Solo la clave de FORMAS. Los nombres de los corredores los pone la tabla de al
+ * lado, con su misma tinta: dos leyendas de lo mismo son una de más.
+ */
+function Formas() {
   return (
-    <div style={{
-      display: 'flex', flexWrap: 'wrap', gap: '0.35rem 1rem',
-      paddingTop: '0.55rem', borderTop: '1px solid var(--borde-suave)',
-      fontSize: '0.72rem', color: 'var(--texto-3)',
-    }}>
-      {corredores.map(c => (
-        <span key={c.corredor_id} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-          <span style={{
-            width: 12, height: 2.5, borderRadius: 2,
-            background: COLOR_CORREDOR[c.corredor_id],
-            opacity: c.caudal > 0.05 ? 1 : 0.35,
-          }} />
-          {c.nombre}
-        </span>
-      ))}
-      <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center',
-                     gap: '0.75rem' }}>
-        <span>● cerrado</span>
-        <span>◆ por fuerza</span>
-        <span>■ pactado</span>
-        <span>? sin verificar</span>
-        <Ayuda etiqueta="Qué significa cada forma">{D.formas_mapa}</Ayuda>
-      </span>
+    <div className="mapa-formas">
+      <span>● cerrado</span>
+      <span>◆ fuerza</span>
+      <span>■ pactado</span>
+      <span>? sin ver</span>
+      <Ayuda etiqueta="Qué significa cada forma">{D.formas_mapa}</Ayuda>
     </div>
   )
 }

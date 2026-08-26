@@ -76,6 +76,10 @@ def tablero():
     d["congelado"] = sala["congelado"]
     d["fase"] = sala["fase"]
     d["registro"] = [asdict(x) for x in _estado.registro[-12:]]
+    # Qué se movió desde la última vez que la sala miró. Un delta no revela nada
+    # que el valor actual no revelara ya: se calcula sobre las mismas magnitudes
+    # que `vista_publica()` serializa, ni una más.
+    d["deltas"] = motor.deltas()
     return d
 
 

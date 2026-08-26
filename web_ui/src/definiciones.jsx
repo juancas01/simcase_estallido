@@ -18,6 +18,86 @@
 
 export const D = {
 
+  // --- el reloj y el plazo --------------------------------------------------
+
+  reloj: (
+    <>
+      <p>
+        <strong>Cinco jornadas, del 11 al 15 de mayo</strong>, en turnos de doce
+        horas que alternan día y noche. Nueve ventanas en total: cinco de
+        deliberación y cuatro interludios nocturnos.
+      </p>
+      <dl>
+        <dt>día</dt>
+        <dd>06:00 – 18:00 · se delibera, se ordena, la mesa está disponible</dd>
+        <dt>noche</dt>
+        <dd>
+          18:00 – 06:00 · no se delibera. Lo abierto por la fuerza vuelve a
+          cerrarse y el riesgo de incidente se multiplica por 1,6
+        </dd>
+      </dl>
+      <p>
+        El plazo condiciona la jugada tanto como el dato: una concertación tarda
+        dos turnos en rendir, de modo que abrirla en la jornada 5 es no abrirla.
+      </p>
+    </>
+  ),
+
+  linea_jornadas: (
+    <>
+      <p>
+        <strong>Las nueve ventanas del ejercicio.</strong> La barra superior de
+        cada columna es el día; la inferior, la noche que le sigue.
+      </p>
+      <dl>
+        <dt>llena</dt><dd>ventana ya resuelta</dd>
+        <dt>azul</dt><dd>la ventana en curso</dd>
+        <dt>vacía</dt><dd>pendiente</dd>
+      </dl>
+      <p>La jornada 15 no tiene noche: el ejercicio cierra con ella.</p>
+    </>
+  ),
+
+  sin_cerrar: (
+    <>
+      <p>
+        <strong>Lo que sigue abierto</strong>, contado. Puntos que nadie ha
+        verificado en campo, denuncias graves cuya veracidad no se ha
+        establecido, y decisiones registradas sin responsable nominado.
+      </p>
+      <p>
+        Son hechos sobre el estado del expediente, no una lista de tareas. Qué
+        hacer con cada uno —y si vale la pena— es de la mesa.
+      </p>
+    </>
+  ),
+
+  coste_humano: (
+    <>
+      <p>
+        <strong>Las dos magnitudes que no perdonan.</strong>
+      </p>
+      <p>
+        Las muertes evitables son un acumulador irreversible: no descienden
+        nunca, hagan lo que hagan los turnos siguientes. La presión en la calle
+        sí baja, pero solo con decisiones, y con rendimientos decrecientes.
+      </p>
+    </>
+  ),
+
+  delta: (
+    <>
+      <p>
+        <strong>Cuánto se movió la magnitud</strong> desde la última vez que la
+        sala miró, es decir, en la última ventana resuelta.
+      </p>
+      <p>
+        Una magnitud sin marca no se movió. El color indica si el movimiento fue
+        a favor o en contra, no si la decisión que lo produjo fue acertada.
+      </p>
+    </>
+  ),
+
   // --- las cinco magnitudes del tablero ------------------------------------
 
   presion_calle: (

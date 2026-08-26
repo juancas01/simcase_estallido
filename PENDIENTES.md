@@ -126,6 +126,19 @@ encima, al llegar con el tabulador o al tocarla.
   debería estar impreso y no en el globo.
 - ¿Alguna marca interrumpe la lectura del número en vez de acompañarla?
 
+**Y la que mide si el tablero apunta sin mandar.** El tablero ordena corredores y
+regiones peor primero, marca con ▲▼ cuánto se movió cada magnitud desde la
+última ventana, dice en qué jornada va de cinco y cuenta lo que sigue sin cerrar.
+Ninguna de las cuatro señales nombra un remedio.
+
+- ¿Alguien mira el tablero y **dice en voz alta cuál es el problema** sin que se
+  lo pregunten? Es la señal de que la saliencia funciona.
+- ¿Alguien lee el tablero como una **lista de tareas**? Entonces se pasó de
+  indicativo a prescriptivo, y hay que quitar señal.
+- ¿El delta ▼ de una reserva provoca la pregunta «¿qué hicimos anoche?»? Es
+  exactamente para lo que está.
+- ¿La franja de noche se distingue de la de día **sin leerla**?
+
 > Las 30 definiciones viven en un solo archivo,
 > [`definiciones.jsx`](web_ui/src/definiciones.jsx). Si un umbral cambia en
 > `parameters.py`, hay exactamente un párrafo que corregir.
