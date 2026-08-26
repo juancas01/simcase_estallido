@@ -1,14 +1,14 @@
 # Pendientes
 
-Lo que falta para que esto se pueda correr con ocho personas en una sala. **Este
-es el único sitio donde se lleva la cuenta**: si algo está pendiente y no está
-aquí, es que se me pasó.
+Lo que falta para correr esto con ocho personas en una sala. **Este es el único
+sitio donde se lleva la cuenta**: si algo está pendiente y no está aquí, es que
+se me pasó.
 
-Va ordenado por lo que bloquea. Hay tres clases de pendiente y no se resuelven
-igual:
+Va ordenado por lo que bloquea. Hay cuatro clases y no se resuelven igual:
 
 | Clase | Quién lo resuelve | Sección |
 |---|---|---|
+| **Probar** — lo que se puede hacer ya, sin decidir nada | cualquiera, hoy | [P](#p--lo-que-se-puede-probar-ya) |
 | **Decisiones** — no son técnicas y no son mías | el equipo docente | [A](#a--decisiones-que-no-son-mías) |
 | **Código** — está diseñado y no escrito | yo | [B](#b--código-que-falta) |
 | **Calibración** — solo se resuelve midiendo | la primera corrida | [C](#c--calibración) |
@@ -19,22 +19,25 @@ igual:
 
 | | Pendiente | Bloquea | Estado |
 |---|---|---|---|
-| **A1–A6** | seis decisiones de diseño | A1 y A5 bloquean B4 | esperando |
-| **B1** | capa 4 · canal de órdenes en lenguaje natural | la consola del moderador | stub determinista |
-| **B2** | capa 3 · seis agentes de entorno | la esfera pública | marcador de posición |
-| **B3** | las tres cifras salen cableadas, no del motor de información | el dilema del error doble en la interfaz | cableado |
-| **B4** | las ocho fichas de rol, en datos | imprimir los sobres | `data/roles/` vacío |
-| **B5** | persistencia de la corrida | el debriefing | no existe |
-| **B6** | presupuesto de latencia | depende de B2 | no existe |
-| **C1–C4** | cuatro problemas medidos | la primera corrida real | medidos, sin ajustar |
+| **P1–P4** | las cuatro pruebas, en orden | nada — se pueden hacer hoy | listas para correr |
+| **A1** | cuántos dispositivos, o papel | el montaje de la sala | esperando |
+| **A2** | quién opera la consola | el guion de la sesión | esperando |
+| **A3** | ¿con llave o sin llave la primera vez? | qué se está midiendo | esperando |
+| **A4** | el contenido exacto de las ocho vistas | la versión definitiva | se decide probando |
+| **A5** | cerrar el territorio ficticio | las fichas impresas | nombres provisionales puestos |
+| **B1** | persistencia de la corrida | el debriefing | no existe |
+| **B2** | las ocho fichas de rol, en datos | imprimir los sobres | `data/roles/` vacío |
+| **B3** | telemetría por turno | medir el ejercicio | no existe |
+| **B4** | el hecho H1 del paquete detonante | el turno 1 completo | falta 1 de 4 |
+| **B5** | presupuesto de latencia medido | la fase de consecuencias | hay timeout, falta medirlo |
+| **C1–C3** | tres cosas que solo se ven con personas | la primera corrida real | esperando |
 
-Lo que **sí** funciona está en el README, sección «Estado actual».
+Lo que **sí** funciona está en el README, sección «Estado actual», y en
+[`docs/COMO_FUNCIONA_2.md`](docs/COMO_FUNCIONA_2.md).
 
 ---
 
 ## Cómo verlos desde el código
-
-Los stubs están marcados en el sitio donde viven:
 
 ```bash
 grep -rn "PENDIENTE\|TODO" src/
@@ -46,106 +49,260 @@ al código.
 
 ---
 
+## P · Lo que se puede probar ya
+
+**Nada de esto depende de ninguna decisión pendiente.** Cuatro pruebas, cada una
+responde una pregunta distinta, y ninguna necesita la siguiente para ser útil.
+
+### P1 · El motor, solo — 20 min, una persona
+
+**¿El motor produce dilemas o produce un guion?**
+
+```bash
+# La tabla: seis salas ficticias, mismo escenario, seis formas de jugar
+uv run python scripts/correr_ejercicio.py --comparar
+
+# Y la cadena causal: qué se ordenó cada turno y por qué salió así
+uv run python scripts/correr_ejercicio.py --comparar --detalle
+
+# Con otras semillas, para separar el ruido de la señal
+uv run python scripts/correr_ejercicio.py --semilla 7 --comparar
+uv run python scripts/correr_ejercicio.py --semilla 99 --comparar
+```
+
+Mirar que **ninguna estrategia domine con las tres semillas**. Si `solo_fuerza`
+gana alguna vez, hay que recalibrar antes de convocar a nadie.
+
+**`--detalle` es lo que hace la prueba útil para calibrar**, porque un número sin
+su cadena causal no dice qué tocar. Por cada estrategia imprime las órdenes de
+los cinco turnos con su consecuencia, y después un diagnóstico leído de la
+corrida: **en qué región murió cada quien y si esa región llegó a tener alguna
+vez un camino humanitario abierto que la sirviera** — que es la diferencia entre
+«la sala no pudo» y «la sala no lo atendió», dos conversaciones muy distintas en
+el debriefing.
+
+**Lo que debe cambiar con la semilla y lo que no.** Cambian `netas`, `reap` y las
+reservas: son las tiradas. **No cambian `cohes` ni `muert`**, porque la cohesión
+depende de qué banderas se adoptaron y el reloj de qué corredores se abrieron —
+no del azar. Si algún día empezaran a bailar, algo se rompió.
+
+### P2 · Las pantallas — 30 min, dos personas
+
+**¿Se entienden sin explicación?**
+
+```bash
+cd web_ui
+npm install
+npm run build
+cd ..
+uv run python -m src.api.main        # http://localhost:8000
+```
+
+**Con dos proyectores:** uno con `/tablero`, otro con `/esfera`, un portátil con
+`/consola` y otro con una vista privada.
+
+**Con una sola pantalla o un portátil:** `/tablero` ya lleva la esfera pública
+como **barra lateral plegable** —el botón está arriba a la derecha— y con eso
+basta. Cuando está plegada, el botón sigue mostrando cuántas denuncias hay sin
+verificar, que es lo que hace que alguien la abra.
+
+> **Barra y no pestaña.** La distancia entre lo que el Estado tiene por cierto y
+> lo que se dice solo se percibe **simultánea**. Una barra abierta se ve junto al
+> tablero; una pestaña sustituye una cosa por la otra y elimina justamente lo que
+> hay que enseñar.
+
+- ¿Se lee el tablero desde el fondo de la sala?
+- ¿El mapa enseña por sí solo que un corredor vale lo que su peor punto?
+- ¿La alerta de la vista privada se entiende en menos de diez segundos?
+- ¿El plan de vuelta de la consola es legible en voz alta?
+
+**Es la prueba más barata y la que más va a cambiar el diseño.**
+
+### P3 · En seco, con tres personas — 45 min
+
+**¿La asimetría de información produce conversación?**
+
+Tres roles, uno por frente: **Interior**, **Defensa** y **Minas**. Tres turnos,
+sin turno 0 ni debriefing. Y una sola cosa que mirar:
+
+- ¿Alguien dice un dato de su vista privada **sin que se lo pregunten**?
+- ¿Alguien **pregunta** a otro por un dato que no tiene?
+- ¿Aparece un desacuerdo entre dos personas que están las dos diciendo la verdad?
+
+> Si las tres respuestas son «no», la asimetría es decoración y hay que revisar
+> el contenido de las vistas (**A4**) antes de convocar a ocho.
+
+### P4 · La corrida completa — 2 horas, ocho personas
+
+**¿El ejercicio enseña lo que pretende enseñar?**
+
+**Y es una medición, no un ejercicio.** Conviene decirlo antes de empezar.
+
+Las tres lecturas del debriefing: la línea declarada contra la ejecutada · el
+turno en que la mesa dejó de ser una mesa · las agendas reservadas, que se
+revelan y no se puntúan.
+
+Y una comprobación nueva de la v2: **en el minuto 4 de la deliberación, mire
+cuántas personas están mirando su pantalla.** Si hay alguna, una de las cinco
+reglas de §6.3 de la propuesta se rompió.
+
+---
+
 ## A · Decisiones que no son mías
 
-Son las de §12.1 de la propuesta. Ninguna es técnica; todas cambian el ejercicio.
-Van con mi recomendación, pero la decisión es del equipo docente.
+Van con recomendación porque tener una es más útil que no tenerla, pero las cinco
+son del equipo docente.
 
-| # | Decisión | Mi recomendación | Qué bloquea |
-|---|---|---|---|
-| **A1** | **¿Nombres reales o ficticios?** Ficcionalizar protege de convertir el ejercicio en un juicio sobre hechos con responsabilidad judicial viva; cuesta el reconocimiento que hace que el caso muerda. | Reales, por coherencia con el Manual, más una declaración expresa en el turno 0 de que el ejercicio no juzga hechos ni personas. | `data/escenario/` y **B4** |
-| **A2** | **¿Se puntúa?** Y en particular: ¿las agendas reservadas suman? | Sin marcador. Las agendas se revelan, no se puntúan. | el guion del debriefing |
-| **A3** | **¿La Defensoría puede retirarse de verdad**, dejando a la sala sin sus mitigadores? | Que pueda. Un condicionamiento que no se puede cumplir no es una palanca. | una acción en `actions.py` |
-| **A4** | **¿`capital_politico` se queda?** Tal como está en §3.6 **no es implementable**: el motor no sabe quién se opone a quién porque la deliberación ocurre en voz alta y no entra al sistema. | Eliminarlo. Con ocho personas en una sala, el capital político lo administra la sala sola. | nada — ya está fuera del código |
-| **A5** | **¿El paquete detonante es fijo o se sortea?** Fijo permite comparar salas; sorteado evita que el facilitador que ya lo vio lo anticipe. | Fijo las primeras corridas, sorteado después. | **B4** |
-| **A6** | **¿Se acepta el estocástico?** «Hicimos todo bien y salió mal» es una lección real y difícil de recibir. | Decisión del equipo docente, no mía. Mitigado con la banda visible antes de decidir y la corrida reproducible; no resuelto. | el encuadre del turno 0 |
+### A1 · ¿Cuántos dispositivos, o papel?
+
+**Bloquea:** el montaje físico de la sala. No bloquea código.
+
+| Montaje | Qué hace falta |
+|---|---|
+| Portátil o tableta por persona | ocho equipos en la red del servidor |
+| **Papel por turno** | alguien imprime ocho hojas desde `/api/vistas` |
+
+> **Recomendación:** portátil o tableta. Y si el equipo no está seguro de poder
+> sostener las cinco reglas —vista sin scroll, pantallas congeladas en la
+> deliberación, nadie ordena desde su pantalla, ficha en papel, el tablero no
+> repite lo privado—, **papel**: el ejercicio funciona igual y el riesgo de ocho
+> personas mirando ocho pantallas desaparece.
+
+### A2 · ¿Quién opera la consola?
+
+**Bloquea:** el guion de la sesión.
+
+**No es un moderador**: no conduce, no reparte información y no sabe nada que los
+demás no sepan.
+
+> **Recomendación:** un externo si lo hay —deja a los ocho libres para
+> deliberar—; el Presidente si no, porque el registro escrito de decisiones ya es
+> competencia suya.
+
+### A3 · ¿Con llave o sin llave la primera vez?
+
+**Bloquea:** qué se está midiendo.
+
+La llave ya está puesta y las dos capas funcionan. Con llave, la consola entiende
+lenguaje coloquial y la esfera pública produce titulares reales; sin ella, ambas
+degradan y el ejercicio corre igual.
+
+> **Recomendación:** **la primera corrida sin llave** —basta con vaciar
+> `OPENAI_API_KEY` en `.env`—, para medir el motor y no el modelo. Cuando el
+> motor esté calibrado, se enciende y se mide qué añade, que es una medición
+> distinta y también interesante.
+
+### A4 · ¿Cuál es el contenido exacto de las ocho vistas?
+
+**Bloquea:** la versión definitiva. No bloquea probar.
+
+Las ocho están construidas con un contenido que **es una propuesta, no una
+decisión**. Verlas de un vistazo:
+
+```bash
+uv run python scripts/correr_ejercicio.py --vistas
+```
+
+La pregunta, vista por vista: **¿este dato le sirve a su titular para decir algo
+que nadie más puede decir?** Si no, sobra.
+
+> **Recomendación:** probarlas tal como están y ajustar después. Es una decisión
+> que se resuelve mejor viendo a tres personas usarlas 45 minutos que
+> discutiéndola en una mesa.
+
+### A5 · ¿Se cierra el territorio ficticio?
+
+**Bloquea:** las fichas impresas y el material de los participantes.
+
+Los nombres provisionales están puestos y funcionando: **Bellaflor** (ciudad
+epicentro), **Región de Bellaflor**, **Puerto Espejo**, **Las Cumbres**, **Alto
+Verde**. Se sustituyen enteros editando solo
+[`data/escenario/estado_inicial.json`](data/escenario/estado_inicial.json),
+porque el motor identifica por código y no por nombre.
+
+> **Recomendación:** dejarlos para las primeras corridas y decidirlos después,
+> cuando se vea si el caso muerde con nombres inventados. El criterio: que **no
+> sean alias transparentes**. Hay una prueba automática
+> (`test_el_territorio_es_ficticio`) que falla si vuelve a aparecer un nombre real.
 
 ---
 
 ## B · Código que falta
 
-### B1 · Capa 4 — el canal de órdenes en lenguaje natural
+### B1 · Persistencia de la corrida
 
-**Dónde:** [`src/api/main.py:128`](src/api/main.py#L128) · [`src/agents/`](src/agents/) (vacío)
+**Dónde:** [`src/engine/simulation.py`](src/engine/simulation.py), en el
+constructor de `MotorCrisis`.
 
-El moderador escribe *«concentrar ESMAD en el anillo hospitalario, con dupla de la
-Defensoría, responsable el Ministro de Defensa»* y el sistema debe devolver un
-plan tipado —acciones, requisitos que faltan, banda de riesgo— **para que el
-moderador lo lea de vuelta a la sala antes de ejecutarlo**. Ese momento no es un
-trámite: la sala oye su propia decisión reformulada, con su riesgo, y con
-frecuencia la cambia.
+El motor guarda `historial` en memoria y la semilla en el objeto. Al cerrar el
+proceso se pierde todo — y el debriefing dura veinte minutos, más que cualquier
+turno.
 
-Hoy `/api/plan/interpretar` ignora el texto y devuelve una interpretación
-determinista de prueba: escoge el nodo cerrado más duro y propone operarlo. Sirve
-para probar la interfaz y para nada más.
+Hace falta escribir a disco la semilla, el estado inicial, el log de acciones y
+los resultados por turno. Con eso **la corrida se repite con una decisión
+cambiada**, que es la mejor herramienta que este diseño ofrece y ahora mismo no
+se puede usar.
 
-Lo que falta es el NLU con herramientas tipadas del §7 de la guía de
-arquitectura: el modelo **solo traduce** texto a llamadas de herramienta; no
-decide, no valida y no toca el estado. La resolución de entidades es el punto
-delicado —acertar mal en silencio aquí no manda ayuda al barrio equivocado sino
-**ESMAD al nodo equivocado**—, así que necesita devolver la entidad resuelta en
-el eco al moderador, con su nombre completo.
-
-### B2 · Capa 3 — los seis agentes de entorno
-
-**Dónde:** [`src/api/main.py:96`](src/api/main.py#L96) · lo consume [`web_ui/src/components/EsferaPublica.jsx`](web_ui/src/components/EsferaPublica.jsx)
-
-Comité del Paro, prensa nacional, redes, gremios, comunidad internacional y
-alcaldes. Producen **contenido y solo contenido**: publicaciones, comunicados y
-reacciones que la sala lee. No mutan el estado — el motor ya calculó lo que pasó
-y ellos lo narran desde su sesgo.
-
-Hoy `_publicaciones_recientes()` recorre el historial y emite dos frases fijas
-cuando encuentra un incidente mortal o una reapertura. La esfera pública se llena,
-pero con plantilla.
-
-### B3 · Las tres cifras salen cableadas
-
-**Dónde:** [`src/api/main.py:79`](src/api/main.py#L79)
-
-`/api/esfera` devuelve hoy `oficial = verificada − 3` y `municipal = verificada + 2`.
-Los números divergen, que es el efecto que se busca, pero **divergen por
-aritmética y no por el motor de información**.
-
-Debe salir de `information.estimar_nodo()`, que ya existe, ya tiene los cuatro
-sesgos calibrados y ya produce la dispersión real. Es poco trabajo y es
-importante: es la diferencia entre una interfaz que ilustra el error doble y una
-que lo produce.
-
-### B4 · Las ocho fichas de rol, en datos
+### B2 · Las ocho fichas de rol, en datos
 
 **Dónde:** [`data/roles/`](data/roles/) (vacío)
 
-Las fichas del Manual de Roles y sus RADs viven hoy fuera del repositorio. Deben
-entrar como datos, no como código, por la misma razón que el escenario: lo que se
-duplique entre los datos y el prompt de un modelo se desincroniza. Siempre.
+Las fichas del Manual y sus RADs viven hoy fuera del repositorio. Deben entrar
+como datos, no como código, por la misma razón que el escenario: **lo que se
+duplique entre los datos y el prompt de un modelo se desincroniza. Siempre.**
 
-Depende de **A1** (nombres) y **A5** (paquete detonante fijo o sorteado).
+Incluye la **agenda reservada** de cada rol —el apartado 11 del Manual—, que va
+en sobre sellado y en papel: se juega, no se enuncia.
 
-### B5 · Persistencia de la corrida
+Depende de **A5** (nombres).
+
+### B3 · Telemetría por turno
 
 **Dónde:** no existe
 
-El motor guarda `historial` en memoria y la semilla en `MotorCrisis`. Al cerrar
-el proceso se pierde todo — y el debriefing dura veinte minutos, más que
-cualquier turno.
+Un evento canónico por turno, en JSONL. Sin eso, medir el ejercicio es
+arqueología: cruzar a mano dos archivos que nunca se diseñaron para cruzarse.
 
-Hace falta escribir a disco la semilla, el estado inicial, el log de acciones y
-los resultados por turno. Con eso la corrida se repite **con una decisión
-cambiada**, que es la mejor herramienta de debriefing que da este diseño y ahora
-mismo no se puede usar.
+Con la v2 hay dos métricas nuevas que solo existen si esto existe: **en qué turno
+cada rol compartió por primera vez algo de su vista**, y **cuántas decisiones se
+tomaron habiendo en la sala un dato que las desaconsejaba**.
 
-### B6 · Presupuesto de latencia
+> **Cuidado:** anotar el dato en el código no basta. Hay que comprobar que
+> **llega al archivo**. En la simulación anterior, dos campos se perdían en la
+> serialización sin que ninguna prueba lo detectara, porque las pruebas miraban
+> el código y no el dato de salida.
 
-**Dónde:** depende de B2
+### B4 · El hecho H1 del paquete detonante
 
-Seis agentes, cinco turnos y cuatro interludios dan entre 40 y 50 invocaciones de
-modelo. La fase de consecuencias dura sesenta segundos con ocho personas mirando
-la pantalla.
+**Dónde:** [`src/engine/loader.py`](src/engine/loader.py) ·
+`proximidad_infra_critica` en el escenario
 
-Ejecución en paralelo con presupuesto de tiempo duro, degradando a contenido de
-plantilla si el proveedor tarda. **No se puede calcular hasta que B2 exista**,
-pero el diseño tiene que preverlo desde el principio.
+De los cuatro hechos que abren el turno 1, tres están: **H2** (las dos denuncias,
+una cierta y una falsa), **H3** (el ultimátum gremial de 48 horas) y **H4** (la
+región que cruza los dos días de oxígeno).
+
+Falta **H1**: el incidente nocturno junto a una instalación de combustible, con
+un herido grave de la fuerza pública. Los tres puntos contiguos a infraestructura
+crítica ya están marcados en los datos; falta el evento que los active.
+
+### B5 · Presupuesto de latencia, medido
+
+**Dónde:** [`src/agents/entorno.py`](src/agents/entorno.py) y
+[`src/agents/nlu.py`](src/agents/nlu.py)
+
+Hay timeout duro y degradación a plantilla, que es lo importante. Lo que falta es
+**medir cuánto tarda de verdad** con el modelo puesto: la fase de consecuencias
+dura sesenta segundos con ocho personas mirando la pantalla.
+
+Se mide en la prueba **P2**, cronómetro en mano.
+
+### B6 · El guion de la sesión
+
+**Dónde:** fuera del código
+
+Qué se dice en el turno 0 —incluida la declaración expresa sobre el alcance del
+ejercicio—, cómo se abre el debriefing, y qué se hace si la sala se queda sin
+órdenes al terminar los seis minutos.
 
 ---
 
@@ -156,71 +313,116 @@ que ninguna estrategia pura gane. El criterio es **por comportamiento, no por
 realismo**: no hay respuesta empírica a cuánta legitimidad cuesta un muerto, y no
 la va a haber.
 
-La herramienta es `uv run python scripts/correr_ejercicio.py --comparar`.
-Medición del 2026-08-24:
+Medición actual con `--comparar`:
 
 ```
-  estrategia      netas  reap  muertes  legit  cohes  credib
-  solo_fuerza         3     3      147     25      0      21
-  solo_mesa           6     0      147     52     41      45
-  constituida         1     2      147     44     23      21
-  humanitaria         3     0       70     37      0      45
-  pasiva              1     0      147     25      0      45
+  estrategia      netas  reap  muert  legit  cohes  credib   resp
+  ---------------------------------------------------------------------
+  solo_fuerza         1     2     64     15      0      21     24
+  solo_mesa           5     4     64     59     56      29     49
+  constituida         3     1     48     24     74      21     38
+  humanitaria         3     0     16     32     28      35     50
+  logistica           3     1     24     41     40      26     39
+  pasiva              0     0     64     23     28      45     43
 ```
 
-Lee bien en lo esencial —ninguna estrategia domina: `solo_mesa` conserva las
-reservas y no salva a nadie, `humanitaria` salva la mitad y lo paga en
-legitimidad y cohesión— y mal en cuatro cosas concretas:
+**Ninguna domina, que es el criterio.** `solo_mesa` abre más caminos y conserva
+las reservas — y deja morir a la misma gente que `pasiva`. `humanitaria` salva al
+75 % y lo paga en cohesión y en caminos. `constituida` tiene la mejor mesa y
+gasta legitimidad al operar. `solo_fuerza` se queda sin nada.
 
-| # | Problema | Por qué importa |
-|---|---|---|
-| **C1** | **La cohesión se hunde a 0 en tres de las cinco.** Satura, y una variable saturada deja de discriminar: a partir de ahí toda decisión da igual. | Es una de las tres lecturas del debriefing. Si siempre termina en 0, no se lee nada. |
-| **C2** | **Las muertes son 147 en cuatro de las cinco.** Solo `humanitaria` se despega, con 70. El reloj de oxígeno responde a abrir corredores humanitarios explícitamente y a casi nada más. | El reloj debe ser un dilema, no un guion. Es la misma clase de fallo que el de Buenaventura, más suave. |
-| **C3** | **`constituida` rinde por debajo de lo que debería.** Una sala que se constituye bien —reglas escritas, protocolo de vocería, criterio de priorización— saca 1 corredor neto y 2 reaperturas. | Si constituirse no paga, el segundo hallazgo del caso se convierte en una moraleja sin respaldo aritmético. |
-| **C4** | **Con cinco turnos, la fuerza casi nunca abre un corredor.** Lo que se abre de noche se cierra, el corredor se mide por su punto peor y el mínimo vuelve a cero. | **No lo diseñé: salió de la aritmética.** Refuerza la tesis del caso, pero conviene decidirlo a propósito y no heredarlo por accidente. |
+**Los dos problemas que estaban medidos ya no lo están** — y no eran de
+coeficientes, eran piezas que faltaban. Ver «Lo que ya NO está pendiente».
 
-Y tres cosas que solo se ven con personas dentro:
+Quedan **tres cosas que solo se ven con personas dentro**:
 
-- **¿24 nodos son demasiados para 5 decisiones?** Si la sala toca menos de diez,
-  bajar a 16.
-- **¿Da tiempo a que la mesa se rompa?** Con cinco decisiones puede no aparecer.
-  Si la cohesión termina por encima de 55 casi siempre, subir la sensibilidad —o
-  aceptar que un ejercicio de dos horas mide la constitución de la mesa y no su
-  desgaste, que también es un objeto legítimo.
-- **¿Se cumplen los 13 minutos por turno?** Si no, el problema es de moderación y
-  se corrige con guion, no con diseño.
+### C1 · ¿24 puntos son demasiados para 5 decisiones?
 
-**La primera corrida con personas es una medición, no un ejercicio**, y conviene
-decirlo antes de empezar.
+Si la sala toca menos de diez, bajar a 16. El mapa esquemático puede cambiar esto
+en las dos direcciones: hace los 24 más manejables, o hace evidente que sobran.
+
+### C2 · ¿Da tiempo a que la mesa se rompa?
+
+Si la cohesión termina por encima de 55 casi siempre, subir la sensibilidad — o
+aceptar que un ejercicio de dos horas **mide la constitución de la mesa y no su
+desgaste**, que también es un objeto legítimo.
+
+### C3 · ¿Se cumplen los 13 minutos por turno?
+
+Con el minuto 0 de parte privado añadido, el turno es más apretado. Si no
+cuadra, el problema es de conducción y se corrige con guion, no con diseño.
 
 ---
 
 ## D · Fuera del código
 
-- **El guion de moderación.** Sin pantallas individuales, el ritmo entero depende
-  de una persona: el moderador es el punto único de fallo. Requiere ensayo
-  completo y un guion propio, no solo el manual de roles.
-- **La declaración del turno 0** sobre el alcance del ejercicio, decida lo que se
-  decida sobre A1.
-- **El protocolo de los sobres.** La confidencialidad en papel depende de que
+- **El protocolo de los sobres.** La agenda reservada en papel depende de que
   nadie pase la hoja. Con ocho personas y un facilitador es sostenible; no
   escalaría a treinta.
+- **La declaración del turno 0** sobre el alcance del ejercicio: el motor no
+  cuantifica culpa ni produce veredictos sobre hechos históricos.
+- **Qué se dice sobre el azar.** *«El azar nunca decide si algo era buena idea;
+  decide si esta vez salió mal, y la probabilidad se muestra antes.»*
 
 ---
 
 ## Lo que ya NO está pendiente
 
-La propuesta §12.2 los lista como pendientes porque se escribió antes que el
-código. **Están resueltos** — anotado aquí para que nadie los vuelva a levantar:
+Anotado aquí para que nadie lo vuelva a levantar.
+
+### De la propuesta original
 
 | | Era | Cómo quedó |
 |---|---|---|
-| **T1** | `intensidad_movilizacion` satura en 100 y deja de discriminar | Rendimientos decrecientes (`DECAIMIENTO_REPETICION = 0.6`) y decaimiento proporcional al nivel (`0.04`), en [`mobilization.py:37`](src/engine/mobilization.py#L37) y [`:82`](src/engine/mobilization.py#L82) |
-| **T2** | `control_voceria` no está en la capa de estimación, así que Interior lo ve perfecto y el dilema desaparece | Entró con sesgo por fuente en [`information.py:67`](src/engine/information.py#L67): Interior lo sobreestima (+0,20), Cali lo estima bien en su jurisdicción (+0,03) |
-| **T3** | `dureza` la escriben dos mecanismos sin precedencia declarada | Tres, y con orden fijo en `paso()`: turno sin decisión (+0,03) → reapertura (+0,08) → `g(intensidad)`. Determinista y reproducible |
-| **—** | Toda región sin corredor humanitario acumula muertes evitables haga lo que haga la sala | Invariante con fallo ruidoso en [`loader.py`](src/engine/loader.py) y prueba automática |
-| **—** | `P(incidente)` alcanzaba 1,0 exacto y volvía la tirada irrelevante | Techo en `P_INCIDENTE_MAX = 0.98`. Una operación puede ser un disparate y aun así no terminar mal, que es precisamente por lo que se repiten los disparates |
+| **T1** | `intensidad_movilizacion` satura en 100 y deja de discriminar | Rendimientos decrecientes (×0,6 por repetición) y decaimiento proporcional (×0,96) |
+| **T2** | `control_voceria` no está en la capa de estimación | Entró con sesgo por fuente: Interior lo sobreestima +0,20; el Alcalde lo ve bien en su jurisdicción |
+| **T3** | `dureza` la escriben dos mecanismos sin precedencia | Tres, con orden fijo en `paso()`. Determinista y reproducible |
+| **—** | Toda región sin corredor humanitario acumula muertes inevitables | Invariante con fallo ruidoso en `loader.py` y prueba automática |
+| **—** | `P(incidente)` alcanzaba 1,0 y volvía la tirada irrelevante | Techo en 0,98 |
+| **A2** | ¿Se puntúa? ¿Las agendas suman? | **No hay marcador.** Las agendas se revelan, no se puntúan |
+| **A3** | ¿La Defensoría puede retirarse? | **No se retira.** Su palanca es manifestar públicamente que su permanencia está en cuestión — se puede usar varias veces, es graduada, y nunca saca sus mitigadores del juego |
+| **A4** | `capital_politico` no es implementable | Eliminado. Con ocho personas en una sala, el capital político lo administra la sala sola |
+| **A6** | ¿Se acepta el azar? | Sí, con semilla fija. **La semilla no es un elemento visible de la interfaz** |
+
+### Del diagnóstico del motor anterior
+
+Los siete problemas de [`docs/mapa_de_palancas.md`](docs/mapa_de_palancas.md):
+
+| | Era | Cómo quedó |
+|---|---|---|
+| **D1** | La mezcla real de los puntos no cambiaba **nada** | Conectada por dos vías. `test_la_mezcla_real_cambia_el_resultado_de_la_corrida` falla si se desconecta |
+| **D2** | El polo de negociación no podía negociar | Interior tiene 4 acciones, incluida la mesa nacional. Los dos mayores movimientos hacia abajo de la movilización ya se disparan |
+| **D3** | El dueño del ESMAD no podía asignarlo | `DisponerESMAD` y `Escoltar` |
+| **D4** | El frente logístico no podía mover carga | Escolta, caravana, gremios, y la prioridad de combustible como criterio permanente |
+| **D5** | La cohesión era una rampa determinista | Solo se cobra de día, y ahora se puede reponer. Va de 0 a 74 según lo que la sala haga |
+| **D6** | El paquete detonante no existía | H2, H3 y H4 en el motor; la jornada nacional en el calendario. Falta H1 (**B4**) |
+| **D7** | El eje de Vocería no tenía mecánica | Parcial: el anuncio verificado y el parte clasificado sí; el encuadre sigue pendiente |
+
+### Las dos capas de lenguaje natural
+
+Eran **B1** y **B2** de la lista anterior. **Están construidas y probadas con el
+modelo puesto.**
+
+| | Era | Cómo quedó |
+|---|---|---|
+| **capa 4** | el canal de órdenes era un stub que ignoraba el texto | [`src/agents/nlu.py`](src/agents/nlu.py) · los nueve pasos, y **solo el primero usa el modelo**. Resolutor determinista de cuatro estados, validación sin `break`, tope de expansión, elección tipada para las ambigüedades y lectura de vuelta determinista |
+| **capa 3** | la esfera pública emitía dos frases fijas | [`src/agents/entorno.py`](src/agents/entorno.py) · seis agentes con su sesgo y su cadencia, una llamada por turno con presupuesto duro |
+| **—** | las tres cifras salían cableadas | Salen de las vistas por rol, con los sesgos calibrados |
+| **—** | no había dónde poner la llave | `.env` en la raíz, a partir de `.env.example`. `/api/config` dice si está |
+
+**Las dos degradan solas si falta la llave o si el proveedor tarda**, y lo dicen
+en el campo `generado_por`. Esa degradación es la prueba operativa de que ninguna
+decisión de la simulación se delegó al modelo.
+
+### Las superficies
+
+| | Era | Cómo quedó |
+|---|---|---|
+| **—** | tres superficies contra la API antigua | Cuatro: `/tablero`, `/esfera`, `/vista/{rol}` ×8 y `/consola` |
+| **—** | el mapa no existía | [`MapaEsquematico.jsx`](web_ui/src/components/MapaEsquematico.jsx) · esquema de líneas, con la forma del nodo diciendo cómo se abrió y un `?` en lo que nadie ha mirado |
+| **—** | el reloj lo llevaba el moderador | Lo lleva el sistema, fase por fase |
 
 ---
 
-*Última revisión: 2026-08-24 · 18 pruebas en verde.*
+*Última revisión: 2026-08-26 · 49 pruebas en verde · capas de lenguaje natural
+activas con `gpt-5-nano`.*

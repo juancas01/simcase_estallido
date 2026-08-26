@@ -24,14 +24,21 @@ puede cerrar dos, y eso sale de la aritmética del motor, no de un guion.
 
 | Si quieres… | Lee |
 |---|---|
-| **entender cómo funciona la simulación** | [`docs/COMO_FUNCIONA.md`](docs/COMO_FUNCIONA.md) — explica el motor con los números reales que usa, sin necesidad de leer código |
+| **entender cómo funciona el motor v2** | [`docs/COMO_FUNCIONA_2.md`](docs/COMO_FUNCIONA_2.md) — del juego al código: qué pasa en la sala, qué cálculo lo produce y en qué archivo está |
+| entender el motor **anterior** | [`docs/COMO_FUNCIONA.md`](docs/COMO_FUNCIONA.md) — la versión previa, con sus números |
 | saber **por qué** está diseñado así | [`docs/propuesta_simulacion_estallido_social.md`](docs/propuesta_simulacion_estallido_social.md) — el documento de diseño completo |
+| entender **el diseño del juego v2** | [`docs/propuesta_v2.md`](docs/propuesta_v2.md) — vista privada por rol, el modelo del mundo, 34 acciones y el turno sin moderador |
 | montar **otro** caso con esta arquitectura | [`docs/guia_arquitectura_simulaciones.md`](docs/guia_arquitectura_simulaciones.md) |
-| saber **qué falta** por hacer | [`PENDIENTES.md`](PENDIENTES.md) — decisiones abiertas, código sin escribir y calibración, en un solo sitio |
+| entender **el ejercicio como juego** — qué puede hacer cada rol y cómo se afectan | [`docs/mapa_de_palancas.md`](docs/mapa_de_palancas.md) — las reglas, las ocho fichas, el mapa de interdependencias, y qué de todo eso sostiene el motor |
+| **empezar a probar**, y saber qué falta | [`PENDIENTES.md`](PENDIENTES.md) — las cuatro pruebas en orden, las decisiones abiertas, el código sin escribir y la calibración, en un solo sitio |
 
 ---
 
 ## Arranque rápido
+
+> **En Windows PowerShell**, los comandos van **uno por línea**: PowerShell 5.1
+> no admite `&&` como separador y da un `ParserError`. Todo lo de abajo funciona
+> tal cual en PowerShell, cmd y bash.
 
 ```bash
 # 1 · Dependencias (Python 3.13+)
@@ -46,14 +53,40 @@ uv run python scripts/correr_ejercicio.py --comparar
 # 4 · Pruebas (sin modelo, < 1 s)
 uv run pytest -q
 
-# 5 · Interfaz
-cd web_ui && npm install && npm run build && cd ..
+# 5 · Las ocho vistas privadas de un turno real
+uv run python scripts/correr_ejercicio.py --vistas
+
+# 6 · Las cuatro superficies
+cd web_ui
+npm install
+npm run build
+cd ..
 uv run python -m src.api.main        # http://localhost:8000
 ```
+
+| Superficie | Ruta | Para quién |
+|---|---|---|
+| Tablero de situación | `/tablero` | **proyectar** — lleva la esfera como barra lateral plegable |
+| Esfera pública | `/esfera` | **proyectar** aparte, si hay dos proyectores |
+| Vista privada | `/vista/Minas`, `/vista/Defensoría`… | el dispositivo de cada uno |
+| Consola | `/consola` | quien transcribe · no proyectar |
 
 No hace falta clave de API para nada de lo anterior. **El motor corre entero sin
 llamar a ningún modelo de lenguaje.** Si algún día no puede, la arquitectura está
 mal.
+
+### Con lenguaje natural (opcional)
+
+Las dos capas de LN —el canal de órdenes y los agentes de entorno— se activan con
+una llave. Va en un archivo `.env` en la raíz:
+
+```bash
+cp .env.example .env      # y dentro: OPENAI_API_KEY=sk-...
+uv sync --extra agents
+```
+
+Sin llave, la consola interpreta de forma determinista y la esfera pública usa
+plantillas. Comprobar con `/api/config`.
 
 ---
 
@@ -70,20 +103,21 @@ src/engine/          EL MOTOR. Único dueño del estado. Sin IA, determinista sa
   aperture.py          §4.3 · las tres vías de abrir un corredor
   information.py       §4.4 · la verdad, las estimaciones y la versión
   supply.py            §4.5 · el reloj y el oxígeno medicinal
-  actions.py           las acciones de los ocho roles
+  views.py             LAS OCHO VISTAS PRIVADAS · la pieza central de la v2
+  actions.py           las 34 acciones de los ocho roles
   simulation.py        el bucle de turnos
 
-src/api/             capa delgada sobre el motor
+src/api/             capa delgada · sirve las cuatro superficies
 src/agents/          capas 3 y 4 · agentes y órdenes en LN (sin escribir)
 data/escenario/      el caso, en datos y no en código
-web_ui/              las tres superficies
+web_ui/              las superficies (pendiente de apuntar a la API v2)
 scripts/             corredor sin interfaz, para calibrar
 tests/               verificadores sin modelo
 ```
 
 ---
 
-## Las cinco decisiones de diseño
+## Las seis decisiones de diseño
 
 | | Decisión | Dónde vive |
 |---|---|---|
@@ -91,25 +125,33 @@ tests/               verificadores sin modelo
 | **2** | **Tres vías de abrir un corredor, con economías distintas.** La fuerza reabre esa misma noche; la concertación se sostiene; el desgaste es gratis y lento. | `aperture.py` |
 | **3** | **El estándar de derechos es un multiplicador de riesgo**, no un discurso. Seis mitigadores dividen la probabilidad de incidente por casi cinco. | `force.py` |
 | **4** | **Lo primero no es el territorio: es la mesa.** Seis acciones constitutivas no abren ningún corredor y modifican todo lo posterior. Nada está bloqueado; todo está tarifado. | `actions.py` |
-| **5** | **Una sala, un teclado, ninguna pantalla individual.** | `web_ui/` |
+| **5** | **Cada rol ve su cartera en alta resolución** y el resto del país en grano grueso. Resolución, no secreto: lo que hace valiosa una vista no es que esté oculta, sino que hay una sola persona que la tiene actualizada. | `views.py` |
+| **6** | **No hay moderador como figura aparte.** El sistema conduce el turno; quien opera la consola puede ser uno de los ocho. | `simulation.py` |
 
 ---
 
-## Dos invariantes que no se pueden romper
+## Tres invariantes que no se pueden romper
 
 Ambas tienen prueba automática. Si fallan, el ejercicio pierde su objeto sin que
 nada reviente ruidosamente — que es la peor clase de fallo.
 
-**1 · `composicion_real` nunca sale del motor.** Si la verdad se proyecta en la
-pared, las cuatro fuentes con sesgo sobran, el error doble desaparece y la
-Defensoría se queda sin oficio. `Estado.vista_publica()` es la única salida
-autorizada.
+**1 · La mezcla real de un punto nunca sale del motor** — ni al tablero, ni a
+ninguna de las ocho vistas privadas. Si la verdad se proyecta, las cuatro fuentes
+con sesgo sobran, el error doble desaparece y la Defensoría se queda sin oficio.
+Y desde la v2 esa mezcla **sí tiene consecuencia**: operar sobre población
+mayoritariamente civil cuesta casi el doble, y pactar donde hay estructura
+organizada produce un acuerdo que se rompe.
 
 **2 · Toda región debe tener un corredor humanitario.** Sin vía de reposición de
 oxígeno, una región acumula muertes evitables *haga lo que haga la sala*. Eso no
-es un dilema: es un guion que castiga. Se detectó midiendo —las cuatro
-estrategias daban las mismas 147 muertes— y hoy `loader.py` falla ruidosamente
-si alguien lo rompe.
+es un dilema: es un guion que castiga. Se detectó midiendo —las estrategias
+daban todas las mismas 147 muertes— y hoy `loader.py` falla ruidosamente si
+alguien lo rompe.
+
+**3 · Nunca una sola denuncia sin verificar.** Siempre al menos dos, con
+veracidad distinta y sin ninguna señal que las distinga. Un ejercicio en el que
+la única denuncia grave resulta inventada enseña que las denuncias graves suelen
+serlo — y eso, sobre hechos con responsabilidad judicial viva, es tomar partido.
 
 ---
 
@@ -117,20 +159,23 @@ si alguien lo rompe.
 
 **Funciona y está medido:**
 
-- motor completo: seis subsistemas, bucle de turnos día/noche, proyección T+72 h
-- 24 nodos, 5 corredores, 4 regiones, 40 escuadrones con fatiga
-- 14 acciones de los ocho roles, constitutivas y operativas
-- corredor sin interfaz con cinco estrategias comparables
-- 18 pruebas sin modelo, en 0,1 s
-- las tres superficies de la interfaz, conectadas a la API
+- motor v2 completo: seis subsistemas, bucle día/noche, proyección T+72 h
+- 24 puntos de cierre, 5 corredores, 4 regiones, 40 escuadrones con fatiga
+- **34 acciones** de los ocho roles — constitutivas, operativas e informativas
+- **las ocho vistas privadas**, con sus sesgos opuestos y su alerta por turno
+- tres duplas en un solo bolsillo: verificar un punto, una denuncia, o acompañar
+- denuncias con veracidad oculta, y el ultimátum gremial del turno 1
+- territorio ficticio, con posiciones para el mapa esquemático
+- corredor sin interfaz con **seis estrategias** comparables
+- **49 pruebas sin modelo, en 0,2 s**
 
-**Falta** — la lista completa, con su porqué y su sitio en el código, está en
-[`PENDIENTES.md`](PENDIENTES.md). En resumen:
+**Falta** — la lista completa está en [`PENDIENTES.md`](PENDIENTES.md):
 
 - **capa 4** — el canal de órdenes en lenguaje natural (hoy, un stub determinista)
 - **capa 3** — los seis agentes de entorno (hoy, plantilla)
-- **calibración** — cuatro problemas medidos, ver abajo
-- **seis decisiones de diseño** que no son técnicas y no son mías
+- **el mapa esquemático en pantalla** — las 24 posiciones ya están en los datos
+- **las superficies web** — `web_ui/` apunta todavía a los endpoints antiguos
+- **persistencia** de la corrida, para repetirla con una decisión cambiada
 
 Los stubs están marcados donde viven: `grep -rn "PENDIENTE" src/`
 
@@ -142,26 +187,29 @@ Los stubs están marcados donde viven: `grep -rn "PENDIENTE" src/`
 corrida con personas es una medición, no un ejercicio, y conviene decirlo antes
 de empezar.
 
-El criterio es **por comportamiento, no por realismo**: ajustar hasta que
-ninguna estrategia pura gane. `scripts/correr_ejercicio.py --comparar` es la
-herramienta que lo mide. Medición del 2026-08-24:
+El criterio es **por comportamiento, no por realismo**: ajustar hasta que ninguna
+estrategia pura gane. `scripts/correr_ejercicio.py --comparar` lo mide.
 
 ```
-  estrategia      netas  reap  muertes  legit  cohes  credib
-  solo_fuerza         3     3      147     25      0      21
-  solo_mesa           6     0      147     52     41      45
-  constituida         1     2      147     44     23      21
-  humanitaria         3     0       70     37      0      45
-  pasiva              1     0      147     25      0      45
+  estrategia      netas  reap  muert  legit  cohes  credib   resp
+  ---------------------------------------------------------------------
+  solo_fuerza         1     2     64     15      0      21     24
+  solo_mesa           5     4     64     59     56      29     49
+  constituida         3     1     48     24     74      21     38
+  humanitaria         3     0     16     32     28      35     50
+  logistica           3     1     24     41     40      26     39
+  pasiva              0     0     64     23     28      45     43
 ```
 
-Ninguna domina —`solo_mesa` conserva las reservas pero no salva a nadie;
-`humanitaria` salva la mitad y lo paga en legitimidad y cohesión— pero quedan
-cuatro problemas abiertos: la cohesión se hunde a 0 en tres de las cinco
-(satura), las muertes son 147 en cuatro de las cinco, `constituida` rinde por
-debajo de lo que debería para una sala que hace las cosas bien, y la fuerza casi
-nunca alcanza a abrir un corredor en cinco turnos. Los cuatro están en
-[`PENDIENTES.md` §C](PENDIENTES.md#c--calibración).
+**Ninguna domina.** `solo_mesa` abre más caminos y conserva las reservas — y deja
+morir a la misma gente que `pasiva`. `humanitaria` salva al 75 % y lo paga en
+cohesión y en caminos. `constituida` tiene la mejor mesa y gasta legitimidad al
+operar. `solo_fuerza` se queda sin nada.
+
+Los dos problemas que estaban medidos —la cohesión saturada en 0 y las muertes
+idénticas en cuatro de cinco estrategias— **no eran de coeficientes: eran piezas
+que faltaban.** El antes y el después está en
+[`docs/COMO_FUNCIONA_2.md` §12](docs/COMO_FUNCIONA_2.md).
 
 ---
 
