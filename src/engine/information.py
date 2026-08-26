@@ -125,6 +125,26 @@ def reponer_duplas(estado: Estado) -> None:
     estado.duplas_usadas_en = []
 
 
+def marcar_verificado(estado: Estado, nodo, por: str, turno: int) -> None:
+    """
+    Registra que alguien miró este punto — y lo deja visible en el tablero.
+
+    Las cuatro fuentes de observación (dupla, parte municipal, inteligencia de
+    Defensa, mapa de Transporte) pasaban por aquí poniendo los mismos dos campos
+    a mano, y ninguna dejaba rastro. Que un punto **haya sido mirado en la última
+    ventana** es un hecho público y es justo lo que la sala necesita ver para
+    saber si su decisión de gastar una dupla surtió efecto.
+
+    Lo que NO sale de aquí es qué vio: la estimación, con su sesgo, es de quien
+    la encargó.
+    """
+    nodo.ultima_verificacion_turno = turno
+    nodo.verificado_por = por
+    estado.eventos_turno.append(
+        {"tipo": "punto_verificado", "nodo": nodo.nodo_id, "por": por}
+    )
+
+
 def verificar_puntos(
     estado: Estado, nodos_ids: list[str], turno: int, rng: random.Random
 ) -> dict:
@@ -146,8 +166,7 @@ def verificar_puntos(
         if not consumir_dupla(estado, f"verificar:{nid}"):
             no_alcanzados.append(nid)
             continue
-        nodo.ultima_verificacion_turno = turno
-        nodo.verificado_por = "dupla_defensoria"
+        marcar_verificado(estado, nodo, "dupla_defensoria", turno)
         verificados.append(estimar_nodo(nodo, "dupla_defensoria", turno, rng))
 
     aviso = None

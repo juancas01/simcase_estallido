@@ -788,3 +788,66 @@ def test_el_delta_no_abre_una_puerta_trasera_a_lo_oculto():
                 "esmad_sin_comprometer", "puntos_abiertos"}
     caudales = {f"caudal:{c}" for c in e.corredores}
     assert set(m.historial[-1].indicadores) == publicas | caudales
+
+
+def test_el_mapa_cuenta_lo_que_se_hizo_y_no_donde_esta_la_fuerza():
+    """
+    **La línea que no se cruza en la capa de hechos del mapa.**
+
+    Que se operó en un punto es un hecho público: sale en las noticias esa misma
+    tarde, y la sala necesita verlo para saber si su decisión surtió efecto.
+
+    Dónde está la fuerza AHORA —su ubicación, su asignación, su fatiga— es de la
+    Dirección General de la Policía. Si apareciera en el tablero, uno de los ocho
+    roles dejaría de hacer falta.
+    """
+    e = cargar_estado()
+    m = MotorCrisis(e)
+    m.paso("dia")
+
+    nid = next(iter(e.nodos))
+    m.cola_inmediata = [OperarNodo(
+        nodo_id=nid, tipo_unidad="esmad", dupla_presente=True,
+        responsable_nominado="Ministro de Defensa")]
+    m.paso("dia")
+
+    hechos = m.hechos_por_punto()
+    assert nid in hechos, "operar deja huella aunque no consiga abrir"
+    tipos = {h["tipo"] for h in hechos[nid]}
+    assert "operacion" in tipos
+
+    # Ni un solo campo que hable de dónde está o cómo está la fuerza.
+    prohibido = ("ubicacion", "asignacion", "fatiga", "unidad_id",
+                 "escuadron", "turnos_continuos", "veraz", "composicion")
+    for lista in hechos.values():
+        for h in lista:
+            for clave in h:
+                assert clave in MotorCrisis.CAMPOS_DE_HECHO, clave
+                assert not any(x in clave.lower() for x in prohibido), clave
+
+    # Y la posición sigue existiendo en el motor: no se ha borrado, se ha callado.
+    assert any(u.ubicacion is not None for u in e.unidades)
+
+
+def test_el_anillo_del_mapa_se_apaga_a_la_ventana_siguiente():
+    """
+    Los hechos son de la ÚLTIMA ventana, igual que los deltas. Si se acumularan,
+    a partir del turno 3 el mapa estaría lleno de anillos y dejaría de señalar.
+
+    La noche vale como ventana: lo que se abrió por la fuerza reabre en ella, y
+    eso es precisamente lo que la sala tiene que ver ocurrir.
+    """
+    e = cargar_estado()
+    m = MotorCrisis(e)
+    m.paso("dia")
+
+    nid = next(iter(e.nodos))
+    m.cola_inmediata = [OperarNodo(
+        nodo_id=nid, tipo_unidad="esmad",
+        responsable_nominado="Ministro de Defensa")]
+    m.paso("dia")
+    assert "operacion" in {h["tipo"] for h in m.hechos_por_punto().get(nid, [])}
+
+    m.paso("noche")
+    despues = {h["tipo"] for h in m.hechos_por_punto().get(nid, [])}
+    assert "operacion" not in despues, "el hecho no se arrastra de una ventana a otra"

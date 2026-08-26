@@ -264,10 +264,39 @@ sala avanza y `9/24` tres turnos después sí.
 > **La distancia entre «3 puntos sin verificar» y «verifique P7» es la distancia
 > entre un ejercicio y un tutorial.**
 
+**5 · Lo que pasó en cada punto.** El mapa dibuja un anillo sobre los puntos
+donde ocurrió algo en la última ventana, y se apaga en la siguiente. Es la misma
+regla del delta aplicada al territorio: *un punto rojo dice que está cerrado; un
+punto rojo con anillo dice que se cerró anoche, que es otra conversación.*
+
+| Anillo | Qué ocurrió |
+|---|---|
+| rojo | volvió a cerrarse de noche · se operó con incidente · se incumplió un acuerdo |
+| ámbar | se operó, sin incidente |
+| verde | se abrió, o se acordó paso seguro |
+| azul | alguien lo verificó en campo |
+
+> **El mapa cuenta lo que se hizo; no dónde está la fuerza.**
+>
+> Que se operó en un punto es público: sale en las noticias esa misma tarde, y
+> la sala necesita verlo para saber si su decisión surtió efecto. La
+> **ubicación, la asignación y la fatiga** de cada escuadrón existen en el motor
+> y viven en la vista de la Dirección General de la Policía. Si aparecieran en
+> el tablero, uno de los ocho roles dejaría de hacer falta.
+
+Lo custodia `test_el_mapa_cuenta_lo_que_se_hizo_y_no_donde_esta_la_fuerza`, y que
+el anillo no se acumule,
+`test_el_anillo_del_mapa_se_apaga_a_la_ventana_siguiente`.
+
 **Y el delta no abre una puerta trasera.** `_indicadores()` se restringe a lo que
 `vista_publica()` ya serializa: un delta calculado sobre la mezcla real de un
 punto la filtraría igual de bien que mostrarla. Lo custodia
 `test_el_delta_no_abre_una_puerta_trasera_a_lo_oculto`.
+
+Los hechos del mapa llevan **lista blanca de campos** por la misma razón: un
+evento del motor puede llevar dentro cualquier cosa —`veraz`, por ejemplo— y
+basta añadir un campo nuevo para abrir una filtración sin darse cuenta. Lo que no
+esté en `CAMPOS_DE_HECHO` no sale.
 
 ---
 ---

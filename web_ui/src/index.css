@@ -639,27 +639,32 @@ a { color: var(--acento); }
 
 .territorio {
   display: grid;
-  grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 520px) minmax(0, 1fr);
   gap: 1.5rem;
   align-items: start;
 }
-@media (max-width: 1050px) {
-  .territorio { grid-template-columns: 1fr; gap: 1rem; }
-  .mapa-svg { max-height: 46vh; }
+/* Con el mapa a 520 px la tabla necesita sitio propio; por debajo de esto se
+   apilan y el mapa se queda con el ancho entero, que es cuando mejor se lee. */
+@media (max-width: 1250px) {
+  .territorio { grid-template-columns: 1fr; gap: 1.25rem; }
+  .mapa-svg { max-height: 62vh; }
 }
 
 /* DOS AJUSTES SUCESIVOS, y el segundo corrige al primero.
    Con `height: auto` sobre un lienzo casi cuadrado, a ancho completo el mapa se
    comía la pantalla. Acotarlo lo devolvió a su sitio — y de paso lo dejó
    ilegible: los identificadores de los 24 puntos no se leían.
-   El ancho de la columna (360 px) y el tope de alto (375 px) van emparejados a
-   propósito: el lienzo es 100×104, así que un hueco de esa proporción se llena
-   casi entero y no queda letterbox a los lados. */
+   El ancho de la columna (520 px) y el tope de alto (560 px) van emparejados a
+   propósito: el lienzo es 100×104 más margen, o sea casi cuadrado, así que un
+   hueco de esa proporción se llena entero y no queda franja vacía a los lados.
+
+   Y el tamaño es legibilidad, no capricho: el texto del SVG escala con el
+   lienzo. A 360 px los identificadores de los 24 puntos salían a 6 px. */
 .mapa-svg {
   display: block;
   width: 100%;
   height: auto;
-  max-height: min(375px, 44vh);
+  max-height: min(560px, 60vh);
 }
 
 .mapa-formas {
@@ -728,4 +733,15 @@ tr.aviso > td:first-child { padding-left: 0.65rem; }
 }
 @media (max-width: 620px) {
   .banda { grid-template-columns: 1fr; }
+}
+
+/* El anillo de la leyenda: la misma forma que se dibuja sobre el punto. */
+.aro {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 0.3rem;
+  border: 1.5px solid;
+  border-radius: 50%;
+  vertical-align: -0.05em;
 }

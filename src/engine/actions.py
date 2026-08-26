@@ -546,8 +546,7 @@ class PublicarParteMunicipal(Accion):
         nodos = estado.nodos_de_region(estado.region_epicentro)
         for n in nodos:
             if n.ultima_verificacion_turno is None:
-                n.ultima_verificacion_turno = estado.turno
-                n.verificado_por = "parte_municipal"
+                information.marcar_verificado(estado, n, "parte_municipal", estado.turno)
 
         if self.disputa_cifra and not estado.banderas.protocolo_verificacion:
             information.costo_de_no_clasificar(estado)
@@ -666,6 +665,22 @@ class OperarNodo(Accion):
             concertado_con_alcaldia=self.concertado_con_alcaldia,
             responsable_nominado=self.responsable_nominado,
         )
+
+        # QUE SE OPERÓ AQUÍ ES UN HECHO PÚBLICO, con éxito o sin él. Sale en las
+        # noticias esa misma tarde. Antes solo se registraba la apertura cuando
+        # salía bien, de modo que una operación fallida no dejaba ninguna huella
+        # en el tablero y la sala no podía ver dónde había intervenido.
+        #
+        # Lo que NO se registra aquí es dónde está la fuerza AHORA. Eso es de la
+        # Dirección General de la Policía, y si se filtrara al tablero uno de los
+        # ocho roles dejaría de hacer falta.
+        estado.eventos_turno.append({
+            "tipo": "operacion",
+            "nodo": nodo.nodo_id,
+            "unidad": self.tipo_unidad,
+            "dupla": dupla_real,
+            "incidente": res.hubo_incidente,
+        })
 
         # ¿Se operó sobre un punto pactado? El acuerdo se rompe.
         acuerdo = estado.acuerdo_vigente_sobre(self.nodo_id)
@@ -795,8 +810,8 @@ class PresentarEvidenciaInteligencia(Accion):
         for nid in objetivo:
             n = estado.nodos.get(nid)
             if n and n.ultima_verificacion_turno is None:
-                n.ultima_verificacion_turno = estado.turno
-                n.verificado_por = "inteligencia_defensa"
+                information.marcar_verificado(
+                    estado, n, "inteligencia_defensa", estado.turno)
 
         if self.declara_solidez:
             estado.reservas.aplicar({"cohesion_mesa": 3.0, "credibilidad_mesa": 2.0})
@@ -1294,8 +1309,8 @@ class PublicarMapaCierres(Accion):
             b = c.punto_que_bloquea(estado.nodos)
             if b:
                 bloqueos[c.corredor_id] = estado.nodos[b].nombre
-                estado.nodos[b].ultima_verificacion_turno = estado.turno
-                estado.nodos[b].verificado_por = "mapa_transporte"
+                information.marcar_verificado(
+                    estado, estado.nodos[b], "mapa_transporte", estado.turno)
 
         if not self.anunciar:
             return Resultado(True, (

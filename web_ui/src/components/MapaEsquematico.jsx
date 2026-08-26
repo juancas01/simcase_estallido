@@ -49,9 +49,72 @@ const FORMA = {
   cerrado: 'cerrado',
 }
 
+// ---------------------------------------------------------------------------
+// LO QUE PASÓ AQUÍ EN LA ÚLTIMA VENTANA
+//
+// Mismo principio que los deltas de las reservas, aplicado al mapa: **el
+// cambio, no el nivel.** Un punto rojo dice que está cerrado. Un punto rojo con
+// anillo dice que se cerró ANOCHE, que es otra conversación.
+//
+// LA LÍNEA QUE NO SE CRUZA. Aquí se dibuja lo que YA OCURRIÓ y es público: se
+// operó en este punto, una dupla lo miró, el acuerdo se rompió. Sale en las
+// noticias esa misma tarde y el mapa no revela nada que la sala no sepa.
+//
+// Lo que NO se dibuja es dónde está la fuerza AHORA. Eso vive en la vista de la
+// Dirección General de la Policía —con su fatiga y su asignación— y ponerlo en
+// el tablero dejaría sin oficio a uno de los ocho. La regla en una línea:
+//
+//     El mapa cuenta lo que se hizo. La posición de la fuerza es de quien
+//     la manda.
+// ---------------------------------------------------------------------------
+
+const HECHO = {
+  operacion:         { rango: 2, color: '#d9a441', texto: 'se operó' },
+  operacion_grave:   { rango: 3, color: '#d9636f', texto: 'se operó, con incidente' },
+  reapertura:        { rango: 3, color: '#d9636f', texto: 'volvió a cerrarse de noche' },
+  acuerdo_incumplido:{ rango: 3, color: '#d9636f', texto: 'el acuerdo se incumplió' },
+  apertura:          { rango: 1, color: '#4fb286', texto: 'se abrió' },
+  desgaste:          { rango: 1, color: '#4fb286', texto: 'se abrió por desgaste' },
+  paso_seguro:       { rango: 1, color: '#4fb286', texto: 'se acordó paso seguro' },
+  punto_verificado:  { rango: 0, color: '#7aa5e8', texto: 'lo verificó una dupla' },
+}
+
+const UNIDAD = { esmad: 'ESMAD', policia: 'Policía', militar: 'Ejército' }
+
+/** La clave del hecho, desdoblando la operación según haya habido incidente. */
+function claveDe(h) {
+  if (h.tipo === 'operacion' && h.incidente) return 'operacion_grave'
+  return h.tipo
+}
+
+/** El anillo se pinta del hecho MÁS GRAVE. Los demás se cuentan en el rótulo. */
+function anilloDe(hechos) {
+  let peor = null
+  for (const h of hechos || []) {
+    const d = HECHO[claveDe(h)]
+    if (d && (!peor || d.rango > peor.rango)) peor = d
+  }
+  return peor
+}
+
+/** La frase que se lee al posarse encima. En prosa, no en claves del motor. */
+function frasesDe(hechos) {
+  return (hechos || []).map(h => {
+    const d = HECHO[claveDe(h)]
+    if (!d) return null
+    if (h.tipo === 'operacion') {
+      const quien = UNIDAD[h.unidad] || h.unidad
+      return `${d.texto} con ${quien}${h.dupla ? ', con dupla' : ', sin dupla'}`
+    }
+    if (h.tipo === 'apertura' && h.via) return `${d.texto} por ${h.via}`
+    return d.texto
+  }).filter(Boolean)
+}
+
 const VB = { w: 100, h: 104, pad: 6 }
 
 export default function MapaEsquematico({ tablero, seleccionado, onSeleccionar }) {
+  const hechos = tablero?.hechos || {}
   if (!tablero?.puntos?.length) return null
 
   const puntos = tablero.puntos
@@ -105,6 +168,9 @@ export default function MapaEsquematico({ tablero, seleccionado, onSeleccionar }
           const forma = FORMA[p.modo_apertura] || 'cerrado'
           const sel = seleccionado === p.nodo_id
           const sinMirar = p.estado === 'sin_verificar'
+          const suyos = hechos[p.nodo_id]
+          const anillo = anilloDe(suyos)
+          const frases = frasesDe(suyos)
 
           return (
             <g
@@ -115,11 +181,23 @@ export default function MapaEsquematico({ tablero, seleccionado, onSeleccionar }
               <title>
                 {`${p.nombre} · ${regiones[p.region_id]?.nombre || p.region_id}`}
                 {p.modo_apertura !== 'cerrado' ? ` · abierto por ${p.modo_apertura}` : ''}
-                {sinMirar ? ' · SIN VERIFICAR' : ''}
+                {sinMirar ? ' · sin verificar' : ''}
+                {frases.length ? `
+En la última ventana: ${frases.join('; ')}` : ''}
               </title>
 
-              {sel && <circle cx={p.x} cy={p.y} r={3.4} fill="none"
-                              stroke="#e8ecf4" strokeWidth={0.5} />}
+              {/* El anillo dice QUE AQUÍ PASÓ ALGO desde la última vez que la sala
+                  miró. Se apaga solo en la ventana siguiente, igual que un delta:
+                  si se quedara, dejaría de señalar en el turno 3. */}
+              {anillo && (
+                <circle cx={p.x} cy={p.y} r={3.5} fill="none"
+                        stroke={anillo.color}
+                        strokeWidth={anillo.rango >= 3 ? 0.75 : 0.5}
+                        strokeOpacity={0.95} />
+              )}
+
+              {sel && <circle cx={p.x} cy={p.y} r={4.6} fill="none"
+                              stroke="#e8ecf4" strokeWidth={0.45} />}
 
               {forma === 'pactado' ? (
                 // Cuadrado: lo pactado se sostiene mientras el acuerdo se cumpla
@@ -170,12 +248,24 @@ export default function MapaEsquematico({ tablero, seleccionado, onSeleccionar }
  */
 function Formas() {
   return (
-    <div className="mapa-formas">
-      <span>● Cerrado</span>
-      <span>◆ Fuerza</span>
-      <span>■ Pactado</span>
-      <span>? Sin verificar</span>
-      <Ayuda etiqueta="Qué significa cada forma">{D.formas_mapa}</Ayuda>
-    </div>
+    <>
+      <div className="mapa-formas">
+        <span>● Cerrado</span>
+        <span>◆ Fuerza</span>
+        <span>■ Pactado</span>
+        <span>? Sin verificar</span>
+        <Ayuda etiqueta="Qué significa cada forma">{D.formas_mapa}</Ayuda>
+      </div>
+      <div className="mapa-formas">
+        <span className="eyebrow" style={{ letterSpacing: '0.08em' }}>
+          Última ventana
+        </span>
+        <span><i className="aro" style={{ borderColor: '#d9636f' }} /> Se cerró o hubo incidente</span>
+        <span><i className="aro" style={{ borderColor: '#d9a441' }} /> Se operó</span>
+        <span><i className="aro" style={{ borderColor: '#4fb286' }} /> Se abrió</span>
+        <span><i className="aro" style={{ borderColor: '#7aa5e8' }} /> Se verificó</span>
+        <Ayuda etiqueta="Qué significan los anillos">{D.hechos_mapa}</Ayuda>
+      </div>
+    </>
   )
 }

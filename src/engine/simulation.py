@@ -197,6 +197,44 @@ class MotorCrisis:
 
     # ------------------------------------------------------------------
 
+    # Qué clases de hecho se dibujan sobre un punto del mapa, y qué campos de
+    # cada uno viajan a la interfaz. La lista de campos es BLANCA a propósito: un
+    # evento del motor puede llevar dentro cualquier cosa —`veraz`, por ejemplo—
+    # y basta con que alguien añada un campo nuevo para abrir una filtración sin
+    # darse cuenta. Aquí no pasa nada por olvidarse: lo que no esté en la lista
+    # no sale.
+    HECHOS_DE_PUNTO = frozenset({
+        "operacion", "punto_verificado", "apertura", "reapertura",
+        "desgaste", "paso_seguro", "acuerdo_incumplido",
+    })
+    CAMPOS_DE_HECHO = frozenset({"tipo", "via", "unidad", "dupla", "incidente", "por"})
+
+    def hechos_por_punto(self) -> dict[str, list[dict]]:
+        """
+        Qué le pasó a cada punto en la última ventana resuelta.
+
+        Es el mismo principio que los deltas, aplicado al mapa: **el cambio, no
+        el nivel.** Un punto rojo dice que está cerrado; un punto rojo con anillo
+        dice que se cerró anoche, que es otra conversación.
+
+        LA LÍNEA QUE NO SE CRUZA: aquí va lo que YA OCURRIÓ y es público —se
+        operó en este punto, una dupla lo miró, el acuerdo se rompió— y nunca
+        dónde está la fuerza AHORA. Lo primero sale en las noticias esa misma
+        tarde; lo segundo es de la Dirección General de la Policía, y en el
+        tablero dejaría sin oficio a uno de los ocho.
+        """
+        if not self.historial:
+            return {}
+        fuera: dict[str, list[dict]] = {}
+        for ev in self.historial[-1].eventos:
+            nid = ev.get("nodo")
+            if not nid or ev.get("tipo") not in self.HECHOS_DE_PUNTO:
+                continue
+            fuera.setdefault(nid, []).append(
+                {k: v for k, v in ev.items() if k in self.CAMPOS_DE_HECHO}
+            )
+        return fuera
+
     def _indicadores(self) -> dict:
         """
         Foto de las magnitudes que ve la sala, para poder restarlas después.

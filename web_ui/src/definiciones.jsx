@@ -252,6 +252,35 @@ export const D = {
     </>
   ),
 
+  hechos_mapa: (
+    <>
+      <p>
+        <strong>Un anillo dice que en ese punto pasó algo</strong> desde la última
+        vez que la sala miró, es decir, en la última ventana resuelta. Se apaga
+        solo en la siguiente.
+      </p>
+      <dl>
+        <dt>Rojo</dt>
+        <dd>
+          volvió a cerrarse de noche, se operó con incidente, o se incumplió un
+          acuerdo
+        </dd>
+        <dt>Ámbar</dt><dd>se operó, sin incidente</dd>
+        <dt>Verde</dt><dd>se abrió, o se acordó paso seguro</dd>
+        <dt>Azul</dt><dd>alguien lo verificó en campo</dd>
+      </dl>
+      <p>
+        Al posarse sobre el punto se lee el detalle: qué unidad operó y si llevaba
+        dupla de la Defensoría.
+      </p>
+      <p>
+        <strong>El mapa cuenta lo que se hizo, no dónde está la fuerza ahora.</strong>{' '}
+        Una operación de anoche es un hecho público; la posición y la fatiga de los
+        escuadrones son de la Dirección General de la Policía.
+      </p>
+    </>
+  ),
+
   corredores: (
     <>
       <p>

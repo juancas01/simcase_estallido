@@ -80,6 +80,9 @@ def tablero():
     # que el valor actual no revelara ya: se calcula sobre las mismas magnitudes
     # que `vista_publica()` serializa, ni una más.
     d["deltas"] = motor.deltas()
+    # Qué le pasó a cada punto en la última ventana. Solo hechos públicos y
+    # ya ocurridos: nunca dónde está la fuerza ahora, que es de la Policía.
+    d["hechos"] = motor.hechos_por_punto()
     return d
 
 
