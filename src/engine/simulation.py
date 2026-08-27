@@ -62,6 +62,12 @@ class MotorCrisis:
         self.semilla = semilla
         self.rng = random.Random(semilla)
 
+        # El estado la lleva encima para que una LECTURA pueda ser reproducible
+        # sin tocar `self.rng`. Mirar no mueve el dado: si lo moviera, el
+        # resultado de la corrida dependeria de cuantas veces se refresco una
+        # pantalla, y la semilla no serviria para nada.
+        estado.semilla = semilla
+
         # Tres colas, igual que en Macondo. La condicional es aquí más necesaria.
         self.cola_inmediata: list[Accion] = []
         self.eventos_programados: list[dict] = []

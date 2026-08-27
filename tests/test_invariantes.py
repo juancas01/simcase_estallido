@@ -61,7 +61,7 @@ def test_la_vista_publica_jamas_expone_la_mezcla_real(estado):
 def test_las_ocho_vistas_privadas_tampoco_la_exponen(estado):
     """La vista privada es de alta resolución, no de capa 1."""
     for rol in views.ROLES:
-        texto = repr(views.vista(estado, rol, _rng()))
+        texto = repr(views.vista(estado, rol))
         assert "composicion_real" not in texto, rol
         assert "protesta_legitima" not in texto, rol
 
@@ -73,7 +73,7 @@ def test_ninguna_vista_revela_la_veracidad_de_una_denuncia(estado):
     """
     assert "veraz" not in repr(estado.vista_publica())
     for rol in views.ROLES:
-        assert "'veraz'" not in repr(views.vista(estado, rol, _rng())), rol
+        assert "'veraz'" not in repr(views.vista(estado, rol)), rol
 
 
 def test_la_vista_publica_sigue_limpia_tras_varios_turnos(motor):
@@ -555,7 +555,7 @@ def test_la_misma_semilla_da_la_misma_corrida():
 def test_los_ocho_roles_tienen_vista(estado):
     assert len(views.ROLES) == 8
     for rol in views.ROLES:
-        v = views.vista(estado, rol, _rng())
+        v = views.vista(estado, rol)
         assert v["detalle"], rol
         assert v["alerta"], rol
 
@@ -566,9 +566,87 @@ def test_cada_vista_cabe_en_una_pantalla(estado):
     gente mirará la pantalla en vez de a las otras siete personas.
     """
     for rol in views.ROLES:
-        v = views.vista(estado, rol, _rng())
+        v = views.vista(estado, rol)
         assert len(v["detalle"]) <= 7, f"{rol} tiene {len(v['detalle'])} bloques"
         assert len(v["alerta"]) < 260, rol
+
+
+# ---------------------------------------------------------------------------
+# Mirar no cambia nada
+#
+# Las cuatro nacen del mismo fallo: `estimar_nodo` tiraba el dado en el momento
+# de MIRAR, y la API le pasaba el dado del motor. Refrescar movía los números y
+# —lo grave— movía la corrida.
+# ---------------------------------------------------------------------------
+
+def test_mirar_dos_veces_da_lo_mismo(estado, motor):
+    """
+    Refrescar la pantalla no puede mover un número.
+
+    Es el síntoma por el que se encontró todo esto: el parte de Interior cambiaba
+    solo por pulsar F5, y una fuente que se contradice sola es una fuente que
+    nadie lleva a la mesa.
+    """
+    motor.paso(franja="dia")
+    assert views.todas(estado) == views.todas(estado) == views.todas(estado)
+
+
+def test_mirar_no_gasta_azar_de_la_corrida(estado, motor):
+    """
+    El precio invisible del mismo fallo, y el grave.
+
+    Si una lectura consume el `rng` del motor, el resultado de la corrida pasa a
+    depender de cuántas veces alguien refrescó su pantalla — y entonces la
+    semilla no sirve para repetir la corrida con una decisión cambiada, que es la
+    mejor herramienta del debriefing.
+    """
+    motor.paso(franja="dia")
+    antes = motor.rng.getstate()
+    for _ in range(5):
+        views.todas(estado)
+    assert motor.rng.getstate() == antes
+
+
+def test_la_lectura_es_un_hecho_del_turno_en_que_se_hizo(estado):
+    """
+    La misma fuente, el mismo punto y el mismo turno dan siempre lo mismo. Turnos
+    distintos dan lecturas distintas, que es lo correcto: cada turno la fuente
+    vuelve a mirar.
+    """
+    n = next(iter(estado.nodos.values()))
+    a = information.estimar_nodo(n, "dupla_defensoria", 2, estado.semilla)
+    b = information.estimar_nodo(n, "dupla_defensoria", 2, estado.semilla)
+    c = information.estimar_nodo(n, "dupla_defensoria", 5, estado.semilla)
+
+    assert a.estructura_organizada == b.estructura_organizada
+    assert a.estructura_organizada != c.estructura_organizada
+
+
+def test_lo_constatado_por_la_defensoria_se_queda_quieto(estado, motor):
+    """
+    Lo que una dupla constató en el turno 0 tiene que seguir diciendo lo mismo en
+    el turno 3. Si se recalcula con el turno actual, «constatado» no significa
+    nada — y la Defensoría deja de ser la fuente que casi no se equivoca.
+
+    Ojo con el turno 0: es un turno, no un `None`. La primera versión del guardia
+    usaba `or` y el turno 0 caía por falsy, que es justo el caso de un punto
+    verificado antes de empezar.
+    """
+    nodo = next(iter(estado.nodos.values()))
+    information.marcar_verificado(estado, nodo, "dupla_defensoria", estado.turno)
+
+    def constatado():
+        v = views.vista(estado, "Defensoría")
+        return v["detalle"]["lo_que_han_constatado"]
+
+    primero = constatado()
+    assert primero, "el punto verificado tiene que aparecer"
+
+    motor.paso(franja="dia")
+    motor.paso(franja="noche")
+    motor.paso(franja="dia")
+
+    assert constatado() == primero
 
 
 def test_solo_minas_ve_los_dias_exactos(estado):
@@ -581,12 +659,12 @@ def test_solo_minas_ve_los_dias_exactos(estado):
         assert "semaforo" in r
         assert "dias_oxigeno" not in r
 
-    minas = views.vista(estado, "Minas", _rng())
+    minas = views.vista(estado, "Minas")
     assert minas["detalle"]["calendario_por_region"][0]["oxigeno_dias"] is not None
 
 
 def test_solo_transporte_ve_que_punto_bloquea_cada_corredor(estado):
-    t = views.vista(estado, "Transporte", _rng())
+    t = views.vista(estado, "Transporte")
     assert any(c["bloqueado_en"] for c in t["detalle"]["mapa_vivo"])
 
 

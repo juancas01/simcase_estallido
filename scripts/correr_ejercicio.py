@@ -524,7 +524,7 @@ def mostrar_vistas(semilla: int, turnos: int = 2) -> None:
     print(SEP)
     print(f"  LAS OCHO VISTAS PRIVADAS — turno {estado.turno_decision}")
     print(SEP)
-    for rol, v in views.todas(estado, motor.rng).items():
+    for rol, v in views.todas(estado).items():
         print()
         print(f"── {rol.upper()} " + "─" * (60 - len(rol)))
         print(f"  ALERTA: {v['alerta']}")

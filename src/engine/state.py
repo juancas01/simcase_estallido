@@ -368,6 +368,11 @@ class Estado:
     turno_decision: int = 0   # turnos de sala; solo los de día
     franja: Franja = "dia"
 
+    # La semilla de la corrida. No es una variable del caso: es lo que permite
+    # que una LECTURA sea reproducible sin gastar el azar del motor. La pone
+    # `MotorCrisis.__init__`; ver `information.estimar_nodo`.
+    semilla: int = P.SEMILLA_POR_DEFECTO
+
     nodos: dict[str, Nodo] = field(default_factory=dict)
     corredores: dict[str, Corredor] = field(default_factory=dict)
     regiones: dict[str, Region] = field(default_factory=dict)

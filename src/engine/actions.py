@@ -1162,7 +1162,7 @@ class AsignarDuplas(Accion):
             )
 
         if self.nodos:
-            r = information.verificar_puntos(estado, self.nodos, estado.turno, rng)
+            r = information.verificar_puntos(estado, self.nodos, estado.turno)
             if r["ok"]:
                 partes.append(f"Verificados {len(r['verificados'])} punto(s).")
                 if r.get("aviso"):

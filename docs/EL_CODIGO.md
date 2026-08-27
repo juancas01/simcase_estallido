@@ -34,7 +34,7 @@ De ahí sale la propiedad más importante del repositorio, y la que conviene
 comprobar antes de tocar nada:
 
 ```bash
-uv run pytest -q          # 59 pruebas, ninguna llama a un modelo
+uv run pytest -q          # 63 pruebas, ninguna llama a un modelo
 ```
 
 **El motor corre entero sin llave de API.** No es una comodidad de desarrollo: es
@@ -69,18 +69,18 @@ simcase_estallido/
 │
 ├── src/engine/          EL MOTOR · único dueño del estado · sin IA
 │   ├── parameters.py    328 l   todas las constantes, con nombre y unidad
-│   ├── state.py         641 l   de qué está hecho el país + vista_publica()
+│   ├── state.py         646 l   de qué está hecho el país + vista_publica()
 │   ├── loader.py        289 l   construye t=0 desde data/ y verifica invariantes
 │   │
 │   ├── mobilization.py  183 l   el adversario reflexivo
 │   ├── force.py         367 l   riesgo, mitigadores, incidentes, ESMAD, escolta
 │   ├── aperture.py      224 l   las tres vías de abrir, reaperturas, acuerdos
 │   ├── supply.py        227 l   el reloj, el oxígeno, la prioridad de combustible
-│   ├── information.py   319 l   verdad, estimaciones sesgadas, duplas, denuncias
+│   ├── information.py   341 l   verdad, estimaciones sesgadas, duplas, denuncias
 │   │
-│   ├── views.py         525 l   LAS OCHO VISTAS PRIVADAS
+│   ├── views.py         539 l   LAS OCHO VISTAS PRIVADAS
 │   ├── actions.py     1 670 l   las 34 acciones de los ocho roles
-│   └── simulation.py    496 l   el bucle de turnos · paso() es la única puerta
+│   └── simulation.py    502 l   el bucle de turnos · paso() es la única puerta
 │
 ├── src/api/main.py      364 l   capa delgada · 15 endpoints y el catch-all del SPA
 │
@@ -101,7 +101,7 @@ simcase_estallido/
 │
 ├── data/escenario/      EL CASO, en datos y no en código
 ├── scripts/             el corredor sin interfaz, para calibrar sin sala
-├── tests/               964 l   59 verificadores sin modelo, en 0,2 s
+├── tests/             1 042 l   63 verificadores sin modelo, en 0,2 s
 │
 ├── README.md            por dónde empezar
 ├── PENDIENTES.md        qué falta · el único sitio donde se lleva la cuenta
@@ -304,7 +304,7 @@ aviso, rojo es deterioro.
 
 ## 9. Las pruebas
 
-**59, sin modelo, en dos décimas de segundo.** Corren en cada cambio.
+**63, sin modelo, en dos décimas de segundo.** Corren en cada cambio.
 
 ```bash
 uv run pytest -q
@@ -406,6 +406,22 @@ probó antes y no funcionó**.
 repositorio y la que más veces ha salvado algo: el catálogo de acciones se genera
 del código, los rótulos viven en un archivo, las definiciones en otro, y el
 frontend lee de las mismas fuentes que el motor.
+
+**Mirar no cambia nada y no gasta azar.** Todo lo que sirve una superficie
+—`vista_publica()`, `views.vista()`, `deltas()`, `hechos_por_punto()`— es una
+proyección determinista del estado: con el mismo estado sale lo mismo, se pida
+una vez o cincuenta. Donde hace falta ruido, la semilla se **deriva** de la clave
+del dato (`information.estimar_nodo`) en vez de sacarla del `rng` del motor.
+
+> Costó encontrarlo porque el síntoma era cosmético —los números de la vista de
+> Interior cambiaban al refrescar— y el daño no: cada refresco consumía azar de
+> la corrida, así que el resultado dependía de cuántas veces alguien pulsó F5.
+> Una semilla que no reproduce la corrida no sirve para el debriefing.
+>
+> **La excepción conocida es `/api/proyeccion`**, que sí avanza el mundo:
+> `proyectar_sin_mando()` corre turnos de verdad sobre el estado real. Es
+> intencionado —es el país que la sala entrega— pero significa que ese endpoint
+> **no se puede refrescar**. Hoy ninguna pantalla lo llama.
 
 ---
 

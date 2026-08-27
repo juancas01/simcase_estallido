@@ -41,8 +41,6 @@ distintos y tengan que hablar.
 
 from __future__ import annotations
 
-import random
-
 from src.engine import parameters as P
 from src.engine import information
 from src.engine.state import Estado
@@ -54,18 +52,23 @@ ROLES = [
 ]
 
 
-def vista(estado: Estado, rol: str, rng: random.Random | None = None) -> dict:
+def vista(estado: Estado, rol: str) -> dict:
     """
     Devuelve la vista privada de un rol: `{rol, detalle, alerta}`.
 
-    `rng` solo se usa para las lecturas sesgadas. Se pasa el del motor para que
-    la corrida siga siendo reproducible.
+    **Mirar no cambia nada y no gasta azar.** Una vista es una proyección
+    determinista del estado: con el mismo estado sale el mismo texto y los
+    mismos números, se pida una vez o cincuenta.
+
+    Antes esta función recibía el dado del motor, y eso tenía dos precios que no
+    se veían: refrescar la pantalla movía los números, y refrescar la pantalla
+    movía la corrida. El ruido de las lecturas sesgadas ahora se deriva de la
+    semilla, en `information.estimar_nodo`.
     """
-    rng = rng or random.Random(P.SEMILLA_POR_DEFECTO + estado.turno)
     fn = _VISTAS.get(rol)
     if fn is None:
         raise KeyError(f"rol desconocido: {rol}. Los ocho son {ROLES}")
-    detalle, alerta = fn(estado, rng)
+    detalle, alerta = fn(estado)
     return {
         "rol": rol,
         "turno": estado.turno_decision,
@@ -75,15 +78,15 @@ def vista(estado: Estado, rol: str, rng: random.Random | None = None) -> dict:
     }
 
 
-def todas(estado: Estado, rng: random.Random | None = None) -> dict[str, dict]:
-    return {r: vista(estado, r, rng) for r in ROLES}
+def todas(estado: Estado) -> dict[str, dict]:
+    return {r: vista(estado, r) for r in ROLES}
 
 
 # ===========================================================================
 # 01 · Presidente — la contabilidad de la propia mesa
 # ===========================================================================
 
-def _presidente(estado: Estado, rng: random.Random):
+def _presidente(estado: Estado):
     """
     Es el único que ve el desorden del PMU **antes de que produzca un daño**, y
     el único que tiene delante lo que cada rol declaró al entrar.
@@ -133,7 +136,7 @@ def _temperatura_coalicion(estado: Estado) -> str:
 # 02 · Interior — el estado del canal, sesgado hacia arriba
 # ===========================================================================
 
-def _interior(estado: Estado, rng: random.Random):
+def _interior(estado: Estado):
     """
     Su lectura sesgada es la trampa central del caso: **cree que puede pactar un
     punto entero cuando su interlocutor controla la mitad.** Su interlocutor le
@@ -146,7 +149,8 @@ def _interior(estado: Estado, rng: random.Random):
     cerrados = [n for n in estado.nodos.values() if not n.abierto]
     lecturas = []
     for n in sorted(cerrados, key=lambda x: -x.control_voceria)[:6]:
-        est = information.estimar_nodo(n, "parte_operacional", estado.turno, rng)
+        est = information.estimar_nodo(
+            n, "parte_operacional", estado.turno, estado.semilla)
         lecturas.append({
             "punto": n.nombre,
             "nodo_id": n.nodo_id,
@@ -188,7 +192,7 @@ def _interior(estado: Estado, rng: random.Random):
 # 03 · Alcalde — su ciudad en alta resolución
 # ===========================================================================
 
-def _alcalde(estado: Estado, rng: random.Random):
+def _alcalde(estado: Estado):
     """
     Es el único que puede decir, punto por punto, **si hay alguien con quien
     negociar** en su jurisdicción. Y su sesgo va en dirección contraria al de
@@ -199,7 +203,8 @@ def _alcalde(estado: Estado, rng: random.Random):
 
     puntos = []
     for n in sorted(mios, key=lambda x: -x.dureza)[:8]:
-        est = information.estimar_nodo(n, "parte_municipal", estado.turno, rng)
+        est = information.estimar_nodo(
+            n, "parte_municipal", estado.turno, estado.semilla)
         puntos.append({
             "punto": n.nombre,
             "nodo_id": n.nodo_id,
@@ -243,7 +248,7 @@ def _alcalde(estado: Estado, rng: random.Random):
 # 04 · Defensa — la inteligencia, y su propia solidez
 # ===========================================================================
 
-def _defensa(estado: Estado, rng: random.Random):
+def _defensa(estado: Estado):
     """
     Su lectura es el argumento más potente para escalar **y la más sesgada**: ve
     casi el doble de estructura organizada de la que hay, y la mesa tiende a
@@ -257,7 +262,8 @@ def _defensa(estado: Estado, rng: random.Random):
     inteligencia = []
     for n in sorted(cerrados,
                     key=lambda x: -x.composicion_real.estructura_organizada)[:5]:
-        est = information.estimar_nodo(n, "inteligencia_defensa", estado.turno, rng)
+        est = information.estimar_nodo(
+            n, "inteligencia_defensa", estado.turno, estado.semilla)
         # La solidez judicial es su propio juicio sobre su propia evidencia: alta
         # donde la lectura coincide con la realidad, baja donde su sesgo la infló.
         real = n.composicion_real.normalizada().estructura_organizada
@@ -301,7 +307,7 @@ def _defensa(estado: Estado, rng: random.Random):
 # 05 · Policía — el que más ve
 # ===========================================================================
 
-def _policia(estado: Estado, rng: random.Random):
+def _policia(estado: Estado):
     """
     Es el que más ve, y **el único que puede convertir «hay 6 escuadrones libres»
     en «hay 2 que llegan a tiempo»** — que es una decisión completamente distinta.
@@ -353,7 +359,7 @@ def _policia(estado: Estado, rng: random.Random):
 # 06 · Defensoría — tres duplas y veinticuatro puntos
 # ===========================================================================
 
-def _defensoria(estado: Estado, rng: random.Random):
+def _defensoria(estado: Estado):
     """
     Es la única fuente que casi no se equivoca, y la que menos alcanza a ver.
     **Verificar aquí es no verificar allá**, y esa elección es suya cada turno.
@@ -368,7 +374,15 @@ def _defensoria(estado: Estado, rng: random.Random):
     verificados = []
     for n in estado.nodos.values():
         if n.verificado_por == "dupla_defensoria":
-            est = information.estimar_nodo(n, "dupla_defensoria", estado.turno, rng)
+            # El turno de la LECTURA, no el actual: lo que la dupla constató en
+            # el turno 2 tiene que seguir diciendo lo mismo en el turno 5. Con
+            # `estado.turno` la verificación se volvía a tirar cada vez que
+            # alguien abría la vista, que es lo contrario de «constatado».
+            cuando = n.ultima_verificacion_turno
+            if cuando is None:
+                cuando = estado.turno
+            est = information.estimar_nodo(
+                n, "dupla_defensoria", cuando, estado.semilla)
             verificados.append({
                 "punto": n.nombre,
                 "estructura_organizada": round(est.estructura_organizada, 2),
@@ -404,7 +418,7 @@ def _defensoria(estado: Estado, rng: random.Random):
 # 07 · Transporte — el mapa vivo
 # ===========================================================================
 
-def _transporte(estado: Estado, rng: random.Random):
+def _transporte(estado: Estado):
     """
     Sin él, la mesa discute «el corredor al puerto» como si fuera una cosa. **Él
     sabe que son cuatro puntos, que tres están abiertos y que todo depende de
@@ -460,7 +474,7 @@ def _transporte(estado: Estado, rng: random.Random):
 # 08 · Minas — el reloj
 # ===========================================================================
 
-def _minas(estado: Estado, rng: random.Random):
+def _minas(estado: Estado):
     """
     **Es quien tiene el reloj.** Mientras no lo diga, la mesa sabe que hay un
     problema de abastecimiento y no sabe cuánto tiempo tiene.

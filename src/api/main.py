@@ -103,7 +103,7 @@ def vista_privada(rol: str):
     a ser necesario.
     """
     try:
-        v = views.vista(_estado, rol, motor.rng)
+        v = views.vista(_estado, rol)
     except KeyError:
         raise HTTPException(404, f"Rol desconocido: {rol}. Los ocho son {views.ROLES}")
     v["congelado"] = sala["congelado"]
@@ -114,7 +114,7 @@ def vista_privada(rol: str):
 @app.get("/api/vistas")
 def todas_las_vistas():
     """Solo para revisar el contenido al montar. No es una superficie del ejercicio."""
-    return views.todas(_estado, motor.rng)
+    return views.todas(_estado)
 
 
 # ===========================================================================

@@ -68,7 +68,7 @@ class Estimacion:
         return f"[{self.grado} · {self.fuente} · turno {self.turno}]"
 
 
-def estimar_nodo(nodo: Nodo, fuente: str, turno: int, rng: random.Random) -> Estimacion:
+def estimar_nodo(nodo: Nodo, fuente: str, turno: int, semilla: int) -> Estimacion:
     """
     Produce la lectura sesgada de una fuente sobre un punto.
 
@@ -76,9 +76,30 @@ def estimar_nodo(nodo: Nodo, fuente: str, turno: int, rng: random.Random) -> Est
     direcciones opuestas a propósito: la inteligencia de Defensa sobreestima la
     estructura organizada, el parte municipal la subestima. **Ninguno miente**:
     cada uno mira desde donde está parado.
+
+    ### La lectura es un hecho del turno, no del momento en que se mira
+
+    El ruido no sale de un dado compartido: sale de una semilla derivada de
+    **(corrida, turno, fuente, punto)**. Con las mismas cuatro cosas sale
+    siempre el mismo número, y con cualquiera distinta sale otro.
+
+    Esto no es una optimización, corrige tres cosas a la vez:
+
+    | | |
+    |---|---|
+    | **Mirar dos veces da lo mismo** | antes cada F5 volvía a tirar el dado, y el parte de Interior cambiaba solo por refrescar la pantalla |
+    | **Mirar no gasta azar de la corrida** | antes la API pasaba aquí el `rng` del motor: el resultado de la simulación dependía de cuántas veces alguien refrescó, que es justo lo que una semilla existe para impedir |
+    | **Lo constatado se queda quieto** | pasando el turno en que la dupla fue, una verificación del turno 2 sigue diciendo lo mismo en el turno 5 |
+
+    Por eso `turno` es el turno **de la lectura**, no el turno actual. Quien
+    consulta algo verificado antes pasa `nodo.ultima_verificacion_turno`.
     """
     real = nodo.composicion_real.normalizada()
     sesgo = P.SESGO_FUENTE.get(fuente, 0.0)
+
+    # Semilla derivada, no dado compartido. `random.Random` con cadena usa
+    # sha512: es estable entre procesos y no depende de PYTHONHASHSEED.
+    rng = random.Random(f"{semilla}|{turno}|{fuente}|{nodo.nodo_id}")
     ruido = rng.gauss(0.0, 0.05)
 
     est = min(1.0, max(0.0, real.estructura_organizada + sesgo + ruido))
@@ -146,7 +167,7 @@ def marcar_verificado(estado: Estado, nodo, por: str, turno: int) -> None:
 
 
 def verificar_puntos(
-    estado: Estado, nodos_ids: list[str], turno: int, rng: random.Random
+    estado: Estado, nodos_ids: list[str], turno: int
 ) -> dict:
     """
     Manda duplas a constatar qué hay en unos puntos. Una dupla por punto.
@@ -167,7 +188,8 @@ def verificar_puntos(
             no_alcanzados.append(nid)
             continue
         marcar_verificado(estado, nodo, "dupla_defensoria", turno)
-        verificados.append(estimar_nodo(nodo, "dupla_defensoria", turno, rng))
+        verificados.append(
+            estimar_nodo(nodo, "dupla_defensoria", turno, estado.semilla))
 
     aviso = None
     if no_alcanzados:

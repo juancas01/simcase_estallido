@@ -917,7 +917,7 @@ Cada vista es una **proyección determinista del estado** — no texto generado.
 construye leyendo el estado y aplicando el sesgo de la fuente de ese rol.
 
 ```python
-def vista(estado, rol, rng) -> {"rol", "turno", "detalle", "alerta"}
+def vista(estado, rol) -> {"rol", "turno", "detalle", "alerta"}
 ```
 
 **Tres invariantes que las custodian**, con prueba cada una:
@@ -987,7 +987,7 @@ reloj tenía **una sola entrada**. **Ahora** tiene tres:
   pasiva                  147       64
   constituida             147       48
   logistica                 —       24
-  humanitaria              70       16
+  humanitaria              70       14
 ```
 
 ### La medición completa
@@ -997,7 +997,7 @@ reloj tenía **una sola entrada**. **Ahora** tiene tres:
   ---------------------------------------------------------------------
   solo_fuerza         1     2     64     11      0      21     20
   solo_mesa           9     0     64     65     56      49     49
-  constituida         3     1     48     24     74      21     38
+  constituida         1     4     48     42     74      21     53
   humanitaria         3     0     14     41     28      35     54
   logistica           3     1     24     41     40      26     39
   pasiva              1     0     64     23     28      45     43
@@ -1006,11 +1006,17 @@ reloj tenía **una sola entrada**. **Ahora** tiene tres:
 **Ninguna domina, y el reparto es el que debe ser.** `solo_mesa` abre nueve
 caminos y conserva las reservas — **y deja morir exactamente a la misma gente que
 `pasiva`**. `humanitaria` salva 50 de las 64 muertes y abre un tercio de los
-caminos. `constituida` tiene la mejor mesa y opera lo justo para gastar
-legitimidad. `solo_fuerza` se queda sin nada.
+caminos. `constituida` tiene la mejor mesa y salva 16 muertes sin dejar de operar —
+y lo paga en credibilidad, que es lo que cuesta operar con la mesa puesta.
+`solo_fuerza` se queda sin nada.
 
 El dilema central del caso está en esa primera línea: **abrir el país y dejar
 morir a la gente, o salvarla y entregar el país cerrado.**
+
+> **Se lee por las columnas que no bailan.** `netas` y `reap` son tiradas y
+> cambian con la semilla; `cohes` y `muert` no, porque dependen de qué banderas
+> se adoptaron y qué corredores se abrieron. Si esas dos empezaran a moverse con
+> la semilla, algo se rompió.
 
 > **Si en el debriefing una opción resulta haber sido obviamente correcta desde el
 > turno 1, el ejercicio está mal calibrado.** Hoy no la hay.
@@ -1071,7 +1077,7 @@ La lista completa, con sus propuestas de diseño, en
 
 ---
 
-*Motor v2 · 59 pruebas en verde · semilla `20210511`. Diseño en
+*Motor v2 · 63 pruebas en verde · semilla `20210511`. Diseño en
 [`propuesta.md`](propuesta.md); diagnóstico del motor anterior en
 [`historial/mapa_de_palancas.md`](historial/mapa_de_palancas.md).*
 

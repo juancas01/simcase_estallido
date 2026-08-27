@@ -424,7 +424,7 @@ Medición actual con `--comparar`:
   ---------------------------------------------------------------------
   solo_fuerza         1     2     64     11      0      21     20
   solo_mesa           9     0     64     65     56      49     49
-  constituida         3     1     48     24     74      21     38
+  constituida         1     4     48     42     74      21     53
   humanitaria         3     0     14     41     28      35     54
   logistica           3     1     24     41     40      26     39
   pasiva              1     0     64     23     28      45     43
@@ -433,8 +433,8 @@ Medición actual con `--comparar`:
 **Ninguna domina, y el reparto es el que debe ser.** `solo_mesa` abre nueve
 caminos y conserva las reservas — **y deja morir exactamente a la misma gente que
 `pasiva`**. `humanitaria` salva 50 de las 64 muertes y abre un tercio de los
-caminos. `constituida` tiene la mejor mesa y gasta legitimidad al operar.
-`solo_fuerza` se queda sin nada.
+caminos. `constituida` tiene la mejor mesa y salva 16 muertes sin dejar de operar, y lo
+paga en credibilidad. `solo_fuerza` se queda sin nada.
 
 El dilema central del caso está en esa primera línea: **abrir el país y dejar
 morir a la gente, o salvarla y entregar el país cerrado.**
@@ -726,5 +726,5 @@ decisión de la simulación se delegó al modelo.
 
 ---
 
-*Última revisión: 2026-08-26 · 59 pruebas en verde · capas de lenguaje natural
+*Última revisión: 2026-08-26 · 63 pruebas en verde · capas de lenguaje natural
 activas con `gpt-5-nano`.*

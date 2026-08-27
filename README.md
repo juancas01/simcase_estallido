@@ -179,7 +179,7 @@ serlo — y eso, sobre hechos con responsabilidad judicial viva, es tomar partid
 - denuncias con veracidad oculta, y el ultimátum gremial del turno 1
 - territorio ficticio, con posiciones para el mapa esquemático
 - corredor sin interfaz con **seis estrategias** comparables
-- **59 pruebas sin modelo, en 0,2 s**
+- **63 pruebas sin modelo, en 0,2 s**
 
 **Falta** — la lista completa está en [`PENDIENTES.md`](PENDIENTES.md):
 
@@ -207,7 +207,7 @@ estrategia pura gane. `scripts/correr_ejercicio.py --comparar` lo mide.
   ---------------------------------------------------------------------
   solo_fuerza         1     2     64     11      0      21     20
   solo_mesa           9     0     64     65     56      49     49
-  constituida         3     1     48     24     74      21     38
+  constituida         1     4     48     42     74      21     53
   humanitaria         3     0     14     41     28      35     54
   logistica           3     1     24     41     40      26     39
   pasiva              1     0     64     23     28      45     43
