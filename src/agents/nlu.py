@@ -41,6 +41,7 @@ resto del cauce es idéntico. Ver `src/agents/config.py`.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 
 from src.engine import force
@@ -65,8 +66,29 @@ ARGUMENTOS_EN_CLARO: dict = {
     "modo": lambda v: f"modo: {v}",
     "n_escuadrones": lambda v: f"{v} escuadrón(es)",
     "n_unidades": lambda v: f"{v} unidad(es)",
-    "delimitada": lambda v: "con límites escritos" if v else "",
+    # También en los dos sentidos, y por la misma razón que `con_alcaldia`: la
+    # firma sin delimitar cuesta −22 de respaldo internacional y −15 de
+    # legitimidad frente a −8 y −5, entrega el encuadre de represión y dispara
+    # «militares en control de multitudes». Es el valor por defecto más caro del
+    # repertorio, y era el que no se decía.
+    "delimitada": lambda v: ("con límites escritos" if v else
+                             "SIN límites: sin territorio, plazo, reglas ni "
+                             "criterio de terminación"),
     "tema": lambda v: f"tema: {v}",
+    # Los cinco que faltaban. Cada uno cambia lo que el motor hace y ninguno se
+    # decía: la sala confirmaba una mesa «con la Alcaldía» que nadie había
+    # pedido, o unas líneas rojas con un margen que nadie había fijado.
+    #
+    # `con_alcaldia` se dice en los DOS sentidos —a diferencia del resto de
+    # booleanos— porque en el epicentro su ausencia es lo que hace inviable la
+    # acción, y eso la sala tiene que oírlo antes de confirmar, no después.
+    "con_alcaldia": lambda v: ("con la Alcaldía" if v else
+                               "SIN la Alcaldía"),
+    "ofrece_compensacion": lambda v: ("ofreciendo compensación" if v else
+                                      "sin ofrecer compensación"),
+    "margen": lambda v: f"margen negociable: {v}",
+    "instalaciones": lambda v: f"instalaciones: {', '.join(v)}" if v else "",
+    "orden": lambda v: f"orden de prioridad: {' > '.join(v)}" if v else "",
 }
 
 UNIDADES_EN_CLARO = {"esmad": "ESMAD", "policia": "policía", "militar": "militares"}
@@ -120,6 +142,10 @@ class AccionPlan:
     habilitada_por: list[str] = field(default_factory=list)
     riesgo: dict | None = None
 
+    # Lo que el canal QUITÓ de la interpretación, y por qué. Nunca lo que
+    # añadió: añadir sería el canal concediendo. Se lee en voz alta con el resto.
+    correcciones: list[str] = field(default_factory=list)
+
     # La hoja de datos, cuando la acción es una CONSULTA y no una orden. Se
     # extrae del motor y viaja con el plan para que se lea en la misma pantalla.
     datos: dict | None = None
@@ -133,8 +159,16 @@ class AccionPlan:
         sí — pero se dan los dos, porque el eco con identificador es lo que hace
         auditable la resolución.
         """
-        partes = [f"Sobre: {e.nombre} ({e.entidad_id})"
-                  for e in self.entidades if e.estado == "ok"]
+        resueltas = [e for e in self.entidades if e.estado == "ok"]
+        if len(resueltas) > 1:
+            # UNA CUENTA, y no tres «Sobre:» seguidos. Si la sala nombró tres
+            # puntos y oye dos, la resta la hace ella sola — y ese es el único
+            # aviso posible cuando el tercero ni siquiera se reconoció como
+            # nombre, que es lo que pasa en la rama sin modelo.
+            partes = [f"Sobre {len(resueltas)}: " + ", ".join(
+                f"{e.nombre} ({e.entidad_id})" for e in resueltas)]
+        else:
+            partes = [f"Sobre: {e.nombre} ({e.entidad_id})" for e in resueltas]
         for campo, valor in self.argumentos.items():
             trozo = _en_claro_argumento(campo, valor)
             if trozo:
@@ -149,13 +183,15 @@ class AccionPlan:
             "argumentos": self.argumentos,
             "entidades": [
                 {"crudo": e.crudo, "estado": e.estado, "id": e.entidad_id,
-                 "nombre": e.nombre, "candidatos": e.candidatos, "eco": e.eco()}
+                 "nombre": e.nombre, "candidatos": e.candidatos, "eco": e.eco(),
+                 "campo": e.campo}
                 for e in self.entidades
             ],
             "estado": self.estado,
             "motivo": self.motivo,
             "requisitos_faltantes": self.requisitos_faltantes,
             "habilitada_por": self.habilitada_por,
+            "correcciones": self.correcciones,
             "riesgo": self.riesgo,
             "en_claro": self.en_claro(),
             "datos": self.datos,
@@ -218,7 +254,12 @@ class Plan:
         for i, a in enumerate(ordenes, 1):
             marca = {"lista": "·", "falta_dato": "?", "ambigua": "?",
                      "no_viable": "×"}[a.estado]
-            lineas.append(f"  {marca} {i}. {a.descripcion}")
+            # DE QUIÉN ES LA ACCIÓN. Sin esto, «instalar mesa con voceros»
+            # —del Alcalde— y «mesa local de concertación» —del Interior— se
+            # leían con la misma frase, y la sala no podía oír que la palanca
+            # había cambiado de dueño. En un ejercicio cuyo objeto es quién
+            # tiene qué palanca, eso es el dato, no un adorno.
+            lineas.append(f"  {marca} {i}. [{a.rol}] {a.descripcion}")
             # SOBRE QUÉ y CON QUÉ. Sin esta línea la sala confirmaba «operación
             # de desbloqueo sobre un punto de cierre» sin oír sobre cuál — y el
             # paso 5 existe justamente para que oiga lo que va a ordenar.
@@ -235,6 +276,8 @@ class Plan:
                     f"       Riesgo de incidente: {r['banda'].upper()}, "
                     f"{r['p_incidente']:.0%}. Mitigadores ausentes: {faltan}."
                 )
+            for c in a.correcciones:
+                lineas.append(f"       ! {c}")
             ecos = {e.eco() for e in a.entidades if e.estado != "ok"}
             if a.motivo and a.motivo not in ecos:
                 lineas.append(f"       {a.motivo}")
@@ -258,8 +301,14 @@ REGLAS QUE NO PUEDES ROMPER:
 - NO decides nada. NO validas. NO estimas riesgos. NO afirmas resultados.
 - NO normalices los nombres de lugar: cópialos TAL CUAL los escribió la persona.
   Un sistema determinista los resuelve después, y es auditable.
-- Si la orden no encaja en ninguna herramienta, no fuerces la más parecida:
-  no llames a ninguna.
+- UN LUGAR AMBIGUO O DESCONOCIDO NO ES MOTIVO PARA NO LLAMAR. Si la acción está
+  clara y el sitio no —«operen el puente», habiendo tres puentes—, llama igual a
+  la herramienta y copia el texto del sitio tal cual. El sistema determinista
+  repregunta después con la lista de candidatos, que es la respuesta correcta.
+  Si en cambio no llamas a nada, la sala recibe «esa acción no existe», que es
+  falso y la manda a corregir donde no estaba el problema.
+- Lo único que justifica no llamar a ninguna herramienta es que la ACCIÓN pedida
+  no exista en el repertorio. Y entonces no fuerces la más parecida.
 - Una orden puede contener varias acciones. Emite una llamada por cada una.
 - Si la persona pregunta algo en vez de ordenar, usa `consultar`.
 
@@ -270,6 +319,13 @@ Ministerio de Defensa NO significa que se empleen militares: el Ministerio
 también ordena operaciones con ESMAD, y de hecho es lo normal. Emplear tropa
 multiplica por cinco el riesgo y requiere una firma que puede no existir, así
 que no se infiere: se dice o no se dice.
+
+LO QUE CONCEDE ALGO NO SE INFIERE NUNCA. `con_alcaldia`,
+`concertado_con_alcaldia`, `dupla_presente` y `delimitada` no describen la orden:
+conceden un requisito o rebajan un riesgo. Que la Alcaldía esté en la mesa es lo
+que hace viable concertar en el epicentro; que la firma vaya delimitada cuesta la
+cuarta parte en respaldo internacional. Ponlos SOLO si el texto los dice con sus
+palabras. Que la orden suene razonable sin ellos no es decirlos.
 
 El texto viene de una deliberación real: es coloquial, incompleto y a veces
 contradictorio. Traduce lo que se pidió, no lo que crees que deberían haber
@@ -302,7 +358,7 @@ def interpretar(estado: Estado, texto: str, plan_id: str) -> Plan:
     # 4 · VALIDADOR — recorre TODAS. Prohibido `break` al primer problema: una
     #     orden compuesta no puede morir entera porque a una parte le falte un dato.
     for llamada in llamadas:
-        plan.acciones.append(_a_accion_plan(estado, llamada))
+        plan.acciones.append(_a_accion_plan(estado, llamada, texto))
 
     # Lo que el canal NO traduce y hay que decir en voz alta antes de confirmar.
     plan.avisos.extend(_avisos_de_lectura(texto))
@@ -353,9 +409,16 @@ def _expandir_selectores(estado: Estado, llamadas: list[dict],
 
 
 # Lo que la gente escribe y el canal NO sabe traducir. No se adivina: se dice.
-CONDICIONALES = ("si ", "cuando ", "en cuanto ", "una vez que", "siempre que")
-NEGACIONES = ("no oper", "no se opere", "no intervenir", "no intervengan",
-              "nada de", "ningun punto", "ningún punto", "eviten", "abstenerse")
+#
+# Van por PALABRA COMPLETA y no por trozo: con «si » a secas, «casi todos los
+# puntos siguen cerrados, operen el Puente Amarillo» disparaba el aviso de
+# condicional. Un aviso que salta cuando no toca se deja de leer, y entonces
+# tampoco se lee el que sí importa.
+CONDICIONALES = (r"\bsi\b", r"\bcuando\b", r"\ben cuanto\b",
+                 r"\buna vez que\b", r"\bsiempre que\b")
+NEGACIONES = (r"\bno\s+oper", r"\bno\s+se\s+opere", r"\bno\s+intervenir",
+              r"\bno\s+intervengan", r"\bnada\s+de\b", r"\bning[uú]n\s+punto\b",
+              r"\beviten\b", r"\babstenerse\b")
 
 
 def _avisos_de_lectura(texto: str) -> list[str]:
@@ -369,13 +432,13 @@ def _avisos_de_lectura(texto: str) -> list[str]:
     """
     t = texto.lower()
     avisos = []
-    if any(c in t for c in CONDICIONALES):
+    if any(re.search(c, t) for c in CONDICIONALES):
         avisos.append(
             "Se leyó una condición en el texto y el canal NO la traduce: lo que "
             "sigue queda como orden inmediata. Si debía esperar a que ocurriera "
             "algo, no la confirmen todavía."
         )
-    if any(nn in t for nn in NEGACIONES):
+    if any(re.search(nn, t) for nn in NEGACIONES):
         avisos.append(
             "Se leyó una negación en el texto y el canal NO la traduce: las "
             "acciones de abajo están en afirmativo. Comprueben que es lo que se "
@@ -409,6 +472,19 @@ def _diagnostico_sin_acciones(estado: Estado, texto: str) -> str:
             "Eso parece una pregunta y no una orden. El canal responde sobre "
             f"{', '.join(herramientas.TEMAS_CONSULTA)}; para lo demás, el dato "
             "está en la vista privada de algún rol."
+        )
+
+    # ¿Se entendió la ACCIÓN pero no sobre qué? Es un quinto diagnóstico, y hace
+    # falta porque el modelo a veces no llama a nada cuando el sitio es
+    # ambiguo: «operen el puente» acababa respondiendo «esa acción no existe»,
+    # que es falso y manda a corregir donde no estaba el problema. La regla del
+    # sistema ya le pide que llame igual; esto es la red por debajo.
+    verbo = herramientas.verbo_reconocido(texto)
+    if verbo:
+        return (
+            f"Se entiende la acción —{verbo}— pero no sobre qué. Diga el punto, "
+            f"el corredor o la región por su nombre, o un criterio: «los "
+            f"cerrados», «el más duro», «sin verificar»."
         )
 
     return (
@@ -446,6 +522,7 @@ def _traducir(estado: Estado, texto: str) -> tuple[list[dict], str]:
             tool_choice="auto",
             parallel_tool_calls=True,
             timeout=cfg.timeout_nlu,
+            **cfg.extra_nlu(),
         )
     except Exception as exc:                                  # pragma: no cover
         # Un error del proveedor no puede dejar a ocho personas mirando la
@@ -473,7 +550,7 @@ def _traducir(estado: Estado, texto: str) -> tuple[list[dict], str]:
 # 2–4 · Resolutor, expansor y validador — todo determinista
 # ===========================================================================
 
-def _a_accion_plan(estado: Estado, llamada: dict) -> AccionPlan:
+def _a_accion_plan(estado: Estado, llamada: dict, texto: str = "") -> AccionPlan:
     nombre = llamada["nombre"]
     args = dict(llamada.get("argumentos") or {})
     spec = herramientas.HERRAMIENTAS.get(nombre)
@@ -504,10 +581,39 @@ def _a_accion_plan(estado: Estado, llamada: dict) -> AccionPlan:
 
     # Normalizar enumeraciones ANTES de tocar el motor. El modelo dice
     # «militares» donde el motor espera «militar», y eso no puede reventar nada.
+    args, avisos_tipo = herramientas.coercionar_tipos(spec, args)
     args, avisos_enum = herramientas.normalizar_enums(args)
+    avisos_enum = avisos_tipo + avisos_enum
+
+    # LOS VALORES POR DEFECTO SE PONEN EN EL PLAN, no dentro del constructor.
+    #
+    # Estaban escondidos en las lambdas de `construir`: la acción se ejecutaba
+    # con ESMAD, con seis escuadrones o con la Alcaldía presente, y como el
+    # argumento no estaba en `argumentos`, la lectura en voz alta no lo decía.
+    # La sala confirmaba una cosa y el motor hacía otra, sin que nadie mintiera.
+    #
+    # Puestos aquí, viajan con el plan, se dicen en `en_claro()` y se pueden
+    # corregir con una elección tipada como cualquier otro argumento.
+    for campo, valor in spec.get("por_defecto", {}).items():
+        args.setdefault(campo, valor)
+
+    # LO QUE NADIE DIJO NO SE DA POR PUESTO. Aquí se contrasta contra el texto
+    # que escribió la sala, no contra lo que devolvió el modelo — que es quien
+    # se lo inventa. Medido: «concertar en la Glorieta La Ceiba» volvía con
+    # `con_alcaldia: true` sin que nadie hubiera nombrado a la Alcaldía, y eso
+    # abre la única puerta que obliga al Interior a traer al Alcalde.
+    #
+    # Solo BAJA concesiones. Si la sala lo dijo y el modelo no lo puso, no se
+    # añade: añadir también sería el canal decidiendo. Se queda en su valor
+    # declarado, se dice en voz alta, y la sala lo corrige con un botón.
+    correcciones: list[str] = []
+    if texto:
+        args, correcciones = herramientas.corregir_lo_que_no_se_infiere(
+            spec, args, texto)
 
     ap = AccionPlan(herramienta=nombre, rol=spec["rol"],
-                    descripcion=spec["descripcion"], argumentos=args)
+                    descripcion=spec["descripcion"], argumentos=args,
+                    correcciones=correcciones)
     if avisos_enum:
         ap.estado = "falta_dato"
         ap.motivo = " ".join(avisos_enum)
@@ -519,6 +625,7 @@ def _a_accion_plan(estado: Estado, llamada: dict) -> AccionPlan:
         if not crudo:
             continue
         r = resolver.resolver(estado, str(crudo), tipo)
+        r.campo = campo
         ap.entidades.append(r)
         if r.estado == "ok":
             args[campo] = r.entidad_id
@@ -542,6 +649,7 @@ def _a_accion_plan(estado: Estado, llamada: dict) -> AccionPlan:
         resueltos, perdidos = [], []
         for crudo in crudos:
             r = resolver.resolver(estado, str(crudo), tipo)
+            r.campo = campo
             ap.entidades.append(r)
             if r.estado == "ok":
                 resueltos.append(r.entidad_id)

@@ -27,7 +27,7 @@ lunes por la mañana:
 | **B1** | el archivo de la corrida — persistencia y telemetría | no | **no existe** · bloquea B7 |
 | **B2** | la identidad de los ocho roles, en datos | no | `data/roles/` vacío · hoy duplicada en el frontend |
 | **B7** | el debriefing, la superficie que falta | no | **no existe** · depende de B1 |
-| **B5** | presupuesto de latencia medido | se mide en P2 | hay timeout, falta medirlo |
+| **B5** | presupuesto de latencia medido | el reloj de la fase, en P2 | **medido** · el timeout ya es duro y las dos capas caben dentro |
 | **B6** | el guion de la sesión | no | fuera del código |
 | **P1** | correr el motor solo y leer la traza | **no** — una persona, 20 min | listo para correr |
 | **P2** | las pantallas | **sí** — dos personas, 30 min | listo |
@@ -279,16 +279,45 @@ la asimetría produjo conversación.
 pantalla durante la deliberación. Eso se observa en **P2** y **P4** mirando la
 sala, no leyendo un archivo.
 
-### B5 · Presupuesto de latencia, medido
+### B5 · Presupuesto de latencia — medido, y no era lo que decía
 
-**Dónde:** [`src/agents/entorno.py`](src/agents/entorno.py) y
-[`src/agents/nlu.py`](src/agents/nlu.py)
+**Dónde:** [`config.py`](src/agents/config.py) · medido el 26-08-2026 contra
+`gpt-5-nano`, 12 órdenes y 3 turnos de esfera
 
-Hay timeout duro y degradación a plantilla, que es lo importante. Lo que falta es
-**medir cuánto tarda de verdad** con el modelo puesto: la fase de consecuencias
-dura sesenta segundos con ocho personas mirando la pantalla.
+Esta entrada decía «hay timeout duro y degradación a plantilla, que es lo
+importante». **Al medirlo, ninguna de las dos cosas era cierta.**
 
-Se mide en la prueba **P2**, cronómetro en mano.
+| | Lo que decía | Lo que medía |
+|---|---|---|
+| El presupuesto es duro | `timeout=12` en la llamada | El SDK reintenta **dos veces** de fábrica: 12 s eran hasta 36 s de reloj. Cronometrado: **35,3 s** |
+| La esfera degrada si el proveedor tarda | excepcional | Tardaba **26–36 s** contra un presupuesto de 20: degradaba **siempre**. La esfera pública no había usado el modelo ni una vez |
+
+Lo segundo es lo grave, y es del tipo que este documento llama silencioso: el
+montaje anuncia seis agentes con su sesgo, el campo `generado_por` decía
+`plantilla (el modelo falló: APITimeoutError)` en todos los turnos, y nadie
+miraba ese campo porque no había motivo para sospechar.
+
+**Las dos correcciones y lo que dan:**
+
+```
+REINTENTOS_LLM=0     el presupuesto declarado es el que se espera
+ESFUERZO_NLU=low     el esfuerzo de razonamiento, medido y no supuesto
+ESFUERZO_ENTORNO=low
+```
+
+| | Antes | Ahora | Presupuesto |
+|---|---|---|---|
+| **capa 4** · canal de órdenes | mediana 8,0 s · máx 35,3 s | **mediana 2,4 s · máx 4,4 s** | 12 s |
+| **capa 3** · esfera pública | 26–36 s · fuera **siempre** | **5,5–6,3 s** | 20 s |
+
+`minimal` está descartado para el canal y no por poco: con él, «declaren el
+estado de sitio» llamaba a firmar la asistencia militar —forzar la acción más
+parecida, que es el modo de falla F5— y una orden compuesta perdía la mitad.
+Acierta 6 de 9 casos difíciles donde `low` acierta 9.
+
+**Lo que sigue en P2** es lo que no se puede medir sin sala: el reloj de la fase
+de consecuencias **entera** —modelo, red del local y pintado de las pantallas—,
+que es lo que dura de verdad para las ocho personas que están mirando.
 
 
 ### B6 · El guion de la sesión
@@ -742,6 +771,61 @@ asignación sin ningún punto ni denuncia.
 **47 pruebas nuevas**, en [`tests/test_canal_ordenes.py`](tests/test_canal_ordenes.py).
 Ninguna llama a un modelo.
 
+### La segunda revisión del canal de órdenes
+
+La primera tanda dejó **47 pruebas** y cerró nueve fallos. Al volver a sondear el
+canal —esta vez con el modelo puesto y no solo la rama determinista— aparecieron
+otros nueve. **Cinco eran silenciosos**, y dos de ellos llevaban puesta la
+etiqueta contraria: el código decía en su propia cabecera que hacía lo que no
+hacía.
+
+| | Era | Cómo quedó |
+|---|---|---|
+| **M1** | El constructor de `abrir_mesa_local` ponía `con_alcaldia=True` **cuando nadie lo había dicho**. En el epicentro esa es la única puerta que obliga al Interior a traer al Alcalde a la mesa, y por el canal **no se cerró nunca** | Por defecto **no** está la Alcaldía. La orden sale `no_viable` y dice quién la habilita. «Con la Alcaldía» dicho sí cuenta |
+| **M2** | Dos de las veintiséis herramientas —`redesplegar_militares` y `mesa_con_voceros`— **no tenían disparador**: sin llave, el canal respondía «ninguna acción del repertorio corresponde a eso» sobre acciones que sí tiene | Las dos tienen el suyo, y una prueba recorre el repertorio entero. El canal ya no niega tener lo que tiene |
+| **M3** | Los valores por defecto vivían dentro de `construir`: la acción se ejecutaba con ESMAD, con seis escuadrones o con un margen de 0,5, y como el argumento no estaba en `argumentos`, **la lectura en voz alta no lo decía** | `por_defecto` declarado por herramienta. Viaja en el plan, se dice, y se puede corregir con un botón |
+| **M4** | El intérprete de reserva no leía **ninguna cifra**: «concentrar 8 escuadrones» concentraba seis | Las lee, en dígitos y en letras. También el margen de las líneas rojas |
+| **M5** | Tampoco leía **quién firma**. Con el registro escrito adoptado, `responsable_nominado` es lo que hace atribuible un incidente: esa mecánica entera moría al correr sin llave | Se extrae tras «responsable», y se dice en la lectura |
+| **M6** | «Operen X **concertado con la Alcaldía**» abría una mesa que nadie pidió —la raíz `concert`— y se llevaba el resto de la frase: la operación perdía el mitigador **y** el responsable que venían detrás | Hay frases que son parámetro de la orden anterior y no empiezan otra. La operación se queda con lo suyo |
+| **M7** | `condicionar` es un infinitivo, no una raíz: «el Alcalde **condiciona** el empleo de la fuerza» no disparaba nada | La raíz aguanta la conjugación, que es lo que el propio comentario del archivo decía y esa entrada no cumplía |
+| **M8** | La lectura en voz alta **no decía de qué rol era cada acción**. Con el modelo, «instalar mesa con voceros» —del Alcalde— salía como la mesa del Interior, y la sala no tenía cómo oírlo | Cada línea empieza por su rol. En un ejercicio cuyo objeto es quién tiene qué palanca, eso es el dato |
+| **M9** | Preguntar **gastaba un turno**: un plan de solo consultas llegaba a `/ejecutar` y corría `motor.paso()` igual. La sala preguntaba cuánto oxígeno quedaba y se le iba una de las cinco ventanas | La hoja de datos ya venía en el plan; ahora además el reloj no se mueve, y la respuesta lo dice |
+
+Y cuatro más que aparecieron al probar **con el modelo puesto**, no con la rama
+determinista. Los tres primeros son la misma lección escrita tres veces:
+*restringir el espacio de salida no impide que el modelo se salga.*
+
+| | Era | Cómo quedó |
+|---|---|---|
+| **M10** | El modelo **se concedía a sí mismo** lo que M1 le quitó al constructor: «concertar en la Glorieta La Ceiba» volvía con `con_alcaldia: true` sin que nadie hubiera nombrado a la Alcaldía. Y lo mismo con la dupla y con la firma delimitada | `NO_SE_INFIERE`: cuatro booleanos que **conceden** un requisito o rebajan un riesgo se contrastan contra el texto que escribió la sala. Solo **bajan** concesiones —añadir también sería el canal decidiendo— y lo que se quita **se dice** |
+| **M11** | `bool("false")` es `True`. El `valor` de una elección tipada viaja siempre como cadena, así que un «no» pulsado en la pantalla habría entrado como sí | Cada campo se lleva al tipo que declara su esquema, antes de tocar el motor. Lo que no se puede convertir se avisa y no se inventa |
+| **M12** | Dos parejas de herramientas se confundían: «redesplegar cuatro unidades militares» salía unas veces como el **relevo del Director de Policía**, y la caravana como la escolta | Una nota `para_el_modelo` por herramienta confundible, que **no** se lee en voz alta: la sala oye la descripción corta, el modelo recibe además qué la distingue de su vecina. Medido: 17 de 18 |
+| **—** | Un quinto diagnóstico del silencio: «operen eso de allí» respondía «esa acción no existe» — y la acción se había entendido perfectamente | Si se reconoce el verbo pero no el sitio, se dice así, que es otra corrección |
+
+Y tres del cauce, que no son del canal pero lo sostienen:
+
+| | Era | Cómo quedó |
+|---|---|---|
+| **—** | **Las pruebas salían a la red.** La cabecera de `test_canal_ordenes.py` decía que ninguna llamaba a un modelo, y era verdad a medias: el accesorio silenciaba `nlu`, pero las cinco pruebas que pasan por `/ejecutar` disparan después la **capa 3** con el cliente real. **176 s por corrida y llamadas facturadas**, en la suite que corre en cada cambio | `tests/conftest.py`, con `autouse`, silencia **las dos**. La suite baja a **1,3 s** y hay una prueba que comprueba que las dos están mudas. Un accesorio por archivo es justo lo que dejó media puerta abierta |
+| **—** | Con el modelo, un lugar ambiguo hacía que **no llamara a nada**: «operen el puente» respondía «esa acción no existe», y la repregunta con candidatos —para la que existe `resolver.py` entero— no llegaba a dispararse nunca | Una regla explícita en el sistema: un sitio ambiguo se copia tal cual y se llama igual. Lo único que justifica no llamar es que la **acción** no exista |
+| **—** | La pantalla adivinaba a qué campo pertenecía cada entidad buscando el valor crudo entre los argumentos. Para los de **lista** no aparecía nunca, así que corregir uno de los tres puntos de `asignar_duplas` moría en un 400 — y la asignación plana habría borrado los otros dos | Cada entidad viaja con su campo, y una elección sobre un campo de lista **completa** en vez de sustituir |
+
+**Lo que sigue sin poder hacer la rama sin llave:** un nombre que no está en el
+catálogo y que tampoco se parece a nada **no se ve**. «Duplas al Puente Amarillo,
+al Puente de Brooklyn y al Alto del Mirador» asigna dos y no puede nombrar el que
+perdió, porque nunca lo reconoció como nombre. Por eso la lectura ahora **cuenta**
+—«Sobre 2: …»—: si la sala dijo tres y oye dos, la resta la hace ella. Con el
+modelo puesto no pasa: el nombre viaja crudo y sale por su nombre en el motivo.
+
+**Queda un residuo, y es del modelo, no del cauce.** «Concertar en el Alto del
+Mirador» sale una de cada tres veces como la mesa del Alcalde. El punto está
+fuera de su jurisdicción, así que el motor la rechaza diciendo que la habilita el
+Ministro del Interior, y la lectura en voz alta ya empieza por el rol — la sala
+lo oye. Es el diseño funcionando: **el modelo se equivoca y el cauce lo atrapa.**
+
+**39 pruebas nuevas**, 150 en total, 2,3 s. Ninguna llama a un modelo — y ahora
+hay una que lo comprueba.
+
 ### El paquete detonante, completo
 
 **B4** era el último de los cuatro hechos que abren el turno 1. Ya está.
@@ -818,5 +902,5 @@ decisión de la simulación se delegó al modelo.
 
 ---
 
-*Última revisión: 2026-08-26 · 110 pruebas en verde · capas de lenguaje natural
-activas con `gpt-5-nano`.*
+*Última revisión: 2026-08-26 · 150 pruebas en verde en 2,3 s · capas de lenguaje
+natural activas con `gpt-5-nano`, con su latencia medida (B5).*

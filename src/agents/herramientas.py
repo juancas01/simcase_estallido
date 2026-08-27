@@ -63,6 +63,7 @@ HERRAMIENTAS: dict[str, dict] = {
             responsable_nominado=a.get("responsable_nominado"),
             de_noche=bool(a.get("de_noche")),
         ),
+        "por_defecto": {"tipo_unidad": "esmad"},
         "esquema": {
             "nodo_id": ("string", "El punto de cierre, TAL CUAL lo dijo la persona"),
             "tipo_unidad": ("string", "esmad, policia o militar"),
@@ -79,16 +80,21 @@ HERRAMIENTAS: dict[str, dict] = {
         "entidades": {},
         "construir": lambda a: A.DisponerESMAD(
             n_escuadrones=int(a.get("n_escuadrones", 6))),
+        "por_defecto": {"n_escuadrones": 6},
         "esquema": {"n_escuadrones": ("integer", "cuántos escuadrones concentrar")},
         "requeridos": [],
     },
     "escoltar": {
         "rol": "Director de Policía",
         "descripcion": "Escoltar una caravana, carrotanque o misión médica",
+        "para_el_modelo": ("Pone la escolta policial. Es el requisito PREVIO "
+                           "de organizar_caravana, no lo mismo: si el texto "
+                           "pide escolta o protección, es esta."),
         "entidades": {"corredor_id": "corredor"},
         "construir": lambda a: A.Escoltar(
             corredor_id=a.get("corredor_id", ""),
             clase_carga=a.get("clase_carga", "humanitario")),
+        "por_defecto": {"clase_carga": "humanitario"},
         "esquema": {
             "corredor_id": ("string", "El corredor, TAL CUAL lo dijo la persona"),
             "clase_carga": ("string", "humanitario, combustible, alimentario o general"),
@@ -98,19 +104,27 @@ HERRAMIENTAS: dict[str, dict] = {
     "relevar_unidades": {
         "rol": "Director de Policía",
         "descripcion": "Relevo y rotación de unidades agotadas",
+        "para_el_modelo": ("Rota unidades de POLICÍA agotadas por unidades "
+                           "descansadas. Es descanso, no movimiento de tropa: "
+                           "si el texto dice militares o ejército, no es esta."),
         "entidades": {},
         "construir": lambda a: A.SolicitarRelevo(
             n_unidades=int(a.get("n_unidades", 6))),
+        "por_defecto": {"n_unidades": 6},
         "esquema": {"n_unidades": ("integer", "cuántas unidades relevar")},
         "requeridos": [],
     },
     "redesplegar_militares": {
         "rol": "Ministro de Defensa",
         "descripcion": "Redespliegue militar a infraestructura, o proyección aérea",
+        "para_el_modelo": ("Mueve unidades MILITARES —ejército, tropa— a "
+                           "custodiar instalaciones, o las proyecta por aire. "
+                           "«Redesplegar/mover militares» es esta, no un relevo."),
         "entidades": {},
         "construir": lambda a: A.RedesplegarMilitares(
             modo=a.get("modo", "infraestructura"),
             n_unidades=int(a.get("n_unidades", 4))),
+        "por_defecto": {"modo": "infraestructura", "n_unidades": 4},
         "esquema": {
             "modo": ("string", "infraestructura o proyeccion_aerea"),
             "n_unidades": ("integer", "cuántas unidades militares"),
@@ -124,6 +138,7 @@ HERRAMIENTAS: dict[str, dict] = {
         "entidades": {},
         "construir": lambda a: A.FirmarAsistenciaMilitar(
             delimitada=bool(a.get("delimitada", False))),
+        "por_defecto": {"delimitada": False},
         "esquema": {"delimitada": ("boolean",
                                    "si lleva territorio, plazo, reglas escritas y "
                                    "criterio de terminación")},
@@ -140,10 +155,22 @@ HERRAMIENTAS: dict[str, dict] = {
     "abrir_mesa_local": {
         "rol": "Ministro del Interior",
         "descripcion": "Mesa de concertación sobre un punto",
+        "para_el_modelo": ("La mesa del MINISTRO DEL INTERIOR, válida en todo "
+                           "el país. Si el texto dice «voceros del punto» o la "
+                           "pide el Alcalde para su ciudad, es mesa_con_voceros."),
         "entidades": {"nodo_id": "punto"},
         "construir": lambda a: A.AbrirMesaLocal(
             nodo_id=a.get("nodo_id", ""),
-            con_alcaldia=bool(a.get("con_alcaldia", True))),
+            con_alcaldia=bool(a.get("con_alcaldia", False))),
+        # POR DEFECTO **NO** ESTÁ LA ALCALDÍA, y esto no es un detalle.
+        #
+        # El constructor ponía `True` cuando nadie lo había dicho. En la
+        # jurisdicción del epicentro `AbrirMesaLocal.validar()` exige a la
+        # Alcaldía —es la única puerta que obliga al Interior a traer al Alcalde
+        # a la mesa— y con el valor puesto a `True` esa puerta **nunca se cerró
+        # por el canal**: la orden salía `lista` sin que nadie hubiera dicho que
+        # la Alcaldía estaba. Una concesión que el canal se daba a sí mismo.
+        "por_defecto": {"con_alcaldia": False},
         "esquema": {
             "nodo_id": ("string", "El punto, TAL CUAL lo dijo la persona"),
             "con_alcaldia": ("boolean", "si la Alcaldía participa (obligatorio en el epicentro)"),
@@ -169,6 +196,9 @@ HERRAMIENTAS: dict[str, dict] = {
     "mesa_con_voceros": {
         "rol": "Alcalde",
         "descripcion": "Mesa local con los voceros de un punto de su ciudad",
+        "para_el_modelo": ("La mesa del ALCALDE, solo en su propia ciudad. "
+                           "Con los voceros del punto, sin pasar por el "
+                           "Ministerio del Interior."),
         "entidades": {"nodo_id": "punto"},
         "construir": lambda a: A.InstalarMesaConVoceros(nodo_id=a.get("nodo_id", "")),
         "esquema": {"nodo_id": ("string", "El punto, TAL CUAL lo dijo la persona")},
@@ -218,6 +248,9 @@ HERRAMIENTAS: dict[str, dict] = {
     "organizar_caravana": {
         "rol": "Ministro de Transporte",
         "descripcion": "Caravana escoltada por un corredor priorizado",
+        "para_el_modelo": ("Junta a los conductores y arma la caravana. "
+                           "Necesita una escolta ya dispuesta: si lo que se "
+                           "pide es la escolta, es escoltar."),
         "entidades": {"corredor_id": "corredor"},
         "construir": lambda a: A.OrganizarCaravana(corredor_id=a.get("corredor_id", "")),
         "esquema": {"corredor_id": ("string", "El corredor, TAL CUAL lo dijo la persona")},
@@ -229,6 +262,7 @@ HERRAMIENTAS: dict[str, dict] = {
         "entidades": {},
         "construir": lambda a: A.NegociarConGremios(
             ofrece_compensacion=bool(a.get("ofrece_compensacion", True))),
+        "por_defecto": {"ofrece_compensacion": True},
         "esquema": {"ofrece_compensacion": ("boolean", "si se ofrece compensación")},
         "requeridos": [],
     },
@@ -238,6 +272,7 @@ HERRAMIENTAS: dict[str, dict] = {
         "entidades": {},
         "construir": lambda a: A.DeclararInfraestructuraCritica(
             instalaciones=list(a.get("instalaciones") or ["refineria"])),
+        "por_defecto": {"instalaciones": ["refineria"]},
         "esquema": {"instalaciones": ("array", "las instalaciones a proteger")},
         "requeridos": [],
     },
@@ -275,6 +310,7 @@ HERRAMIENTAS: dict[str, dict] = {
         "entidades": {},
         "construir": lambda a: A.FijarLineasRojas(
             margen=float(a.get("margen", 0.5))),
+        "por_defecto": {"margen": 0.5},
         "esquema": {"margen": ("number", "0 = sin margen, 1 = todo negociable")},
         "requeridos": [],
     },
@@ -354,7 +390,14 @@ def esquemas() -> list[dict]:
             "type": "function",
             "function": {
                 "name": nombre,
-                "description": f"[{spec['rol']}] {spec['descripcion']}",
+                # La nota de desambiguación es SOLO para el modelo. La sala
+                # oye `descripcion`, que es corta y se lee en voz alta; el
+                # modelo necesita además qué la distingue de su vecina, que es
+                # donde se equivocaba: «redesplegar cuatro unidades militares»
+                # salía unas veces como el relevo del Director de Policía.
+                "description": " · ".join(
+                    x for x in (f"[{spec['rol']}] {spec['descripcion']}",
+                                spec.get("para_el_modelo")) if x),
                 "parameters": {
                     "type": "object",
                     "properties": props,
@@ -399,6 +442,114 @@ ENUMS: dict[str, dict[str, str]] = {
         "aerea": "proyeccion_aerea",
     },
 }
+
+
+# Cómo se nombra a la Alcaldía. Va con marca —«con», «concertado con»— porque
+# «la Alcaldía se opone» no es concertar con ella.
+MARCAS_ALCALDIA = ("con la alcaldia", "con el alcalde", "con la alcaldesa",
+                   "junto a la alcaldia", "junto al alcalde",
+                   "participa la alcaldia", "participa el alcalde")
+
+
+# ---------------------------------------------------------------------------
+# LO QUE NO SE INFIERE — la contraparte determinista de una regla del prompt
+#
+# Hay booleanos que no describen la orden: **conceden un requisito o un
+# mitigador**. Que la Alcaldía esté en la mesa es lo que hace viable concertar
+# en el epicentro; que la firma vaya delimitada cuesta −8 de respaldo en vez de
+# −22; que haya dupla divide el riesgo. Ninguno se deduce de que la orden suene
+# razonable: se dice o no se dice.
+#
+# El sistema ya se lo pide al modelo, y aun así lo hace: medido, «concertar en
+# la Glorieta La Ceiba» volvía con `con_alcaldia: true` sin que nadie hubiera
+# nombrado a la Alcaldía. Es la misma lección que ENUMS, escrita en el mismo
+# archivo: **restringir el espacio de salida no impide que el modelo se salga.**
+# Por eso la comprobación vive aquí, en una capa determinista y auditable, y no
+# solo en una frase del prompt.
+#
+# La marca se busca en el texto ORIGINAL de la sala, no en lo que devolvió el
+# modelo. Lo que no la tiene vuelve a su valor declarado y **se dice**.
+NO_SE_INFIERE: dict[str, tuple[str, ...]] = {
+    "con_alcaldia": MARCAS_ALCALDIA + ("alcaldia", "alcalde", "alcaldesa"),
+    "concertado_con_alcaldia": MARCAS_ALCALDIA + ("alcaldia", "alcalde",
+                                                  "alcaldesa"),
+    "dupla_presente": ("dupla", "defensoria acompan", "acompanamiento"),
+    "delimitada": ("delimit", "con limites", "con reglas escritas", "acotad"),
+}
+
+
+# Lo que cuenta como sí y como no cuando llega en texto. `bool("false")` es
+# `True`, y esa línea sola bastaría para firmar sin delimitar una orden que dijo
+# lo contrario.
+_VERDADEROS = {"true", "1", "si", "sí", "yes", "verdadero", "on"}
+_FALSOS = {"false", "0", "no", "falso", "off", "none", "null", ""}
+
+
+def coercionar_tipos(spec: dict, args: dict) -> tuple[dict, list[str]]:
+    """
+    Cada campo, en el tipo que su esquema declara. Determinista y auditable.
+
+    Dos vías traen texto donde el esquema dice booleano o número: el modelo, que
+    devuelve `"8"` o `"true"` cuando le apetece, y la elección tipada de la
+    consola, cuyo `valor` viaja **siempre** como cadena. Por la segunda, un
+    `"false"` se convertía en `True` —`bool("false")` lo es— y la orden salía
+    con lo contrario de lo que se eligió.
+
+    Lo que no se puede convertir se deja como está y se avisa, igual que en
+    `normalizar_enums`: sustituirlo por un valor por defecto sería el canal
+    decidiendo.
+    """
+    out, avisos = dict(args), []
+    for campo, decl in spec.get("esquema", {}).items():
+        if campo not in out or out[campo] is None:
+            continue
+        tipo, valor = decl[0], out[campo]
+
+        if tipo == "boolean" and isinstance(valor, str):
+            clave = _sin_tildes(valor).strip()
+            if clave in _VERDADEROS:
+                out[campo] = True
+            elif clave in _FALSOS:
+                out[campo] = False
+            else:
+                avisos.append(f"«{valor}» no es sí ni no, para {campo}.")
+        elif tipo in ("integer", "number") and isinstance(valor, str):
+            try:
+                num = float(valor.replace(",", "."))
+                out[campo] = int(num) if tipo == "integer" else num
+            except ValueError:
+                avisos.append(f"«{valor}» no es un número, para {campo}.")
+        elif tipo == "array" and isinstance(valor, str):
+            # Una lista de uno, escrita sin corchetes. No es un error de la sala.
+            out[campo] = [valor]
+    return out, avisos
+
+
+def corregir_lo_que_no_se_infiere(spec: dict, args: dict,
+                                  texto: str) -> tuple[dict, list[str]]:
+    """
+    Devuelve `(argumentos, correcciones)`. Solo baja concesiones, nunca las sube.
+
+    Si la sala lo dijo y el modelo no lo puso, eso NO se corrige aquí: ponerlo
+    sería el canal concediendo, que es exactamente lo que esto impide. Se queda
+    en el valor declarado, se dice en voz alta y la sala lo corrige con un
+    botón.
+    """
+    t = _sin_tildes(texto)
+    out, correcciones = dict(args), []
+    for campo, marcas in NO_SE_INFIERE.items():
+        if campo not in spec.get("esquema", {}):
+            continue
+        if not out.get(campo):
+            continue
+        if any(m in t for m in marcas):
+            continue
+        out[campo] = spec.get("por_defecto", {}).get(campo, False)
+        correcciones.append(
+            f"Nadie dijo «{campo.replace('_', ' ')}» en la orden: no se da por "
+            f"puesto. Si lo hubo, dígalo y vuelva a interpretar."
+        )
+    return out, correcciones
 
 
 def normalizar_enums(argumentos: dict) -> tuple[dict, list[str]]:
@@ -461,7 +612,14 @@ DISPARADORES: list[tuple[str, list[str], list[str]]] = [
     ("convocar_mesa_nacional", ["mesa nacional", "comite del paro", "comité del paro",
                                 "convocar la mesa"], []),
     ("abrir_mesa_local", ["concert", "mesa local", "pactar", "pacto",
-                          "negociar el punto"], ["mesa nacional"]),
+                          "negociar el punto"],
+     ["mesa nacional", "mesa con voceros", "concertacion previa", "condiciona"]),
+    # La mesa del ALCALDE, que no es la del Interior: la suya solo vale en el
+    # epicentro y no le pide permiso a nadie. Sin disparador propio, «instalar
+    # mesa con voceros en X» caía en `abrir_mesa_local` —la del Ministro del
+    # Interior— y la sala nunca se enteraba de que había cambiado de dueño.
+    ("mesa_con_voceros", ["mesa con voceros", "mesa con los voceros",
+                          "voceros del punto"], []),
     ("ofrecer_contraprestacion", ["contraprestacion", "congreso",
                                   "tramite legislativo"], []),
     ("esquema_humanitario", ["esquema humanitario", "ollas comunitarias",
@@ -480,6 +638,12 @@ DISPARADORES: list[tuple[str, list[str], list[str]]] = [
     ("entregar_calendario", ["calendario", "agotamiento",
                              "cuanto tiempo queda"], []),
     ("firmar_asistencia_militar", ["asistencia militar", "ley 1801"], []),
+    # Sin esta entrada, «redesplegar militares a la refinería» respondía que
+    # ninguna acción del repertorio correspondía a eso — y sí corresponde: es la
+    # del Ministro de Defensa. El canal no se equivocaba de acción: negaba tener
+    # una que tiene.
+    ("redesplegar_militares", ["redespleg", "redespliegue", "proyeccion aerea",
+                               "proyeccion area"], []),
     ("fijar_registro_escrito", ["registro escrito", "responsable nominado",
                                 "nodo unico"], []),
     ("fijar_lineas_rojas", ["lineas rojas", "linea roja"], []),
@@ -488,7 +652,7 @@ DISPARADORES: list[tuple[str, list[str], list[str]]] = [
                                        "priorizar corredores", "priorizacion de corredores"], []),
     ("clasificar_parte", ["clasificar el parte", "parte clasificado",
                           "confirmado estimado"], []),
-    ("condicionar_empleo_fuerza", ["condicionar", "concertacion previa"], []),
+    ("condicionar_empleo_fuerza", ["condiciona", "concertacion previa"], []),
 ]
 
 
@@ -504,6 +668,23 @@ PREGUNTAS: list[tuple[str, list[str]]] = [
     ("mesa", ["como esta la mesa", "que legitimidad", "credibilidad",
               "estado de la mesa", "que reservas"]),
 ]
+
+
+def verbo_reconocido(texto: str) -> str | None:
+    """
+    Qué acción del repertorio nombra un texto, aunque no diga sobre qué.
+
+    Sirve para diagnosticar el silencio con precisión: «operen el puente» no es
+    «esa acción no existe» —existe— sino «no se entendió sobre qué punto». Son
+    dos correcciones distintas y la sala tiene 2,5 minutos de fase de órdenes.
+    """
+    t = _sin_tildes(texto)
+    for nombre, raices, excluye in DISPARADORES:
+        if any(x in t for x in excluye):
+            continue
+        if any(r in t for r in raices):
+            return HERRAMIENTAS[nombre]["descripcion"].lower()
+    return None
 
 
 def interpretar_sin_modelo(estado: Estado, texto: str) -> list[dict]:
@@ -554,12 +735,33 @@ def interpretar_sin_modelo(estado: Estado, texto: str) -> list[dict]:
         # que la sala tiene que oír para corregir.
         args.update(_enums_de_la_clausula(spec, t_clausula))
 
+        # Las cantidades que la cláusula nombra. Sin esto, «concentrar 8
+        # escuadrones» se ejecutaba con SEIS —el valor por defecto del motor— y
+        # la lectura en voz alta no decía ningún número, así que la sala no
+        # tenía dónde notarlo. Es la sustitución silenciosa de N4 otra vez, con
+        # una cifra en lugar de una unidad.
+        args.update(_numeros_de_la_clausula(spec, t_clausula))
+
         if "dupla" in t_clausula and nombre == "operar_punto":
             args["dupla_presente"] = True
         if "de noche" in t_clausula or "nocturn" in t_clausula:
             args["de_noche"] = True
         if "delimit" in t or "con limites" in t:
             args["delimitada"] = True
+
+        # La Alcaldía, cuando la sala la nombra. Son DOS campos distintos con la
+        # misma frase detrás: en una operación es un mitigador de riesgo, y en
+        # una mesa del epicentro es el requisito de jurisdicción sin el cual la
+        # acción no es viable. Ninguno de los dos se infiere: se dice o no.
+        if _con_la_alcaldia(t_clausula):
+            if nombre == "operar_punto":
+                args["concertado_con_alcaldia"] = True
+            elif nombre == "abrir_mesa_local":
+                args["con_alcaldia"] = True
+
+        responsable = _responsable_de_la_clausula(crudo_clausula)
+        if responsable and "responsable_nominado" in spec.get("esquema", {}):
+            args["responsable_nominado"] = responsable
 
         # Falta un dato obligatorio: se emite igual, para que el validador lo
         # marque y la sala lo complete. No se descarta en silencio.
@@ -592,6 +794,89 @@ def _enums_de_la_clausula(spec: dict, t_clausula: str) -> dict:
     return puestos
 
 
+def _con_la_alcaldia(t_clausula: str) -> bool:
+    return any(m in t_clausula for m in MARCAS_ALCALDIA)
+
+
+# Quién firma. `responsable_nominado` no es adorno: con el registro escrito
+# adoptado, es lo que hace ATRIBUIBLE un incidente, y la vista privada muestra
+# «— SIN NOMBRE —» cuando falta. Sin extraerlo, esa mecánica entera quedaba
+# muerta en cuanto el ejercicio corría sin llave.
+_RESPONSABLE = re.compile(
+    r"responsab\w*\s*(?:es|:|,)?\s*(?:el|la)?\s*"
+    r"([A-Za-zÀ-ÿ][\wÀ-ÿ]*(?:\s+(?:de|del|la|el)?\s*[A-Za-zÀ-ÿ][\wÀ-ÿ]*){0,3})",
+    re.IGNORECASE)
+
+
+def _responsable_de_la_clausula(crudo_clausula: str) -> str | None:
+    m = _RESPONSABLE.search(crudo_clausula)
+    if not m:
+        return None
+    nombre = " ".join(m.group(1).split()).strip(" ,.;")
+    return nombre or None
+
+
+def _numeros_de_la_clausula(spec: dict, t_clausula: str) -> dict:
+    """
+    Las cantidades que la cláusula nombra, para los campos numéricos declarados.
+
+    Se toma el PRIMER número de la cláusula y solo si la herramienta declara un
+    campo numérico: no se reparten cifras entre campos, porque adivinar cuál es
+    cuál sería el canal decidiendo. Con una sola cifra por cláusula —que es como
+    se habla— basta.
+    """
+    campos = [c for c, decl in spec.get("esquema", {}).items()
+              if decl[0] in ("integer", "number")]
+    if len(campos) != 1:
+        return {}
+    m = re.search(r"\b(\d+(?:[.,]\d+)?)\b", t_clausula)
+    if m is None:
+        n = _numero_en_letras(t_clausula)
+        return {campos[0]: n} if n is not None else {}
+    crudo = m.group(1).replace(",", ".")
+    return {campos[0]: float(crudo) if spec["esquema"][campos[0]][0] == "number"
+            else int(float(crudo))}
+
+
+# La sala dicta en voz alta y quien transcribe escribe lo que oye. «Ocho
+# escuadrones» es tan común como «8».
+NUMEROS_EN_LETRAS = {
+    "un": 1, "una": 1, "uno": 1, "dos": 2, "tres": 3, "cuatro": 4, "cinco": 5,
+    "seis": 6, "siete": 7, "ocho": 8, "nueve": 9, "diez": 10, "once": 11,
+    "doce": 12,
+}
+
+
+def _numero_en_letras(t_clausula: str) -> int | None:
+    for palabra in t_clausula.split():
+        limpia = palabra.strip(" ,.;:()")
+        if limpia in NUMEROS_EN_LETRAS:
+            return NUMEROS_EN_LETRAS[limpia]
+    return None
+
+
+# Frases que PARECEN el principio de otra orden y son un parámetro de la
+# anterior. «Operen el Puente Amarillo concertado con la Alcaldía» no son dos
+# acciones: es una operación con su mitigador puesto. Sin esto, la raíz
+# «concert» abría una mesa de concertación que nadie pidió —y, peor, se llevaba
+# consigo el resto de la frase, así que la operación se quedaba sin el mitigador
+# Y sin el responsable que venían detrás.
+FRASES_PARAMETRO = (
+    "concertado con", "concertada con", "concertados con", "concertadas con",
+    "concertado previamente", "previa concertacion", "sin concertar",
+)
+
+
+def _tramos_parametro(t: str) -> list[tuple[int, int]]:
+    tramos = []
+    for f in FRASES_PARAMETRO:
+        i = t.find(f)
+        while i != -1:
+            tramos.append((i, i + len(f)))
+            i = t.find(f, i + 1)
+    return tramos
+
+
 def _clausulas(t: str) -> list[tuple[str, list[str], list[str], int, int]]:
     """
     Reparte el texto entre los disparadores que aparecen, por posición.
@@ -601,9 +886,20 @@ def _clausulas(t: str) -> list[tuple[str, list[str], list[str], int, int]]:
     sintaxis— pero resuelve el caso que importa: que el complemento de una orden
     no se lo lleve otra.
     """
+    tramos = _tramos_parametro(t)
+
+    def _primera_posicion(raiz: str) -> int:
+        """La primera aparición que NO esté dentro de un parámetro de otra."""
+        i = t.find(raiz)
+        while i != -1:
+            if not any(a <= i < b for a, b in tramos):
+                return i
+            i = t.find(raiz, i + 1)
+        return -1
+
     encontrados = []
     for nombre, raices, excluye in DISPARADORES:
-        posiciones = [t.find(r) for r in raices if r in t]
+        posiciones = [i for i in (_primera_posicion(r) for r in raices) if i >= 0]
         if not posiciones:
             continue
         if any(x in t for x in excluye):

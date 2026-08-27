@@ -34,7 +34,7 @@ De ahí sale la propiedad más importante del repositorio, y la que conviene
 comprobar antes de tocar nada:
 
 ```bash
-uv run pytest -q          # 110 pruebas, ninguna llama a un modelo
+uv run pytest -q          # 150 pruebas, ninguna llama a un modelo
 ```
 
 **El motor corre entero sin llave de API.** No es una comodidad de desarrollo: es
@@ -85,11 +85,11 @@ simcase_estallido/
 ├── src/api/main.py      400 l   capa delgada · 15 endpoints y el catch-all del SPA
 │
 ├── src/agents/          LAS CAPAS DE LENGUAJE NATURAL · opcionales
-│   ├── config.py        105 l   lee .env y dice si hay llave
-│   ├── resolver.py      337 l   entidades → ids, determinista, cuatro estados
-│   ├── herramientas.py  682 l   esquemas tipados generados del catálogo
-│   ├── nlu.py           679 l   el cauce de nueve pasos
-│   └── entorno.py       256 l   los seis agentes de entorno
+│   ├── config.py        159 l   .env, llave, y el presupuesto de latencia duro
+│   ├── resolver.py      345 l   entidades → ids, determinista, cuatro estados
+│   ├── herramientas.py  835 l   esquemas tipados generados del catálogo
+│   ├── nlu.py           736 l   el cauce de nueve pasos
+│   └── entorno.py       294 l   los seis agentes de entorno
 │
 ├── web_ui/src/          LAS SUPERFICIES · React 19 + Vite
 │   ├── App.jsx          174 l   enrutado y portada
@@ -101,9 +101,10 @@ simcase_estallido/
 │
 ├── data/escenario/      EL CASO, en datos y no en código
 ├── scripts/             el corredor sin interfaz, para calibrar sin sala
-├── tests/             1 692 l   110 verificadores sin modelo, en 1,2 s
+├── tests/             2 106 l   150 verificadores sin modelo, en 2,3 s
+│   ├── conftest.py              —   silencia LAS DOS capas: nada sale a la red
 │   ├── test_invariantes.py     63   el motor
-│   └── test_canal_ordenes.py   47   la capa 4, que es la que habla con personas
+│   └── test_canal_ordenes.py   87   las capas que hablan con personas
 │
 ├── README.md            por dónde empezar
 ├── PENDIENTES.md        qué falta · el único sitio donde se lleva la cuenta
@@ -346,11 +347,20 @@ aviso, rojo es deterioro.
 
 ## 9. Las pruebas
 
-**110, sin modelo, en poco más de un segundo.** Corren en cada cambio.
+**150, sin modelo, en poco más de dos segundos.** Corren en cada cambio.
+
+> **Que no salgan a la red no se hereda: se comprueba.** La cabecera de
+> `test_canal_ordenes.py` decía que ninguna prueba llamaba a un modelo, y era
+> verdad a medias. Su accesorio silenciaba la capa 4, pero las cinco pruebas que
+> pasan por `/api/consola/ejecutar` disparan después la **capa 3** —la esfera
+> pública— con el cliente real: **176 s por corrida y llamadas facturadas**, en
+> la suite que se corre en cada cambio. Hoy las silencia
+> [`tests/conftest.py`](../tests/conftest.py) con `autouse`, las dos, y
+> `test_las_dos_capas_estan_silenciadas_en_las_pruebas` lo custodia.
 
 ```bash
 uv run pytest -q
-uv run pytest -q tests/test_canal_ordenes.py   # solo la capa 4
+uv run pytest -q tests/test_canal_ordenes.py   # las capas 3 y 4
 uv run pytest -q -k "delta or mapa"            # un subconjunto
 ```
 
@@ -363,7 +373,7 @@ Van en dos archivos porque custodian dos cosas distintas:
 | Archivo | Cuántas | Qué custodia |
 |---|---|---|
 | `test_invariantes.py` | 63 | **el motor** — que el mundo se comporte como dice el diseño |
-| `test_canal_ordenes.py` | 47 | **la capa 4** — que lo que ocho personas dicen en voz alta se traduzca a lo que quisieron decir, o se repregunte |
+| `test_canal_ordenes.py` | 87 | **las capas 3 y 4** — que lo que ocho personas dicen en voz alta se traduzca a lo que quisieron decir, o se repregunte |
 
 > **El segundo archivo llegó tarde.** Durante varias versiones, sesenta y tres
 > verificadores custodiaban el motor —que nadie toca durante el ejercicio— y
@@ -404,6 +414,11 @@ Y las del canal de órdenes:
 | **La consola** | 8 | que nada se ejecute a medias ni se caiga en silencio |
 | **La degradación** | 3 | que sin llave, y con el proveedor caído, el canal siga traduciendo |
 | **Lo que no puede salir** | 2 | la mezcla real y la veracidad, también por esta superficie |
+| **El repertorio, sin llave** | 4 | que ninguna herramienta quede sin disparador — el canal no puede negar tener una acción que tiene |
+| **Requisitos que no se regalan** | 5 | que el canal no se conceda la Alcaldía, ni una cifra, ni un responsable que nadie dijo |
+| **Los valores por defecto** | 5 | que lo que el motor va a usar se diga en voz alta antes de confirmarlo |
+| **El presupuesto y la esfera** | 6 | que la espera sea la declarada, y que solo publiquen las seis fuentes |
+| **La consola, segunda tanda** | 4 | que preguntar no gaste un turno y que corregir una lista no la borre |
 
 **Ninguna llama a un modelo.** El accesorio `sin_modelo` fuerza la rama
 determinista, que además es la que corre cuando no hay llave: si alguna dejara de

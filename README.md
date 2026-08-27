@@ -98,7 +98,15 @@ uv sync --extra agents
 ```
 
 Sin llave, la consola interpreta de forma determinista y la esfera pública usa
-plantillas. Comprobar con `/api/config`.
+plantillas. Comprobar con `/api/config`, que dice además cuánto se espera como
+máximo por cada capa.
+
+**El presupuesto de latencia está medido** (`PENDIENTES.md` B5) y los valores por
+defecto de `.env.example` salen de esa medición: el canal responde en **2,4 s de
+mediana** y la esfera pública en **6 s**, contra presupuestos de 12 y 20. Los dos
+ajustes que lo consiguen —`REINTENTOS_LLM=0` y `ESFUERZO_*=low`— están
+comentados ahí, porque sin ellos la esfera pública **no llegaba a usar el modelo
+ni una vez**.
 
 ---
 
@@ -179,7 +187,8 @@ serlo — y eso, sobre hechos con responsabilidad judicial viva, es tomar partid
 - denuncias con veracidad oculta, y el ultimátum gremial del turno 1
 - territorio ficticio, con posiciones para el mapa esquemático
 - corredor sin interfaz con **seis estrategias** comparables
-- **110 pruebas sin modelo, en 1,2 s**
+- **150 pruebas sin modelo, en 2,3 s** — y una que comprueba que ninguna sale
+  a la red, porque durante varias versiones cinco de ellas sí salían
 
 **Falta** — la lista completa está en [`PENDIENTES.md`](PENDIENTES.md):
 

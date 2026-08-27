@@ -91,6 +91,14 @@ class Resolucion:
     selector: str | None = None
     puntaje: float = 0.0
 
+    # De qué argumento de la herramienta salió. Viaja hasta la pantalla para que
+    # el botón de corregir sepa qué campo está corrigiendo. Antes lo adivinaba
+    # el frontend buscando el valor crudo entre los argumentos, y para los
+    # campos de lista —los tres puntos de `asignar_duplas`— no lo encontraba
+    # nunca: caía en `nodo_id`, que esa herramienta no declara, y la corrección
+    # moría en un 400.
+    campo: str | None = None
+
     # Por que no se encontro, cuando se puede saber. Un «no existe» a secas
     # obliga a la sala a adivinar que escribio mal; una pista la deja corregir
     # en un segundo, sin que el sistema decida nada por ella.

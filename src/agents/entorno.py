@@ -87,6 +87,12 @@ REGLAS QUE NO PUEDES ROMPER:
 - Nada de nombres de personas reales, partidos reales ni instituciones reales de
   ningún país.
 - Cada publicación: una o dos frases. Es un titular o un tuit, no un artículo.
+- NO empieces el texto repitiendo el nombre de la fuente: la pantalla ya lo pone
+  al lado, y «Prensa nacional: Prensa nacional informa…» es lo que sale si lo
+  haces.
+- El campo `fuente` es la CLAVE que se te da en `fuentes_que_publican`
+  —`prensa_nacional`, `redes`…—, no el nombre para mostrar. Una fuente que no
+  esté en esa lista no se publica.
 - Respeta el sesgo de cada fuente: es lo que hace visible que el mismo hecho se
   cuenta de cuatro maneras distintas.
 
@@ -136,11 +142,12 @@ def publicaciones(estado: Estado, eventos: list[dict],
             ],
             response_format={"type": "json_object"},
             timeout=cfg.timeout_entorno,
+            **cfg.extra_entorno(),
         )
         datos = json.loads(respuesta.choices[0].message.content or "{}")
-        pubs = datos.get("publicaciones") or []
+        pubs = _de_fuentes_conocidas(datos.get("publicaciones") or [])
         if not pubs:
-            raise ValueError("respuesta vacía")
+            raise ValueError("respuesta vacía o sin ninguna fuente reconocible")
         for p in pubs:
             p["turno"] = estado.turno_decision
         return {"publicaciones": pubs[:6], "generado_por": cfg.modelo_entorno}
@@ -149,6 +156,37 @@ def publicaciones(estado: Estado, eventos: list[dict],
         # proveedor tardó. Se degrada y se dice.
         return {"publicaciones": _plantilla(estado, hechos),
                 "generado_por": f"plantilla (el modelo falló: {type(exc).__name__})"}
+
+
+# Cómo se puede nombrar cada una de las seis. El modelo devuelve unas veces la
+# clave y otras el nombre para mostrar, y la pantalla rotula por clave.
+_ALIAS_FUENTE = {
+    **{k: k for k in AGENTES},
+    **{v["nombre"].lower(): k for k, v in AGENTES.items()},
+}
+
+
+def _de_fuentes_conocidas(pubs: list) -> list[dict]:
+    """
+    **Solo publican las seis.** Y con la clave canónica, no con lo que el modelo
+    haya escrito esa vez.
+
+    Dos cosas distintas, y las dos importan. La primera es de rótulo: el campo
+    volvía unas veces como `comite_del_paro` y otras como «Comité Nacional del
+    Paro», y la pantalla rotula por clave. La segunda no es de rótulo: un
+    `fuente` inventado es **contenido atribuido a un medio que no existe** en un
+    ejercicio cuyo objeto es la distancia entre lo que el Estado tiene por cierto
+    y lo que se dice. Atribuirlo mal es peor que no publicarlo.
+    """
+    salida = []
+    for p in pubs:
+        if not isinstance(p, dict):
+            continue
+        clave = _ALIAS_FUENTE.get(str(p.get("fuente", "")).strip().lower())
+        if clave is None or not str(p.get("texto", "")).strip():
+            continue
+        salida.append({**p, "fuente": clave})
+    return salida
 
 
 def _hechos_del_turno(estado: Estado, eventos: list[dict]) -> list[dict]:

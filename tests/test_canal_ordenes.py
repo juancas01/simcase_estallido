@@ -190,6 +190,28 @@ def test_al_no_reconocer_nada_se_dice_por_que(estado):
     assert "repertorio" in aviso.lower()
 
 
+def test_si_se_entiende_la_accion_pero_no_el_sitio_se_dice_asi(estado,
+                                                               monkeypatch):
+    """
+    El quinto diagnóstico. Con el modelo puesto, un sitio ambiguo hacía a veces
+    que no llamara a nada, y la sala leía «esa acción no existe» sobre una
+    acción que sí existe: la mandaba a corregir donde no estaba el problema.
+    """
+    monkeypatch.setattr(herramientas, "interpretar_sin_modelo",
+                        lambda *_: [])          # el modelo no devolvió nada
+    p = plan(estado, "operen eso de alli")
+    assert p.acciones == []
+    aviso = p.avisos[0]
+    assert "Se entiende la acción" in aviso
+    assert "no sobre qué" in aviso
+
+
+def test_si_de_verdad_no_existe_la_accion_se_sigue_diciendo(estado):
+    """La contraparte: no vale responder siempre lo mismo."""
+    p = plan(estado, "declaren el estado de sitio")
+    assert "Ninguna acción del repertorio" in p.avisos[0]
+
+
 # ===========================================================================
 # LA AMBIGÜEDAD SE PREGUNTA, NUNCA SE ADIVINA
 #
@@ -648,3 +670,499 @@ def test_el_canal_jamas_expone_la_mezcla_real_ni_la_veracidad(estado):
 def test_el_tope_de_acciones_por_plan_no_se_puede_saltar(estado):
     p = plan(estado, "operen todos los puntos")
     assert len(p.acciones) <= nlu.TOPE_ACCIONES
+
+
+# ===========================================================================
+# EL REPERTORIO COMPLETO, TAMBIÉN SIN LLAVE
+#
+# Sin llave el canal traduce con `interpretar_sin_modelo`, y ahí una herramienta
+# sin disparador **no existe**: el canal responde «ninguna acción del repertorio
+# corresponde a eso» sobre una acción que sí tiene. No se equivoca de acción:
+# niega tener una que tiene, y manda a la sala a corregir donde no estaba el
+# problema. Faltaban dos de veintiséis.
+# ===========================================================================
+
+def test_toda_herramienta_del_repertorio_es_alcanzable_sin_modelo():
+    """
+    La lista se recorre entera. Una herramienta nueva sin disparador es
+    invisible en la rama determinista, y **A3 deja abierto que la primera
+    corrida se haga sin llave**.
+    """
+    con_disparador = {n for n, _, _ in herramientas.DISPARADORES}
+    huerfanas = [
+        n for n, spec in herramientas.HERRAMIENTAS.items()
+        if not spec.get("solo_lectura") and n not in con_disparador
+    ]
+    assert not huerfanas, f"sin disparador, invisibles sin llave: {huerfanas}"
+
+
+def test_ningun_disparador_apunta_a_una_herramienta_que_no_existe():
+    nombres = set(herramientas.HERRAMIENTAS)
+    perdidos = [n for n, _, _ in herramientas.DISPARADORES if n not in nombres]
+    assert not perdidos
+
+
+def test_el_redespliegue_militar_no_se_niega_a_si_mismo(estado):
+    """«Redesplegar militares a la refinería» decía que eso no existe. Existe."""
+    a = solo(estado, "redesplegar militares a infraestructura")
+    assert a.herramienta == "redesplegar_militares"
+    assert a.argumentos["modo"] == "infraestructura"
+
+
+def test_la_mesa_del_alcalde_no_es_la_del_interior(estado):
+    """
+    Son dos acciones distintas con dos jurisdicciones opuestas: la del Alcalde
+    **solo** vale en el epicentro; la del Interior en el epicentro exige que
+    esté la Alcaldía. Confundirlas cambia de dueño la palanca sin decirlo.
+    """
+    a = solo(estado, "instalar mesa con voceros en Barrio Las Palmas")
+    assert a.herramienta == "mesa_con_voceros"
+    assert a.rol == "Alcalde"
+
+
+def test_una_raiz_tiene_que_aguantar_la_conjugacion(estado):
+    """
+    `condicionar` es un infinitivo, no una raíz: «el Alcalde condiciona el
+    empleo de la fuerza» no disparaba nada. La gente conjuga.
+    """
+    a = solo(estado, "el Alcalde condiciona el empleo de la fuerza en su jurisdiccion")
+    assert a.herramienta == "condicionar_empleo_fuerza"
+
+
+# ===========================================================================
+# EL CANAL NO SE CONCEDE REQUISITOS A SÍ MISMO
+#
+# `AbrirMesaLocal` exige a la Alcaldía en la jurisdicción del epicentro: es la
+# única puerta que obliga al Interior a traer al Alcalde a la mesa. El
+# constructor de la herramienta ponía `con_alcaldia=True` cuando nadie lo había
+# dicho, y esa puerta **no se cerró nunca por el canal**.
+# ===========================================================================
+
+def test_el_canal_no_se_da_a_si_mismo_la_alcaldia(estado):
+    a = solo(estado, "concertar en la Glorieta La Ceiba")
+    assert a.argumentos["con_alcaldia"] is False
+    assert a.estado == "no_viable"
+    assert "Alcaldía" in (a.motivo or "")
+    assert a.habilitada_por, "y se dice quién puede habilitarla"
+
+
+def test_la_alcaldia_dicha_si_cuenta(estado):
+    a = solo(estado, "concertar en la Glorieta La Ceiba con la Alcaldia")
+    assert a.argumentos["con_alcaldia"] is True
+    assert a.estado == "lista"
+
+
+def test_la_ausencia_de_la_alcaldia_se_dice_en_voz_alta(estado):
+    """
+    El resto de booleanos solo se dicen cuando son ciertos —«sin dupla» en cada
+    línea sería ruido—. Este se dice en los dos sentidos, porque su ausencia es
+    lo que hace inviable la acción y la sala tiene que oírlo ANTES.
+    """
+    a = solo(estado, "concertar en la Glorieta La Ceiba")
+    assert "SIN la Alcaldía" in a.en_claro()
+
+
+def test_el_mitigador_de_la_alcaldia_no_abre_una_mesa_aparte(estado):
+    """
+    «Operen X concertado con la Alcaldía» no son dos acciones. La raíz «concert»
+    abría una mesa que nadie pidió y **se llevaba el resto de la frase**: la
+    operación se quedaba sin el mitigador y sin el responsable que venían detrás.
+    """
+    a = solo(estado, "operen el Puente Amarillo con ESMAD, concertado con la "
+                     "Alcaldia, responsable el Ministro de Defensa")
+    assert a.herramienta == "operar_punto"
+    assert a.argumentos["concertado_con_alcaldia"] is True
+    assert a.argumentos["responsable_nominado"] == "Ministro de Defensa"
+
+
+def test_quien_firma_la_orden_se_extrae(estado):
+    """
+    `responsable_nominado` no es adorno: con el registro escrito adoptado es lo
+    que hace ATRIBUIBLE un incidente, y la vista privada muestra «— SIN NOMBRE
+    —» cuando falta. Sin extraerlo, esa mecánica moría al correr sin llave.
+    """
+    a = solo(estado, "operen el Puente Amarillo, responsable: el Presidente")
+    assert a.argumentos["responsable_nominado"] == "Presidente"
+
+
+# ===========================================================================
+# LAS CANTIDADES Y LOS VALORES POR DEFECTO
+#
+# Es N4 otra vez, con una cifra en lugar de una unidad: la orden se ejecuta con
+# un valor que nadie pidió y la lectura en voz alta no lo dice, así que la sala
+# no tiene dónde notarlo.
+# ===========================================================================
+
+def test_una_cantidad_dicha_no_se_sustituye_por_la_de_por_defecto(estado):
+    p = plan(estado, "concentrar 8 escuadrones del ESMAD y relevar 4 unidades")
+    por_nombre = {a.herramienta: a for a in p.acciones}
+    assert por_nombre["disponer_esmad"].argumentos["n_escuadrones"] == 8
+    assert por_nombre["relevar_unidades"].argumentos["n_unidades"] == 4
+
+
+def test_una_cantidad_dictada_en_letras_tambien_cuenta(estado):
+    """La sala dicta en voz alta y quien transcribe escribe lo que oye."""
+    a = solo(estado, "concentrar ocho escuadrones del ESMAD")
+    assert a.argumentos["n_escuadrones"] == 8
+
+
+def test_un_margen_dicho_no_se_sustituye(estado):
+    a = solo(estado, "fijar lineas rojas con margen 0.3")
+    assert a.argumentos["margen"] == 0.3
+
+
+def test_el_valor_por_defecto_viaja_en_el_plan_y_se_dice(estado):
+    """
+    Estaban escondidos dentro de `construir`: la acción se ejecutaba con ESMAD y
+    con seis escuadrones, y como el argumento no estaba en `argumentos`, la
+    lectura no lo decía. La sala confirmaba una cosa y el motor hacía otra.
+    """
+    a = solo(estado, "despejen el Alto del Mirador")
+    assert a.argumentos["tipo_unidad"] == "esmad"
+    assert "con ESMAD" in a.en_claro()
+
+    b = solo(estado, "concentrar el ESMAD")
+    assert b.argumentos["n_escuadrones"] == 6
+    assert "6 escuadrón(es)" in b.en_claro()
+
+
+def test_la_firma_sin_delimitar_se_dice_en_voz_alta(estado):
+    """
+    El valor por defecto más caro del repertorio: firmar sin delimitar cuesta
+    −22 de respaldo internacional frente a −8, entrega el encuadre de represión
+    y dispara «militares en control de multitudes». Y era el que no se decía.
+    """
+    a = solo(estado, "firmar la asistencia militar")
+    assert a.argumentos["delimitada"] is False
+    assert "SIN límites" in a.en_claro()
+
+    b = solo(estado, "firmar la asistencia militar delimitada")
+    assert b.argumentos["delimitada"] is True
+    assert "con límites escritos" in b.en_claro()
+
+
+def test_todo_valor_por_defecto_declarado_se_puede_decir_en_voz_alta():
+    """
+    Un valor por defecto que el motor usa y la lectura calla es exactamente el
+    agujero que esta tanda cerró. Que no se vuelva a abrir al añadir el
+    siguiente.
+    """
+    mudos = []
+    for nombre, spec in herramientas.HERRAMIENTAS.items():
+        for campo in spec.get("por_defecto", {}):
+            if campo in ("nodo_id", "corredor_id", "region_id", "puntos"):
+                continue
+            if campo not in nlu.ARGUMENTOS_EN_CLARO and campo != "tipo_unidad":
+                mudos.append(f"{nombre}.{campo}")
+    assert not mudos, f"valor por defecto que nadie oye: {mudos}"
+
+
+# ===========================================================================
+# LO QUE LA SALA OYE · segunda tanda
+# ===========================================================================
+
+def test_la_lectura_dice_de_que_rol_es_cada_accion(estado):
+    """
+    En un ejercicio cuyo objeto es quién tiene qué palanca, que la lectura no
+    dijera de quién era la acción hacía inaudible una sustitución de rol.
+    """
+    lectura = plan(estado, "operen el Puente Amarillo").lectura()
+    assert "[Ministro de Defensa]" in lectura
+
+
+def test_la_lectura_cuenta_cuantos_puntos_entendio(estado):
+    """
+    Si la sala nombró tres y oye dos, la resta la hace ella. Es el único aviso
+    posible cuando el tercero ni se reconoció como nombre — que es justo lo que
+    pasa en la rama sin modelo.
+    """
+    a = nlu._a_accion_plan(estado, {"nombre": "asignar_duplas", "argumentos": {
+        "puntos": ["Puente Amarillo", "Puente de Brooklyn", "Alto del Mirador"]}})
+    assert "Sobre 2:" in a.en_claro()
+    assert "Puente de Brooklyn" in (a.motivo or "")
+
+
+def test_casi_no_es_una_condicion(estado):
+    """
+    Con «si » a secas, «casi todos los puntos» disparaba el aviso de condicional.
+    Un aviso que salta cuando no toca se deja de leer — y entonces tampoco se lee
+    el que sí importa.
+    """
+    p = plan(estado, "casi todos los puntos siguen cerrados: operen el Puente Amarillo")
+    assert not any("condición" in a for a in p.avisos)
+
+
+def test_la_condicion_de_verdad_sigue_avisando(estado):
+    p = plan(estado, "si la Defensoria verifica el Puente Amarillo, operenlo")
+    assert any("condición" in a for a in p.avisos)
+
+
+# ===========================================================================
+# LA CONSOLA · segunda tanda
+# ===========================================================================
+
+def test_preguntar_no_gasta_un_turno(consola):
+    """
+    La hoja de datos ya viaja dentro del plan y se lee sin ejecutar nada. Pero
+    `/ejecutar` corría `motor.paso()` igual: la sala preguntaba cuánto oxígeno
+    quedaba, pulsaba el botón grande, y se le iba **una de las cinco ventanas**.
+    """
+    antes = consola.get("/api/tablero").json()["turno_decision"]
+    p = consola.post("/api/consola/interpretar",
+                     json={"texto": "cuanto oxigeno queda?"}).json()
+    r = consola.post("/api/consola/ejecutar",
+                     json={"plan_id": p["plan_id"]}).json()
+    assert r["turno_avanzado"] is False
+    assert consola.get("/api/tablero").json()["turno_decision"] == antes
+
+
+def test_una_orden_de_verdad_si_gasta_el_turno(consola):
+    """La contraparte de la anterior: lo que no puede pasar es congelar el reloj."""
+    antes = consola.get("/api/tablero").json()["turno_decision"]
+    p = consola.post("/api/consola/interpretar",
+                     json={"texto": "operen el Puente Amarillo"}).json()
+    r = consola.post("/api/consola/ejecutar",
+                     json={"plan_id": p["plan_id"]}).json()
+    assert r["turno_avanzado"] is True
+    assert consola.get("/api/tablero").json()["turno_decision"] > antes
+
+
+def test_corregir_un_punto_de_una_lista_completa_en_vez_de_borrar(consola):
+    """
+    `asignar_duplas` lleva tres puntos en un solo acto. Elegir el que faltaba
+    sustituía la lista entera por un texto suelto: el botón de corregir dejaba
+    la orden peor que antes.
+    """
+    p = consola.post("/api/consola/interpretar", json={
+        "texto": "asignar duplas al Puente Amarillo y al Alto del Mirador"}).json()
+    assert p["acciones"][0]["argumentos"]["puntos"] == ["N003", "N004"]
+
+    p2 = consola.post("/api/consola/elegir", json={
+        "plan_id": p["plan_id"], "indice": 0,
+        "campo": "puntos", "valor": "N012"}).json()
+    assert p2["acciones"][0]["argumentos"]["puntos"] == ["N003", "N004", "N012"]
+    assert p2["acciones"][0]["estado"] == "lista"
+
+
+def test_cada_entidad_dice_de_que_campo_salio(consola):
+    """
+    La pantalla adivinaba el campo buscando el valor crudo entre los argumentos.
+    Para los campos de lista no aparecía nunca —los que no resuelven no se
+    guardan—, caía en `nodo_id`, y la corrección moría en un 400.
+    """
+    p = consola.post("/api/consola/interpretar",
+                     json={"texto": "operen el puente"}).json()
+    assert p["acciones"][0]["entidades"][0]["campo"] == "nodo_id"
+
+
+# ===========================================================================
+# QUE LA SUITE NO SALGA A LA RED
+#
+# La cabecera de este archivo decía que ninguna prueba llamaba a un modelo, y
+# era falso por la mitad que nadie miró: el accesorio silenciaba `nlu`, y las
+# cinco pruebas que pasan por `/ejecutar` disparaban después la CAPA 3 con el
+# cliente real. Medido: 176 s y llamadas facturadas en cada corrida.
+# ===========================================================================
+
+def test_las_dos_capas_estan_silenciadas_en_las_pruebas():
+    from src.agents import entorno
+    assert nlu.cliente() is None, "la capa 4 sale a la red"
+    assert entorno.cliente() is None, "la capa 3 sale a la red"
+
+
+# ===========================================================================
+# EL PRESUPUESTO DE LATENCIA · B5
+#
+# «Presupuesto de tiempo duro», decía la cabecera de `entorno.py`, y no lo era:
+# el SDK reintenta dos veces de fábrica, así que un presupuesto de 12 s se
+# convertía en tres intentos y hasta 36 s de reloj. Medido en una sonda real:
+# 35,3 s con el presupuesto puesto en 12.
+# ===========================================================================
+
+def test_el_presupuesto_de_latencia_es_el_que_se_declara(monkeypatch):
+    """
+    Sobre los valores POR DEFECTO, no sobre el `.env` de quien corre esto: una
+    prueba que lee la configuración local falla en la máquina de al lado y no
+    dice nada del código.
+    """
+    # `src/agents/__init__.py` reexporta la FUNCIÓN `config`, que tapa al módulo
+    # del mismo nombre: `from src.agents import config` no trae lo que parece.
+    mod = importlib.import_module("src.agents.config")
+
+    for var in ("REINTENTOS_LLM", "TIMEOUT_NLU", "TIMEOUT_ENTORNO"):
+        monkeypatch.delenv(var, raising=False)
+    mod.config.cache_clear()
+    try:
+        c = mod.config()
+        assert c.reintentos == 0, (
+            "con reintentos, la espera real es el presupuesto multiplicado")
+        d = c.diagnostico()
+        assert d["espera_maxima_nlu_s"] == c.timeout_nlu
+        assert d["espera_maxima_entorno_s"] == c.timeout_entorno
+    finally:
+        mod.config.cache_clear()
+
+
+def test_el_esfuerzo_de_razonamiento_se_manda_solo_si_esta_puesto():
+    """
+    Vacío = no se manda el parámetro. Hace falta para apuntar a un modelo que no
+    razona o a otro proveedor, que lo rechazarían con un 400 — y entonces el
+    canal degradaría en todos los turnos.
+    """
+    Config = importlib.import_module("src.agents.config").Config
+    puesto = Config(api_key="x", base_url=None, modelo_nlu="m", modelo_entorno="m",
+                    timeout_nlu=1, timeout_entorno=1, reintentos=0,
+                    esfuerzo_nlu="low", esfuerzo_entorno="low")
+    assert puesto.extra_nlu() == {"reasoning_effort": "low"}
+    assert puesto.extra_entorno() == {"reasoning_effort": "low"}
+
+    vacio = Config(api_key="x", base_url=None, modelo_nlu="m", modelo_entorno="m",
+                   timeout_nlu=1, timeout_entorno=1, reintentos=0,
+                   esfuerzo_nlu="", esfuerzo_entorno="")
+    assert vacio.extra_nlu() == {}
+    assert vacio.extra_entorno() == {}
+
+
+# ===========================================================================
+# LA CAPA 3 · solo publican las seis
+#
+# El campo `fuente` volvía unas veces como clave y otras como nombre para
+# mostrar, y la pantalla rotula por clave. Y un `fuente` inventado es contenido
+# atribuido a un medio que no existe, en un ejercicio cuyo objeto es la
+# distancia entre lo que el Estado tiene por cierto y lo que se dice.
+# ===========================================================================
+
+def test_la_esfera_publica_normaliza_la_fuente_al_nombre_canonico():
+    from src.agents import entorno
+    pubs = entorno._de_fuentes_conocidas([
+        {"fuente": "Prensa nacional", "texto": "algo"},
+        {"fuente": "redes", "texto": "algo"},
+    ])
+    assert [p["fuente"] for p in pubs] == ["prensa_nacional", "redes"]
+
+
+def test_la_esfera_publica_no_atribuye_a_un_medio_que_no_existe():
+    from src.agents import entorno
+    pubs = entorno._de_fuentes_conocidas([
+        {"fuente": "El Tiempo", "texto": "algo"},
+        {"fuente": "prensa_nacional", "texto": ""},
+        {"fuente": "prensa_nacional", "texto": "algo"},
+    ])
+    assert len(pubs) == 1, "ni medios inventados ni publicaciones vacías"
+
+
+def test_sin_llave_la_esfera_publica_usa_plantilla_y_lo_dice(estado):
+    """
+    La degradación es la prueba operativa de que ninguna decisión de la
+    simulación se delegó al modelo.
+    """
+    from src.agents import entorno
+    r = entorno.publicaciones(
+        estado, [{"tipo": "apertura", "nodo": "N003", "via": "fuerza"}])
+    assert r["publicaciones"]
+    assert "plantilla" in r["generado_por"]
+    conocidas = set(entorno.AGENTES)
+    assert all(p["fuente"] in conocidas for p in r["publicaciones"])
+
+
+
+# ===========================================================================
+# LO QUE NADIE DIJO NO SE DA POR PUESTO
+#
+# Hay booleanos que no describen la orden: CONCEDEN un requisito o rebajan un
+# riesgo. El sistema ya se lo pide al modelo y aun así lo hace — medido:
+# «concertar en la Glorieta La Ceiba» volvía con `con_alcaldia: true` sin que
+# nadie hubiera nombrado a la Alcaldía. Misma lección que ENUMS: restringir la
+# salida no impide que el modelo se salga, así que la comprobación es
+# determinista.
+# ===========================================================================
+
+def test_el_modelo_no_puede_concederse_la_alcaldia(estado):
+    """El caso medido, tal cual volvió del modelo."""
+    a = nlu._a_accion_plan(
+        estado,
+        {"nombre": "abrir_mesa_local",
+         "argumentos": {"nodo_id": "N002", "con_alcaldia": True}},
+        "concertar en la Glorieta La Ceiba")
+    assert a.argumentos["con_alcaldia"] is False
+    assert a.estado == "no_viable"
+    assert a.correcciones, "y se dice que se quitó, no se quita en silencio"
+
+
+def test_lo_que_la_sala_si_dijo_se_respeta(estado):
+    a = nlu._a_accion_plan(
+        estado,
+        {"nombre": "abrir_mesa_local",
+         "argumentos": {"nodo_id": "N002", "con_alcaldia": True}},
+        "concertar en la Glorieta La Ceiba con la Alcaldia")
+    assert a.argumentos["con_alcaldia"] is True
+    assert not a.correcciones
+
+
+def test_la_correccion_solo_baja_concesiones_nunca_las_sube(estado):
+    """
+    Si la sala lo dijo y el modelo no lo puso, **no se añade**: añadir también
+    sería el canal decidiendo. Se queda en su valor declarado, se dice en voz
+    alta, y la sala lo corrige con un botón.
+    """
+    a = nlu._a_accion_plan(
+        estado,
+        {"nombre": "operar_punto", "argumentos": {"nodo_id": "N003"}},
+        "operen el Puente Amarillo con dupla de la Defensoria")
+    # Ausente es lo mismo que falso, y aquí se prefiere ausente: la dupla que
+    # falta ya sale nombrada en los «mitigadores ausentes» de la banda de
+    # riesgo, que es más fuerte que una línea más de argumento.
+    assert not a.argumentos.get("dupla_presente")
+    assert not a.correcciones
+
+
+def test_la_correccion_se_lee_en_voz_alta(estado):
+    p = nlu.Plan(plan_id="x", texto_original="firmar la asistencia militar")
+    p.acciones.append(nlu._a_accion_plan(
+        estado,
+        {"nombre": "firmar_asistencia_militar",
+         "argumentos": {"delimitada": True}},
+        "firmar la asistencia militar"))
+    assert "no se da por puesto" in p.lectura()
+
+
+def test_una_eleccion_tipada_no_pasa_por_la_correccion(estado):
+    """
+    La corrección contrasta contra el texto de la sala. Una elección tipada
+    **es** la sala hablando, así que no se le aplica: si no, el botón no podría
+    arreglar nunca lo que la corrección quitó.
+    """
+    a = nlu._a_accion_plan(
+        estado,
+        {"nombre": "abrir_mesa_local",
+         "argumentos": {"nodo_id": "N002", "con_alcaldia": True}})
+    assert a.argumentos["con_alcaldia"] is True
+
+
+# ===========================================================================
+# CADA CAMPO, EN SU TIPO
+#
+# `bool("false")` es `True`, y el `valor` de una elección tipada viaja siempre
+# como cadena.
+# ===========================================================================
+
+def test_un_no_escrito_en_texto_no_se_convierte_en_si():
+    spec = herramientas.HERRAMIENTAS["firmar_asistencia_militar"]
+    args, avisos = herramientas.coercionar_tipos(spec, {"delimitada": "false"})
+    assert args["delimitada"] is False and not avisos
+
+    args, _ = herramientas.coercionar_tipos(spec, {"delimitada": "sí"})
+    assert args["delimitada"] is True
+
+
+def test_un_numero_que_llega_como_texto_se_convierte():
+    spec = herramientas.HERRAMIENTAS["disponer_esmad"]
+    args, avisos = herramientas.coercionar_tipos(spec, {"n_escuadrones": "8"})
+    assert args["n_escuadrones"] == 8 and not avisos
+
+
+def test_lo_que_no_se_puede_convertir_se_avisa_y_no_se_inventa(estado):
+    a = nlu._a_accion_plan(estado, {"nombre": "disponer_esmad",
+                                    "argumentos": {"n_escuadrones": "unos pocos"}})
+    assert a.estado == "falta_dato"
+    assert "no es un número" in (a.motivo or "")
