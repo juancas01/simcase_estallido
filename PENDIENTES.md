@@ -41,6 +41,8 @@ lunes por la mañana:
 | **A4** | el contenido exacto de las ocho vistas | se decide probando | esperando |
 | **A5** | cerrar el territorio ficticio | — | nombres provisionales puestos |
 | **A6** | ¿el mapa muestra dónde está la fuerza? | se decide tras P3 | esperando |
+| **B8** | órdenes condicionales en el canal | no | el motor sabe; el canal no lee «si…» · hoy se avisa |
+| **A7** | ¿la consola puede decir qué punto bloquea un corredor? | — | esperando · es el dato exclusivo de Transporte |
 
 Lo que **sí** funciona está en el README, sección «Estado actual»; el
 ejercicio explicado del juego al motor, en
@@ -313,6 +315,38 @@ discuten, no si el código calcula.
 Van en orden. Cada una responde una pregunta distinta y ninguna necesita la
 siguiente para ser útil.
 
+### B8 · Órdenes condicionales, en el canal
+
+**Dónde:** [`nlu.py`](src/agents/nlu.py) · el motor ya está listo
+
+`MotorCrisis.encolar_condicional()` existe y funciona: **«en cuanto la Defensoría
+verifique ese punto, opérenlo»** es una orden que el motor sabe guardar y
+disparar sola. El canal no sabe leerla.
+
+Hoy, «si la Defensoría verifica el Puente Amarillo, opérenlo» se traduce como
+orden **inmediata**, y lo único que impide que eso pase inadvertido es un aviso:
+
+```
+! Se leyó una condición en el texto y el canal NO la traduce: lo que sigue
+  queda como orden inmediata. Si debía esperar a que ocurriera algo, no la
+  confirmen todavía.
+```
+
+**Por qué se dejó en un aviso y no en una supresión.** Suprimir la acción sería
+el canal decidiendo, que es lo único que esta capa no puede hacer. Y el plan se
+lee en voz alta antes de ejecutar precisamente para que una persona atrape esto.
+
+**Qué haría falta:** una herramienta `ordenar_si` con dos campos —la condición y
+la acción—, un vocabulario cerrado de condiciones que el motor sepa evaluar
+(«cuando X esté verificado», «si la mesa cae por debajo de N»), y una manera de
+enseñar en el tablero que hay órdenes esperando. Ese último punto es el que hace
+que valga la pena: **una orden condicional invisible es peor que no tenerla.**
+
+> Con cinco turnos puede no hacer falta. Se decide viendo si en **P3** o **P4**
+> alguien la pide de viva voz.
+
+---
+
 ### P2 · Las pantallas — 30 min, dos personas
 
 **¿Se entienden sin explicación?**
@@ -371,7 +405,7 @@ Ninguna de las cuatro señales nombra un remedio.
 - ¿Alguien pregunta dónde están los escuadrones? Esa pregunta es **A6**, y la
   respuesta a P3 la decide.
 
-> Las 36 definiciones viven en un solo archivo,
+> Las 38 definiciones viven en un solo archivo,
 > [`definiciones.jsx`](web_ui/src/definiciones.jsx). Si un umbral cambia en
 > `parameters.py`, hay exactamente un párrafo que corregir.
 
@@ -611,6 +645,37 @@ Se decide mejor **después de P3**: si con tres personas nadie le pregunta nunca
 la Policía dónde tiene los escuadrones, la asimetría no está funcionando y da
 igual mostrarla.
 
+---
+
+### A7 · ¿La consola puede decir qué punto bloquea un corredor?
+
+**Encontrado revisando el canal de órdenes.** Cuando alguien ordena una escolta,
+`Escoltar.validar()` responde:
+
+```
+Corredor del Sur sigue bloqueado en Cruce de San Isidro.
+La escolta puede salir, pero la carga no pasará.
+```
+
+**Qué punto bloquea cada corredor es el dato exclusivo del Ministro de
+Transporte**, custodiado por `test_solo_transporte_ve_que_punto_bloquea_cada_corredor`.
+Y el plan se lee en voz alta: cualquiera que pida una escolta se lo destapa a
+toda la sala.
+
+| | A favor de dejarlo | A favor de quitarlo |
+|---|---|---|
+| **Es consecuencia, no consulta** | el dato aparece porque alguien gastó una orden; no se puede pedir a discreción | pero se destapa igual, y basta con una escolta |
+| **El valor de Transporte** | está en saberlo **antes**, para que la sala no gaste el turno | si se destapa en el turno 1, en el turno 2 ya lo sabe todo el mundo |
+
+Al explicar un corredor, el resolutor **sí** se contiene: enumera sus puntos —que
+son públicos— y nunca dice cuál lo bloquea. Esa asimetría entre las dos
+superficies es la que hay que resolver en un sentido o en el otro.
+
+> Cambiarlo es una línea. La pregunta no es técnica: es **cuánto vale que
+> Transporte sea necesario el segundo turno y no solo el primero.**
+
+Se decide con **P3**, mirando si alguien le pregunta a Transporte antes de pedir
+una escolta.
 
 ---
 
@@ -649,6 +714,33 @@ Anotado aquí para que nadie lo vuelva a levantar.
 | **A3** | ¿La Defensoría puede retirarse? | **No se retira.** Su palanca es manifestar públicamente que su permanencia está en cuestión — se puede usar varias veces, es graduada, y nunca saca sus mitigadores del juego |
 | **A4** | `capital_politico` no es implementable | Eliminado. Con ocho personas en una sala, el capital político lo administra la sala sola |
 | **A6** | ¿Se acepta el azar? | Sí, con semilla fija. **La semilla no es un elemento visible de la interfaz** |
+
+### La revisión del canal de órdenes
+
+La capa 4 no tenía **ni una sola prueba**: 63 verificadores custodiaban el motor
+—que nadie toca durante el ejercicio— y cero el canal por el que entran las
+órdenes de ocho personas en dos horas. Al sondearlo con órdenes reales
+aparecieron nueve fallos. Cuatro eran silenciosos, que es la peor clase.
+
+| | Era | Cómo quedó |
+|---|---|---|
+| **N1** | «Operen el puente **y** concertar el Alto del Mirador» producía DOS acciones sobre el Alto del Mirador: el intérprete buscaba nombres en todo el texto | Cada disparador solo mira **su cláusula**. La ambigüedad de «el puente» sobrevive y se repregunta |
+| **N2** | «Operen todos los puntos» ejecutaba **uno**: el expansor se quedaba con `ids[0]` | Un criterio produce **una acción por punto**, con tope y con aviso |
+| **N3** | La lectura en voz alta decía «operación de desbloqueo sobre un punto de cierre» — **sin decir sobre cuál** | Dice sobre qué punto, con qué unidad y con qué mitigadores |
+| **N4** | «Operen X **con militares**» salía como ESMAD, porque el intérprete de reserva no leía la unidad | La lee, tras una marca («con», «usando»), para que «responsable el Director de Policía» no cuente |
+| **N5** | Cuatro criterios documentados —«el más duro», «el más crítico», «el que bloquea», «el más…»— eran **inalcanzables**: `normalizar()` quita el artículo y la tabla los guardaba con él | Las claves se normalizan al cargar. Prueba que recorre la tabla entera |
+| **N6** | «Operen el Anillo hospitalario» respondía «no corresponde a ningún punto, corredor ni región» — y es un corredor | Dice qué es, y enumera sus puntos. Nunca cuál lo bloquea: eso es de Transporte |
+| **N7** | Vacío, galimatías, saludo, pregunta y «declaren el estado de sitio» daban **el mismo párrafo** | Cuatro diagnósticos distintos, porque son cuatro correcciones distintas |
+| **N8** | `consultar` se le ofrecía al modelo pero **no existía** en el repertorio: al llamarla, «Herramienta desconocida» | Herramienta de solo lectura, con su hoja de datos en el plan y sin llegar al motor |
+| **N9** | `/ejecutar` encolaba acciones en `falta_dato`, y un `except: continue` tiraba las que fallaban **sin decirlo** | Solo se ejecuta lo que está `lista`; lo que no, sale en `omitidas` con su motivo |
+
+Y dos del motor, que sostenían por debajo dos de esos fallos:
+`RedesplegarMilitares` no validaba su `modo` —un valor desconocido caía por el
+`else` y hacía **proyección aérea**— y `AsignarDuplas` daba por buena una
+asignación sin ningún punto ni denuncia.
+
+**47 pruebas nuevas**, en [`tests/test_canal_ordenes.py`](tests/test_canal_ordenes.py).
+Ninguna llama a un modelo.
 
 ### El paquete detonante, completo
 
@@ -721,10 +813,10 @@ decisión de la simulación se delegó al modelo.
 | **—** | el mapa no existía | [`MapaEsquematico.jsx`](web_ui/src/components/MapaEsquematico.jsx) · esquema de líneas, con la forma del nodo diciendo cómo se abrió, un `?` en lo que nadie ha mirado y **un anillo sobre lo que cambió en la última ventana** |
 | **—** | el tablero no decía qué hora era | `Estado.reloj()` · cinco jornadas del 11 al 15 de mayo, nueve ventanas, y la noche se ve distinta |
 | **—** | un número solo no decía si iba a mejor | `MotorCrisis.deltas()` · ▲▼ contra la ventana anterior, no contra el arranque |
-| **—** | cada cifra llevaba su glosa impresa debajo | Marca **(?)** y 36 definiciones formales en [`definiciones.jsx`](web_ui/src/definiciones.jsx) |
+| **—** | cada cifra llevaba su glosa impresa debajo | Marca **(?)** y 38 definiciones formales en [`definiciones.jsx`](web_ui/src/definiciones.jsx) |
 | **—** | el reloj de fases lo llevaba el moderador | Lo lleva el sistema, fase por fase |
 
 ---
 
-*Última revisión: 2026-08-26 · 63 pruebas en verde · capas de lenguaje natural
+*Última revisión: 2026-08-26 · 110 pruebas en verde · capas de lenguaje natural
 activas con `gpt-5-nano`.*

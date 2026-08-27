@@ -818,6 +818,20 @@ class RedesplegarMilitares(Accion):
     modo: str = "infraestructura"   # infraestructura | proyeccion_aerea
     n_unidades: int = 4
 
+    MODOS = ("infraestructura", "proyeccion_aerea")
+
+    def validar(self, estado: Estado) -> Validacion:
+        # Sin esto, un `modo` desconocido caía por el `else` de `ejecutar` y se
+        # hacía PROYECCIÓN AÉREA — una cosa que nadie pidió, reportada como
+        # ejecutada con éxito. Es el fallo que la capa 4 dice prevenir, y la
+        # prevención vivía solo en el comentario.
+        if self.modo not in self.MODOS:
+            return Validacion(False, (
+                f"«{self.modo}» no es un modo de redespliegue. "
+                f"Los que hay: {', '.join(self.MODOS)}."
+            ))
+        return Validacion(True)
+
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         from src.engine import mobilization
         militares = [u for u in estado.unidades
@@ -1148,6 +1162,14 @@ class AsignarDuplas(Accion):
         if information.duplas_libres(estado) == 0:
             return Validacion(False, (
                 "No quedan duplas este turno. Verificar aquí era no verificar allá."
+            ))
+        # Sin punto ni denuncia no se verifica nada, y antes esto se ejecutaba y
+        # se reportaba como correcto: la sala ordenaba verificar, no se
+        # verificaba nada, y nadie se enteraba hasta el debriefing.
+        if not self.nodos and not self.denuncias:
+            return Validacion(False, (
+                "No se dijo qué verificar. Nombre los puntos, o diga un criterio: "
+                "«los cerrados», «sin verificar»."
             ))
         return Validacion(True)
 

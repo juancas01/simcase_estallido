@@ -34,7 +34,7 @@ De ahí sale la propiedad más importante del repositorio, y la que conviene
 comprobar antes de tocar nada:
 
 ```bash
-uv run pytest -q          # 63 pruebas, ninguna llama a un modelo
+uv run pytest -q          # 110 pruebas, ninguna llama a un modelo
 ```
 
 **El motor corre entero sin llave de API.** No es una comodidad de desarrollo: es
@@ -79,36 +79,38 @@ simcase_estallido/
 │   ├── information.py   341 l   verdad, estimaciones sesgadas, duplas, denuncias
 │   │
 │   ├── views.py         539 l   LAS OCHO VISTAS PRIVADAS
-│   ├── actions.py     1 670 l   las 34 acciones de los ocho roles
+│   ├── actions.py     1 692 l   las 34 acciones de los ocho roles
 │   └── simulation.py    502 l   el bucle de turnos · paso() es la única puerta
 │
-├── src/api/main.py      364 l   capa delgada · 15 endpoints y el catch-all del SPA
+├── src/api/main.py      400 l   capa delgada · 15 endpoints y el catch-all del SPA
 │
 ├── src/agents/          LAS CAPAS DE LENGUAJE NATURAL · opcionales
 │   ├── config.py        105 l   lee .env y dice si hay llave
-│   ├── resolver.py      218 l   entidades → ids, determinista, cuatro estados
-│   ├── herramientas.py  573 l   esquemas tipados generados del catálogo
-│   ├── nlu.py           431 l   el cauce de nueve pasos
+│   ├── resolver.py      337 l   entidades → ids, determinista, cuatro estados
+│   ├── herramientas.py  682 l   esquemas tipados generados del catálogo
+│   ├── nlu.py           679 l   el cauce de nueve pasos
 │   └── entorno.py       256 l   los seis agentes de entorno
 │
 ├── web_ui/src/          LAS SUPERFICIES · React 19 + Vite
 │   ├── App.jsx          174 l   enrutado y portada
 │   ├── comun.jsx        161 l   ROLES, FASES, api(), useDatos, Barra, Delta
-│   ├── definiciones.jsx 575 l   las 36 definiciones formales de los globos
-│   ├── etiquetas.jsx    114 l   identificador del motor → rótulo de pantalla
-│   ├── index.css        757 l   el sistema visual entero
+│   ├── definiciones.jsx 612 l   las 38 definiciones formales de los globos
+│   ├── etiquetas.jsx    146 l   identificador del motor → rótulo de pantalla
+│   ├── index.css        787 l   el sistema visual entero
 │   └── components/      Tablero · VistaPrivada · Consola · Mapa · Reloj · Ayuda
 │
 ├── data/escenario/      EL CASO, en datos y no en código
 ├── scripts/             el corredor sin interfaz, para calibrar sin sala
-├── tests/             1 042 l   63 verificadores sin modelo, en 0,2 s
+├── tests/             1 692 l   110 verificadores sin modelo, en 1,2 s
+│   ├── test_invariantes.py     63   el motor
+│   └── test_canal_ordenes.py   47   la capa 4, que es la que habla con personas
 │
 ├── README.md            por dónde empezar
 ├── PENDIENTES.md        qué falta · el único sitio donde se lleva la cuenta
 └── docs/                este documento y los demás
 ```
 
-**Los tamaños importan aquí.** `actions.py` con 1 670 líneas es el archivo más
+**Los tamaños importan aquí.** `actions.py` con 1 692 líneas es el archivo más
 grande y es el que más se toca: 34 clases, cada una con su validación y su
 ejecución. Si crece mucho más, el corte natural es por frente (seguridad,
 estrategia, logística), no por tipo de acción.
@@ -252,20 +254,60 @@ Solo el **paso 1** de nueve usa el modelo:
 ```
 
 Cada paso existe por un modo de falla medido en un ejercicio real —los ocho están
-listados en la cabecera de [`nlu.py`](../src/agents/nlu.py)—. Dos que conviene
-tener presentes al tocar esta capa:
+listados en la cabecera de [`nlu.py`](../src/agents/nlu.py)—.
+
+### La regla que gobierna toda la capa
+
+> **Si el canal no entiende, PREGUNTA.** Nunca adivina, nunca fuerza la acción
+> más parecida, y nunca ejecuta una orden a medias.
+
+El fallo que hay que impedir no es que el canal se equivoque: es que **se
+equivoque en silencio**. Una orden rechazada con un motivo legible cuesta veinte
+segundos de sala; una orden ejecutada en el punto equivocado no cuesta nada
+—hasta el debriefing.
+
+### Cuatro piezas que sostienen esa regla
 
 **El resolutor tiene cuatro estados, no dos.** `ok · ambiguo · selector ·
-no_encontrado`. Y la regla que lo hace seguro: *si un escalón produce más de un
+no_encontrado`. Y lo que lo hace seguro: *si un escalón produce más de un
 candidato, el resultado es ambiguo — nunca se toma el primero.*
+
+**Un `no_encontrado` explica y ofrece.** Tres respuestas distintas según el caso:
+si el nombre existe pero es de otra clase, lo dice y enumera los puntos del
+corredor; si se parece a algo por encima de `UMBRAL_SUGERIR`, ofrece las tres más
+cercanas como botones; si no se parece a nada, dice **qué clase de cosa se
+esperaba**. Un «no existe» a secas obliga a la sala a adivinar qué escribió mal.
+
+**El expansor expande.** Un criterio —«todos los puntos», «los cerrados»— produce
+**una acción por punto**, con tope y con aviso. No es un lugar: son N lugares.
+
+**Solo se ejecuta lo que está `lista`.** `falta_dato` también se queda fuera, y
+lo que se queda fuera **se enuncia** en `omitidas`. Ejecutar una acción
+incompleta con sus valores por defecto produce una operación que nadie ordenó,
+informada como cumplida.
+
+### Y dos que ya estaban
 
 **Las ambigüedades se resuelven con elección tipada**, no con texto libre. Sin
 eso, «no», «400» y «sí, confirmo» vuelven a entrar por el canal como si fueran
 órdenes nuevas.
 
-`herramientas.py` **genera los esquemas desde el catálogo de acciones**, no los
-escribe a mano. En la simulación anterior, un paquete que faltaba en un prompt
-escrito a mano fue invisible para el agente durante todo un ejercicio.
+`herramientas.py` **genera los esquemas desde el catálogo**, no los escribe a
+mano. En la simulación anterior, un paquete que faltaba en un prompt escrito a
+mano fue invisible para el agente durante todo un ejercicio.
+
+### El intérprete de reserva trabaja por cláusula
+
+Sin llave, el paso 1 lo hace un intérprete de raíces —`oper`, `escolt`,
+`concert`— porque la gente conjuga. **Cada disparador solo mira su cláusula**:
+antes miraba el texto entero, y en «operen el puente y concertar el Alto del
+Mirador» el nombre de la segunda se colaba en la primera. Salían dos acciones
+sobre el Alto del Mirador y la ambigüedad de «el puente» desaparecía sin dejar
+rastro.
+
+> **`consultar` es una herramienta más, no un clasificador previo.** Un
+> clasificador orden/consulta que se equivoca emite una orden que nadie dio, y
+> eso es irreversible. Un mismo texto puede ser orden **y** consulta.
 
 ---
 
@@ -279,7 +321,7 @@ React 19 + Vite, sin router: [`App.jsx`](../web_ui/src/App.jsx) mira
 | Archivo | Qué guarda | Por qué existe |
 |---|---|---|
 | `comun.jsx` | `ROLES`, `FASES`, `api()`, `useDatos`, `Barra`, `Delta` | lo que usan todas las superficies |
-| `definiciones.jsx` | las 36 definiciones de los globos de ayuda | **un umbral cambia en un solo párrafo** |
+| `definiciones.jsx` | las 38 definiciones de los globos de ayuda | **un umbral cambia en un solo párrafo** |
 | `etiquetas.jsx` | `sin_verificar` → «Sin verificar» | el identificador es del motor; el rótulo es de la sala |
 | `index.css` | el sistema visual entero | tokens, no valores sueltos |
 
@@ -304,18 +346,31 @@ aviso, rojo es deterioro.
 
 ## 9. Las pruebas
 
-**63, sin modelo, en dos décimas de segundo.** Corren en cada cambio.
+**110, sin modelo, en poco más de un segundo.** Corren en cada cambio.
 
 ```bash
 uv run pytest -q
-uv run pytest -q -k "delta or mapa"      # un subconjunto
+uv run pytest -q tests/test_canal_ordenes.py   # solo la capa 4
+uv run pytest -q -k "delta or mapa"            # un subconjunto
 ```
 
 Cada prueba existe porque **su propiedad se rompió alguna vez** o porque su
 ruptura sería silenciosa — que es la peor clase de fallo: el ejercicio pierde su
 objeto sin que nada reviente.
 
-Agrupadas por lo que protegen:
+Van en dos archivos porque custodian dos cosas distintas:
+
+| Archivo | Cuántas | Qué custodia |
+|---|---|---|
+| `test_invariantes.py` | 63 | **el motor** — que el mundo se comporte como dice el diseño |
+| `test_canal_ordenes.py` | 47 | **la capa 4** — que lo que ocho personas dicen en voz alta se traduzca a lo que quisieron decir, o se repregunte |
+
+> **El segundo archivo llegó tarde.** Durante varias versiones, sesenta y tres
+> verificadores custodiaban el motor —que nadie toca durante el ejercicio— y
+> **cero** custodiaban el canal por el que entran las órdenes de ocho personas en
+> dos horas. Al sondearlo aparecieron nueve fallos, cuatro de ellos silenciosos.
+
+Las del motor, agrupadas por lo que protegen:
 
 | Grupo | Cuántas | Qué protegen |
 |---|---|---|
@@ -334,6 +389,25 @@ Agrupadas por lo que protegen:
 
 Las dos últimas son inusuales y se ganaron su sitio: **la promesa de navegación
 en los dos sentidos de `PENDIENTES.md` ya se había roto en silencio.**
+
+Y las del canal de órdenes:
+
+| Grupo | Cuántas | Qué protegen |
+|---|---|---|
+| **Un recurso que no existe** | 6 | que «el Puente de Brooklyn» no se opere en el que más se le parezca |
+| **Una orden que no existe** | 5 | que no se fuerce la acción más parecida, y que el silencio diga por qué |
+| **La ambigüedad** | 3 | que se pregunte, y que una orden compuesta no le robe el lugar a la otra |
+| **Las enumeraciones** | 5 | que la unidad pedida no se cambie por la de por defecto |
+| **Los criterios** | 4 | que «todos los puntos» sean N acciones y no la primera |
+| **Preguntar no es ordenar** | 5 | que una consulta no ejecute nada |
+| **Lo que la sala oye** | 6 | que la lectura diga sobre qué punto se actúa |
+| **La consola** | 8 | que nada se ejecute a medias ni se caiga en silencio |
+| **La degradación** | 3 | que sin llave, y con el proveedor caído, el canal siga traduciendo |
+| **Lo que no puede salir** | 2 | la mezcla real y la veracidad, también por esta superficie |
+
+**Ninguna llama a un modelo.** El accesorio `sin_modelo` fuerza la rama
+determinista, que además es la que corre cuando no hay llave: si alguna dejara de
+pasar al quitar el modelo, la degradación sería decorativa.
 
 ---
 

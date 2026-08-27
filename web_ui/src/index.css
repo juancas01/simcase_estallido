@@ -755,3 +755,33 @@ tr.aviso > td:first-child { padding-left: 0.65rem; }
   letter-spacing: 0.02em;
   color: var(--texto-3);
 }
+
+/* --- hoja de datos de una consulta ---------------------------------------- */
+
+.hoja-datos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.5rem 1.2rem;
+  margin: 0.5rem 0 0;
+}
+
+.hoja-datos > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.hoja-datos dt {
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--texto-3);
+}
+
+.hoja-datos dd {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--texto);
+  overflow-wrap: anywhere;
+}

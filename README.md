@@ -179,7 +179,7 @@ serlo — y eso, sobre hechos con responsabilidad judicial viva, es tomar partid
 - denuncias con veracidad oculta, y el ultimátum gremial del turno 1
 - territorio ficticio, con posiciones para el mapa esquemático
 - corredor sin interfaz con **seis estrategias** comparables
-- **63 pruebas sin modelo, en 0,2 s**
+- **110 pruebas sin modelo, en 1,2 s**
 
 **Falta** — la lista completa está en [`PENDIENTES.md`](PENDIENTES.md):
 

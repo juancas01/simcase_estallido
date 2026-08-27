@@ -26,6 +26,7 @@ import unicodedata
 
 from src.engine import actions as A
 from src.engine.state import Estado
+from src.agents import resolver
 
 
 def _sin_tildes(t: str) -> str:
@@ -40,6 +41,12 @@ def _sin_tildes(t: str) -> str:
 # Las constitutivas se piden por su nombre y no llevan entidades; las operativas
 # llevan el punto o el corredor sobre el que actúan.
 # ---------------------------------------------------------------------------
+
+# Los temas de la hoja de datos. Viven aquí porque los usan el esquema de la
+# herramienta, el intérprete de reserva y `nlu.hoja_de_datos`. Un dato en dos
+# sitios se desincroniza.
+TEMAS_CONSULTA = ["fuerza", "corredores", "abastecimiento", "mesa"]
+
 
 HERRAMIENTAS: dict[str, dict] = {
     # --- Seguridad ---
@@ -303,6 +310,25 @@ HERRAMIENTAS: dict[str, dict] = {
         "esquema": {},
         "requeridos": [],
     },
+
+    # --- La rama de solo lectura ---
+    #
+    # Preguntar NO es ordenar, y el sistema no puede obligar a elegir entre las
+    # dos: un mensaje puede ser orden Y consulta a la vez. Por eso consultar es
+    # una herramienta más y no un clasificador previo — un clasificador que se
+    # equivoca manda una orden que nadie dio, y eso es irreversible.
+    #
+    # `solo_lectura` es lo que impide que llegue al motor. Nunca construye una
+    # acción: no tiene `construir`.
+    "consultar": {
+        "rol": "cualquiera",
+        "descripcion": "Consulta del estado, sin ordenar nada",
+        "entidades": {},
+        "solo_lectura": True,
+        "esquema": {"tema": ("string", "sobre qué se pregunta",
+                             TEMAS_CONSULTA)},
+        "requeridos": ["tema"],
+    },
 }
 
 TIPOS_JSON = {"string": "string", "integer": "integer",
@@ -314,12 +340,16 @@ def esquemas() -> list[dict]:
     out = []
     for nombre, spec in HERRAMIENTAS.items():
         props = {}
-        for campo, (tipo, desc) in spec["esquema"].items():
+        for campo, decl in spec["esquema"].items():
+            tipo, desc = decl[0], decl[1]
+            opciones = decl[2] if len(decl) > 2 else None
             if tipo == "array":
                 props[campo] = {"type": "array", "items": {"type": "string"},
                                 "description": desc}
             else:
                 props[campo] = {"type": TIPOS_JSON[tipo], "description": desc}
+            if opciones:
+                props[campo]["enum"] = list(opciones)
         out.append({
             "type": "function",
             "function": {
@@ -332,22 +362,6 @@ def esquemas() -> list[dict]:
                 },
             },
         })
-    out.append({
-        "type": "function",
-        "function": {
-            "name": "consultar",
-            "description": ("Responder una pregunta sobre el estado, sin ordenar "
-                            "nada. Un mensaje puede ser orden Y consulta a la vez."),
-            "parameters": {
-                "type": "object",
-                "properties": {"tema": {
-                    "type": "string",
-                    "enum": ["fuerza", "corredores", "abastecimiento", "mesa"],
-                }},
-                "required": ["tema"],
-            },
-        },
-    })
     return out
 
 
@@ -478,45 +492,130 @@ DISPARADORES: list[tuple[str, list[str], list[str]]] = [
 ]
 
 
+# Interrogativos que convierten un texto en consulta y no en orden, con el tema
+# al que corresponde cada uno. Preguntar no es ordenar.
+PREGUNTAS: list[tuple[str, list[str]]] = [
+    ("fuerza", ["cuantos escuadrones", "cuanta fuerza", "esmad disponible",
+                "unidades disponibles", "cuantas unidades", "como esta la fuerza"]),
+    ("corredores", ["que corredores", "como estan los corredores",
+                    "esta abierto", "estan abiertos", "que esta bloqueado"]),
+    ("abastecimiento", ["cuanto oxigeno", "cuanto combustible", "abastecimiento",
+                        "cuanto tiempo queda", "dias de autonomia"]),
+    ("mesa", ["como esta la mesa", "que legitimidad", "credibilidad",
+              "estado de la mesa", "que reservas"]),
+]
+
+
 def interpretar_sin_modelo(estado: Estado, texto: str) -> list[dict]:
     """
     Reserva determinista para cuando no hay llave o el proveedor falla.
 
-    Busca disparadores y extrae el nombre del punto o corredor citándolo **tal
-    cual**, para que el resolutor determinista haga su trabajo igual que con el
-    modelo. El cauce posterior es idéntico.
+    **Cada disparador solo mira SU cláusula.** Antes miraba el texto entero, y
+    eso producía el peor fallo del sistema: en «operen el puente y concertar el
+    Alto del Mirador», el nombre de la segunda cláusula se colaba en la primera y
+    salían dos acciones sobre el Alto del Mirador. La ambigüedad de «el puente»
+    —que era la respuesta correcta, una repregunta— desaparecía sin que nadie lo
+    notara.
+
+    Extrae el nombre citándolo **tal cual**, para que el resolutor haga su
+    trabajo igual que con el modelo. El cauce posterior es idéntico.
     """
     t = _sin_tildes(texto)
     llamadas: list[dict] = []
 
-    for nombre, raices, excluye in DISPARADORES:
-        if not any(r in t for r in raices):
-            continue
-        if any(x in t for x in excluye):
-            continue
+    # Una consulta no compite con las órdenes: se emite además.
+    for tema, marcas in PREGUNTAS:
+        if any(m in t for m in marcas):
+            llamadas.append({"nombre": "consultar", "argumentos": {"tema": tema}})
+            break
+
+    for nombre, raices, excluye, ini, fin in _clausulas(t):
         spec = HERRAMIENTAS[nombre]
+        # La cláusula, en el texto original y en el normalizado. Si las
+        # longitudes no coinciden —alguna descomposición rara— se usa el texto
+        # entero: peor precisión, pero nunca un recorte a destiempo.
+        crudo_clausula = texto[ini:fin] if len(t) == len(texto) else texto
+        t_clausula = t[ini:fin]
+
         args: dict = {}
         for campo, tipo in spec.get("entidades", {}).items():
-            crudo = _extraer_entidad(estado, texto, tipo)
+            crudo = _extraer_entidad(estado, crudo_clausula, tipo)
             if crudo:
                 args[campo] = crudo
         for campo, tipo in spec.get("entidades_lista", {}).items():
-            encontrados = _extraer_entidades(estado, texto, tipo)
+            encontrados = _extraer_entidades(estado, crudo_clausula, tipo)
             if encontrados:
                 args[campo] = encontrados
-        if "dupla" in t and nombre == "operar_punto":
+
+        # Las enumeraciones que la cláusula nombra. Sin esto, «operen X con
+        # militares» salía como ESMAD por defecto: una substitución silenciosa de
+        # la unidad, que es el fallo más caro del canal. Lo que no reconozca
+        # queda sin poner y la lectura en voz alta dice «con ESMAD», que es lo
+        # que la sala tiene que oír para corregir.
+        args.update(_enums_de_la_clausula(spec, t_clausula))
+
+        if "dupla" in t_clausula and nombre == "operar_punto":
             args["dupla_presente"] = True
-        if "de noche" in t or "nocturn" in t:
+        if "de noche" in t_clausula or "nocturn" in t_clausula:
             args["de_noche"] = True
         if "delimit" in t or "con limites" in t:
             args["delimitada"] = True
-        if spec["requeridos"] and not all(r in args for r in spec["requeridos"]):
-            # Falta el dato obligatorio: se emite igual para que el validador lo
-            # marque y la sala lo complete. No se descarta en silencio.
-            pass
+
+        # Falta un dato obligatorio: se emite igual, para que el validador lo
+        # marque y la sala lo complete. No se descarta en silencio.
         llamadas.append({"nombre": nombre, "argumentos": args})
 
     return llamadas[:12]
+
+
+# Para `tipo_unidad` hace falta una marca: sin ella, «responsable el Director de
+# Policía» pondría la unidad en policía. Con la marca, solo cuenta «con policía».
+MARCAS_UNIDAD = ("con ", "usando ", "empleando ", "mediante ")
+
+
+def _enums_de_la_clausula(spec: dict, t_clausula: str) -> dict:
+    """Los valores de enumeración que la cláusula nombra explícitamente."""
+    puestos = {}
+    for campo in spec.get("esquema", {}):
+        tabla = ENUMS.get(campo)
+        if tabla is None:
+            continue
+        # De más largo a más corto: «escuadron movil» antes que «movil».
+        for clave in sorted(tabla, key=len, reverse=True):
+            if clave not in t_clausula:
+                continue
+            if campo == "tipo_unidad" and not any(
+                    m + clave in t_clausula for m in MARCAS_UNIDAD):
+                continue
+            puestos[campo] = tabla[clave]
+            break
+    return puestos
+
+
+def _clausulas(t: str) -> list[tuple[str, list[str], list[str], int, int]]:
+    """
+    Reparte el texto entre los disparadores que aparecen, por posición.
+
+    Cada disparador se queda con el tramo que va desde donde aparece su raíz
+    hasta donde empieza el siguiente. Es una heurística tosca —no analiza
+    sintaxis— pero resuelve el caso que importa: que el complemento de una orden
+    no se lo lleve otra.
+    """
+    encontrados = []
+    for nombre, raices, excluye in DISPARADORES:
+        posiciones = [t.find(r) for r in raices if r in t]
+        if not posiciones:
+            continue
+        if any(x in t for x in excluye):
+            continue
+        encontrados.append((min(posiciones), nombre, raices, excluye))
+
+    encontrados.sort()
+    salida = []
+    for i, (pos, nombre, raices, excluye) in enumerate(encontrados):
+        fin = encontrados[i + 1][0] if i + 1 < len(encontrados) else len(t)
+        salida.append((nombre, raices, excluye, pos, fin))
+    return salida
 
 
 def _extraer_entidades(estado: Estado, texto: str, tipo: str) -> list[str]:
@@ -528,7 +627,17 @@ def _extraer_entidades(estado: Estado, texto: str, tipo: str) -> list[str]:
         candidatos = [c.nombre for c in estado.corredores.values()]
     else:
         candidatos = [r.nombre for r in estado.regiones.values()]
-    return [c for c in candidatos if _sin_tildes(c) in t]
+    encontrados = [c for c in candidatos if _sin_tildes(c) in t]
+    if encontrados:
+        return encontrados
+
+    # Ningún nombre propio: ¿había un criterio? «verificar los cerrados» producía
+    # una lista VACÍA que el plan daba por buena — se ordenaba verificar y no se
+    # verificaba nada. El criterio se pasa en crudo y lo expande el resolutor.
+    for frase in resolver.FRASES_SELECTOR:
+        if _sin_tildes(frase) in t:
+            return [frase]
+    return []
 
 
 def _extraer_entidad(estado: Estado, texto: str, tipo: str) -> str | None:

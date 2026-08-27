@@ -560,6 +560,43 @@ export const D = {
     </>
   ),
 
+  consulta: (
+    <>
+      <p>
+        <strong>Respuesta de solo lectura, extraída del motor.</strong> Preguntar
+        no consume el turno y no ordena nada.
+      </p>
+      <p>
+        La consulta es una acción más del plan, no un modo aparte: un mismo texto
+        puede contener una pregunta y una orden. Un sistema que tuviera que
+        clasificar entre las dos antes de leerlas emitiría, cuando se
+        equivocase, una orden que nadie dio.
+      </p>
+      <p>
+        Los datos se entregan estructurados y por tema. Un canal que devolviera
+        un párrafo con totales agregados obligaría a inventar en cuanto se
+        preguntara por algo concreto.
+      </p>
+    </>
+  ),
+
+  omitidas: (
+    <>
+      <p>
+        <strong>Órdenes que constaban en el plan y no llegaron al motor.</strong>
+      </p>
+      <p>
+        Solo se ejecuta lo que está enteramente resuelto. Una acción con un lugar
+        sin identificar, una ambigüedad sin dirimir o un valor fuera de la
+        enumeración se queda fuera y se enuncia con su motivo.
+      </p>
+      <p>
+        La alternativa —ejecutarla con los valores por defecto— produciría una
+        operación que nadie ordenó, informada como cumplida.
+      </p>
+    </>
+  ),
+
   interpretado_por: (
     <>
       <p>

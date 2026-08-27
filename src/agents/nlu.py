@@ -50,6 +50,62 @@ from src.agents.config import cliente, config
 
 TOPE_ACCIONES = 12
 
+# Cómo se dice cada argumento en voz alta. Solo los que la sala puede contrastar
+# con lo que acaba de decir: si pidió militares y oye «con ESMAD», corrige.
+#
+# Los booleanos solo se dicen cuando son ciertos: «sin dupla» en cada línea sería
+# ruido, y lo que hace falta señalar —los mitigadores que faltan— ya lo dice la
+# banda de riesgo con su lista.
+ARGUMENTOS_EN_CLARO: dict = {
+    "dupla_presente": lambda v: "con dupla de la Defensoría" if v else "",
+    "concertado_con_alcaldia": lambda v: "concertado con la Alcaldía" if v else "",
+    "de_noche": lambda v: "de noche" if v else "",
+    "responsable_nominado": lambda v: f"responsable: {v}" if v else "",
+    "clase_carga": lambda v: f"carga: {v}",
+    "modo": lambda v: f"modo: {v}",
+    "n_escuadrones": lambda v: f"{v} escuadrón(es)",
+    "n_unidades": lambda v: f"{v} unidad(es)",
+    "delimitada": lambda v: "con límites escritos" if v else "",
+    "tema": lambda v: f"tema: {v}",
+}
+
+UNIDADES_EN_CLARO = {"esmad": "ESMAD", "policia": "policía", "militar": "militares"}
+
+# Cómo se llama cada campo cuando hay que pedirlo. «No se entendió el punto de
+# cierre» sirve; «falta nodo_id» no.
+# Cómo se lee cada tema en voz alta. «Consulta del estado, sin ordenar nada ·
+# fuerza» es correcto y no lo dice nadie así.
+TEMA_EN_CLARO = {
+    "fuerza": "la capacidad de fuerza disponible",
+    "corredores": "el estado de los cinco corredores",
+    "abastecimiento": "el abastecimiento de las cuatro regiones",
+    "mesa": "el estado de la mesa y sus reservas",
+}
+
+_NOMBRE_CAMPO = {
+    "nodo_id": "sobre qué punto de cierre",
+    "corredor_id": "por qué corredor",
+    "region_id": "de qué región",
+    "puntos": "qué puntos verificar",
+    "tema": "sobre qué se pregunta",
+}
+
+
+def _en_claro_argumento(campo: str, valor) -> str:
+    if campo in ("nodo_id", "corredor_id", "region_id", "puntos", "denuncias"):
+        return ""            # las entidades ya salen resueltas, con su nombre
+    if campo == "tipo_unidad":
+        return f"con {UNIDADES_EN_CLARO.get(str(valor), valor)}"
+    fn = ARGUMENTOS_EN_CLARO.get(campo)
+    if fn is None or valor in (None, "", [], {}):
+        return ""
+    return fn(valor)
+
+# Herramientas que NUNCA llegan al motor. Se calcula del repertorio para que no
+# haya que acordarse de mantener dos listas.
+SOLO_LECTURA = frozenset(
+    n for n, e in herramientas.HERRAMIENTAS.items() if e.get("solo_lectura"))
+
 
 @dataclass
 class AccionPlan:
@@ -63,6 +119,27 @@ class AccionPlan:
     requisitos_faltantes: list[str] = field(default_factory=list)
     habilitada_por: list[str] = field(default_factory=list)
     riesgo: dict | None = None
+
+    # La hoja de datos, cuando la acción es una CONSULTA y no una orden. Se
+    # extrae del motor y viaja con el plan para que se lea en la misma pantalla.
+    datos: dict | None = None
+
+    def en_claro(self) -> str:
+        """
+        Sobre qué actúa y con qué, en una línea, para leerlo en voz alta.
+
+        Solo argumentos que la sala pueda contrastar con lo que dijo. Nada de
+        identificadores sueltos: `N003` no le suena a nadie, «Puente Amarillo»
+        sí — pero se dan los dos, porque el eco con identificador es lo que hace
+        auditable la resolución.
+        """
+        partes = [f"Sobre: {e.nombre} ({e.entidad_id})"
+                  for e in self.entidades if e.estado == "ok"]
+        for campo, valor in self.argumentos.items():
+            trozo = _en_claro_argumento(campo, valor)
+            if trozo:
+                partes.append(trozo)
+        return " · ".join(partes)
 
     def a_dict(self) -> dict:
         return {
@@ -80,6 +157,9 @@ class AccionPlan:
             "requisitos_faltantes": self.requisitos_faltantes,
             "habilitada_por": self.habilitada_por,
             "riesgo": self.riesgo,
+            "en_claro": self.en_claro(),
+            "datos": self.datos,
+            "solo_lectura": self.herramienta in SOLO_LECTURA,
         }
 
 
@@ -113,15 +193,38 @@ class Plan:
         Nunca lo escribe el modelo: si lo escribiera, podría afirmar un éxito que
         todavía no ocurrió — que es el primero de los ocho modos de falla.
         """
+        ordenes = [a for a in self.acciones if a.herramienta not in SOLO_LECTURA]
+        consultas = [a for a in self.acciones if a.herramienta in SOLO_LECTURA]
+
         if not self.acciones:
-            return ("No se reconoció ninguna orden en ese texto. Puede pedir una "
-                    "operación, una mesa de concertación, una escolta, duplas de "
-                    "verificación o una acción constitutiva.")
-        lineas = [f"Entiendo que se ordena lo siguiente ({len(self.acciones)}):"]
-        for i, a in enumerate(self.acciones, 1):
+            # El diagnóstico ya viene en los avisos y es específico: no se
+            # repite aquí una frase genérica que lo tape.
+            return "\n".join(self.avisos) or (
+                "No se reconoció ninguna orden en ese texto.")
+
+        lineas = []
+        for a in consultas:
+            lineas.append(
+                f"Se pregunta por "
+                f"{TEMA_EN_CLARO.get(a.argumentos.get('tema', ''), 'el estado')}. "
+                f"La respuesta sale del motor y no se ejecuta nada.")
+        if consultas and not ordenes:
+            lineas.append("No hay ninguna orden que ejecutar en ese texto.")
+            return "\n".join(lineas)
+        if consultas:
+            lineas.append("")
+
+        lineas.append(f"Entiendo que se ordena lo siguiente ({len(ordenes)}):")
+        for i, a in enumerate(ordenes, 1):
             marca = {"lista": "·", "falta_dato": "?", "ambigua": "?",
                      "no_viable": "×"}[a.estado]
             lineas.append(f"  {marca} {i}. {a.descripcion}")
+            # SOBRE QUÉ y CON QUÉ. Sin esta línea la sala confirmaba «operación
+            # de desbloqueo sobre un punto de cierre» sin oír sobre cuál — y el
+            # paso 5 existe justamente para que oiga lo que va a ordenar.
+            detalle = a.en_claro()
+            if detalle:
+                lineas.append(f"       {detalle}")
             for e in a.entidades:
                 if e.estado != "ok":
                     lineas.append(f"       {e.eco()}")
@@ -137,6 +240,8 @@ class Plan:
                 lineas.append(f"       {a.motivo}")
             if a.habilitada_por:
                 lineas.append(f"       Lo habilita: {', '.join(a.habilitada_por)}.")
+        for av in self.avisos:
+            lineas.append(f"  ! {av}")
         lineas.append("¿Confirman?")
         return "\n".join(lineas)
 
@@ -179,14 +284,14 @@ def interpretar(estado: Estado, texto: str, plan_id: str) -> Plan:
     plan.interpretado_por = quien
 
     if not llamadas:
-        plan.avisos.append(
-            "No se reconoció ninguna acción. Se puede pedir: operar un punto, "
-            "abrir una mesa, escoltar un corredor, asignar duplas, o adoptar una "
-            "acción constitutiva."
-        )
+        plan.avisos.append(_diagnostico_sin_acciones(estado, texto))
         return plan
 
-    # 3 · EXPANSOR, con tope de seguridad
+    # 3 · EXPANSOR. Un criterio —«todos los puntos», «los cerrados»— produce
+    #     UNA acción por punto. Antes se quedaba con el primero y la sala creía
+    #     haber ordenado veinticuatro operaciones cuando ordenaba una.
+    llamadas = _expandir_selectores(estado, llamadas, plan)
+
     if len(llamadas) > TOPE_ACCIONES:
         plan.avisos.append(
             f"La orden expande a {len(llamadas)} acciones y el tope es "
@@ -199,7 +304,119 @@ def interpretar(estado: Estado, texto: str, plan_id: str) -> Plan:
     for llamada in llamadas:
         plan.acciones.append(_a_accion_plan(estado, llamada))
 
+    # Lo que el canal NO traduce y hay que decir en voz alta antes de confirmar.
+    plan.avisos.extend(_avisos_de_lectura(texto))
     return plan
+
+
+def _expandir_selectores(estado: Estado, llamadas: list[dict],
+                         plan: Plan) -> list[dict]:
+    """
+    Un criterio no es un lugar: es N lugares. Aquí se convierte en N llamadas.
+
+    Solo se expanden las entidades SIMPLES. Las de lista —los puntos de
+    `asignar_duplas`— ya se expanden dentro de la acción, porque ahí la lista
+    entera es un solo acto: tres duplas para tres puntos, no tres acciones.
+    """
+    salida: list[dict] = []
+    for ll in llamadas:
+        spec = herramientas.HERRAMIENTAS.get(ll["nombre"])
+        if spec is None:
+            salida.append(ll)
+            continue
+
+        expandida = False
+        for campo, tipo in spec.get("entidades", {}).items():
+            crudo = (ll.get("argumentos") or {}).get(campo)
+            if not crudo:
+                continue
+            r = resolver.resolver(estado, str(crudo), tipo)
+            if r.estado != "selector":
+                continue
+
+            ids = resolver.expandir_selector(estado, r.selector or "")
+            if not ids:
+                break        # sin resultados: que lo marque el validador
+            plan.avisos.append(
+                f"«{crudo}» es un criterio, no un lugar: son {len(ids)} "
+                f"{'punto' if len(ids) == 1 else 'puntos'}. Se ordena uno por cada uno."
+            )
+            for i in ids:
+                salida.append({"nombre": ll["nombre"],
+                               "argumentos": {**ll["argumentos"], campo: i}})
+            expandida = True
+            break
+
+        if not expandida:
+            salida.append(ll)
+    return salida
+
+
+# Lo que la gente escribe y el canal NO sabe traducir. No se adivina: se dice.
+CONDICIONALES = ("si ", "cuando ", "en cuanto ", "una vez que", "siempre que")
+NEGACIONES = ("no oper", "no se opere", "no intervenir", "no intervengan",
+              "nada de", "ningun punto", "ningún punto", "eviten", "abstenerse")
+
+
+def _avisos_de_lectura(texto: str) -> list[str]:
+    """
+    Dos cosas que el canal no traduce y que, calladas, cambian la orden entera.
+
+    **No se suprime ni se adivina nada.** El plan se lee en voz alta antes de
+    ejecutar precisamente para que una persona atrape esto; el canal solo tiene
+    que señalarlo. Suprimir la acción sería el canal decidiendo, que es lo único
+    que esta capa no puede hacer.
+    """
+    t = texto.lower()
+    avisos = []
+    if any(c in t for c in CONDICIONALES):
+        avisos.append(
+            "Se leyó una condición en el texto y el canal NO la traduce: lo que "
+            "sigue queda como orden inmediata. Si debía esperar a que ocurriera "
+            "algo, no la confirmen todavía."
+        )
+    if any(nn in t for nn in NEGACIONES):
+        avisos.append(
+            "Se leyó una negación en el texto y el canal NO la traduce: las "
+            "acciones de abajo están en afirmativo. Comprueben que es lo que se "
+            "quiso pedir."
+        )
+    return avisos
+
+
+def _diagnostico_sin_acciones(estado: Estado, texto: str) -> str:
+    """
+    Por qué no se reconoció nada. **Cuatro respuestas distintas, no una.**
+
+    Antes, un texto vacío, un galimatías, un saludo, una pregunta y «declaren el
+    estado de sitio» daban el mismo párrafo. La sala no podía saber si había
+    escrito mal el nombre, si le faltaba el verbo, o si eso sencillamente no
+    existe en este mundo — y son tres correcciones distintas.
+    """
+    if not texto or not texto.strip():
+        return "No se escribió ninguna orden."
+
+    citados = resolver.nombres_citados(estado, texto)
+    if citados:
+        return (
+            f"Se menciona {', '.join('«' + c + '»' for c in citados[:3])}, pero no "
+            f"qué hacer con {'ellos' if len(citados) > 1 else 'eso'}. Diga la "
+            f"acción: operar, concertar, escoltar, verificar, declarar…"
+        )
+
+    if "?" in texto or "¿" in texto:
+        return (
+            "Eso parece una pregunta y no una orden. El canal responde sobre "
+            f"{', '.join(herramientas.TEMAS_CONSULTA)}; para lo demás, el dato "
+            "está en la vista privada de algún rol."
+        )
+
+    return (
+        "Ninguna acción del repertorio corresponde a eso, y el canal no fuerza la "
+        "más parecida. Se puede pedir: operar un punto, concertar una mesa, "
+        "escoltar un corredor, asignar duplas de verificación, o adoptar una "
+        "acción constitutiva. El repertorio completo está en la vista de cada rol."
+    )
 
 
 def _traducir(estado: Estado, texto: str) -> tuple[list[dict], str]:
@@ -267,6 +484,24 @@ def _a_accion_plan(estado: Estado, llamada: dict) -> AccionPlan:
                           estado="no_viable",
                           motivo="No existe esa acción en el repertorio.")
 
+    # Rama de solo lectura: preguntar no es ordenar. No construye acción, no
+    # toca el motor y no se puede ejecutar — `SOLO_LECTURA` lo garantiza aguas
+    # abajo, en la consola.
+    if spec.get("solo_lectura"):
+        tema = str(args.get("tema", "")).strip().lower()
+        if tema not in herramientas.TEMAS_CONSULTA:
+            return AccionPlan(
+                herramienta=nombre, rol=spec["rol"],
+                descripcion=spec["descripcion"], argumentos=args,
+                estado="falta_dato",
+                motivo=(f"«{tema or 'sin tema'}» no es un tema de consulta. "
+                        f"Los que hay: {', '.join(herramientas.TEMAS_CONSULTA)}."))
+        return AccionPlan(
+            herramienta=nombre, rol=spec["rol"],
+            descripcion=f"Consulta: {TEMA_EN_CLARO.get(tema, tema)}",
+            argumentos={"tema": tema}, estado="lista",
+            datos=hoja_de_datos(estado, tema))
+
     # Normalizar enumeraciones ANTES de tocar el motor. El modelo dice
     # «militares» donde el motor espera «militar», y eso no puede reventar nada.
     args, avisos_enum = herramientas.normalizar_enums(args)
@@ -320,6 +555,19 @@ def _a_accion_plan(estado: Estado, llamada: dict) -> AccionPlan:
                          f"El resto sigue en el plan.")
 
     if ap.estado != "lista":
+        return ap
+
+    # ¿Falta algo obligatorio? Se dice CUÁL. Antes esto llegaba al motor y volvía
+    # como «No existe el punto .» — un mensaje que no le dice a nadie qué
+    # escribir para arreglarlo.
+    faltan = [c for c in spec.get("requeridos", []) if not args.get(c)]
+    if faltan:
+        ap.estado = "falta_dato"
+        ap.requisitos_faltantes = faltan
+        ap.motivo = (
+            f"No se entendió {' ni '.join(_NOMBRE_CAMPO.get(c, c) for c in faltan)}. "
+            f"Repita la orden nombrándolo."
+        )
         return ap
 
     # 4 · dry-run contra el motor. `validar()` NO muta nada.

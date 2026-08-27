@@ -45,6 +45,16 @@ motor = MotorCrisis(_estado)
 FASES = ("parte_privado", "apertura", "deliberacion", "ordenes",
          "resolucion", "consecuencias", "registro")
 
+# Cuántos planes sin ejecutar se guardan. Con 2,5 minutos de órdenes por turno,
+# más de un puñado significa que algo se quedó a medias.
+PLANES_EN_MEMORIA = 8
+
+# Contador MONOTÓNICO de planes. Antes el identificador salía de
+# `len(sala["planes"]) + 1`, y `ejecutar` saca el plan del diccionario: con dos
+# planes abiertos, ejecutar el primero hacía que el siguiente `interpretar`
+# reutilizara un identificador vivo y sobrescribiera aquel plan sin avisar.
+_planes_emitidos = 0
+
 sala = {
     "fase": "parte_privado",
     # Las pantallas se congelan durante la deliberación. Si algo cambia mientras
@@ -178,8 +188,14 @@ def interpretar(orden: TextoOrden):
     resolución de entidades, la validación y la banda de riesgo son
     deterministas, y el texto que se lee en voz alta también.
     """
-    plan_id = f"plan-{len(sala['planes']) + 1}"
+    global _planes_emitidos
+    _planes_emitidos += 1
+    plan_id = f"plan-{_planes_emitidos}"
     plan = nlu.interpretar(_estado, orden.texto, plan_id)
+
+    # Los planes que nadie ejecutó no se acumulan toda la sesión.
+    for viejo in list(sala["planes"])[:-PLANES_EN_MEMORIA]:
+        sala["planes"].pop(viejo, None)
     sala["planes"][plan_id] = plan
     return plan.a_dict()
 
@@ -238,17 +254,36 @@ def ejecutar(c: Confirmacion):
         raise HTTPException(404, "Ese plan ya se consumió o no existe.")
 
     encoladas = 0
+    omitidas: list[dict] = []
+
     for a in plan.acciones:
-        if a.estado in ("no_viable", "ambigua"):
+        # SOLO SE EJECUTA LO QUE ESTÁ LISTO. `falta_dato` también se queda
+        # fuera: una acción con un enum inválido o un punto sin resolver llegaba
+        # al motor y se ejecutaba con lo que hubiera — que es cómo un
+        # redespliegue con un modo desconocido terminaba siendo proyección aérea.
+        if a.estado != "lista":
+            omitidas.append({"herramienta": a.herramienta, "estado": a.estado,
+                             "motivo": a.motivo or "No estaba lista."})
             continue
+
+        # Preguntar no es ordenar: la consulta ya trae su respuesta en el plan.
+        if a.herramienta in nlu.SOLO_LECTURA:
+            continue
+
         spec = nlu.herramientas.HERRAMIENTAS.get(a.herramienta)
-        if spec is None:
+        if spec is None or not spec.get("construir"):
+            omitidas.append({"herramienta": a.herramienta, "estado": a.estado,
+                             "motivo": "No corresponde a ninguna acción del motor."})
             continue
         try:
             motor.encolar(spec["construir"](a.argumentos))
             encoladas += 1
-        except Exception:
-            continue
+        except Exception as exc:
+            # Antes esto era `continue` a secas. Una acción confirmada en voz
+            # alta desaparecía sin dejar rastro, y el hueco no salía por ningún
+            # sitio hasta el debriefing —si es que salía.
+            omitidas.append({"herramienta": a.herramienta, "estado": a.estado,
+                             "motivo": f"No se pudo armar: {type(exc).__name__}"})
 
     r = motor.paso(franja="dia")
     _refrescar_esfera(r.eventos)
@@ -256,6 +291,7 @@ def ejecutar(c: Confirmacion):
     sala["congelado"] = False
     return {"turno": r.turno, "resumen": r.resumen, "eventos": r.eventos,
             "acciones_encoladas": encoladas,
+            "omitidas": omitidas,
             "resultados": [{"accion": n, "ok": x.ok, "mensaje": x.mensaje,
                             "datos": x.datos}
                            for n, x in r.resultados]}

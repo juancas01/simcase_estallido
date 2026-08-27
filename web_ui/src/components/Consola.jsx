@@ -19,7 +19,7 @@
 import { useState } from 'react'
 import Ayuda, { Titulo } from './Ayuda'
 import { D } from '../definiciones.jsx'
-import { FASE, FRANJA, rotulo } from '../etiquetas.jsx'
+import { CAMPO_CONSULTA, ESTADO_PLAN, FASE, FRANJA, rotulo } from '../etiquetas.jsx'
 import { api, FASES, useDatos } from '../comun.jsx'
 
 export default function Consola() {
@@ -165,24 +165,47 @@ export default function Consola() {
               <p key={i} style={{ color: 'var(--medio)', fontSize: '0.85rem' }}>{a}</p>
             ))}
 
-            {/* Las ambigüedades se resuelven con una ELECCIÓN TIPADA, no con
-                texto libre. Sin esto, «no», «400» y «sí, confirmo» vuelven a
-                entrar por el canal como si fueran órdenes nuevas. */}
+            {/* Las dudas se resuelven con una ELECCIÓN TIPADA, no con texto
+                libre. Sin esto, «no», «400» y «sí, confirmo» vuelven a entrar
+                por el canal como si fueran órdenes nuevas.
+
+                Se ofrecen botones también cuando el nombre NO EXISTE: el
+                resolutor ya calculó a qué se parece, y sin esto había que
+                reescribir la orden entera para corregir una letra. */}
             {plan.acciones.map((a, i) => (
-              a.entidades.filter(e => e.estado === 'ambiguo').map((e, j) => (
-                <div key={`${i}-${j}`} style={{ marginTop: '0.8rem' }}>
-                  <p style={{ margin: '0 0 0.35rem', fontSize: '0.88rem' }}>{e.eco}</p>
-                  <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                    {e.candidatos.map(c => (
-                      <button key={c.id} disabled={ocupado}
-                              style={{ fontSize: '0.82rem', padding: '0.3rem 0.6rem' }}
-                              onClick={() => elegir(i, campoDe(a, e), c.id)}>
-                        {c.nombre}
-                      </button>
-                    ))}
+              a.entidades
+                .filter(e => e.candidatos?.length && e.estado !== 'ok')
+                .map((e, j) => (
+                  <div key={`${i}-${j}`} style={{ marginTop: '0.8rem' }}>
+                    <p style={{ margin: '0 0 0.35rem', fontSize: '0.88rem' }}>{e.eco}</p>
+                    <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                      {e.candidatos.map(c => (
+                        <button key={c.id} disabled={ocupado}
+                                style={{ fontSize: '0.82rem', padding: '0.3rem 0.6rem' }}
+                                onClick={() => elegir(i, campoDe(a, e), c.id)}>
+                          {c.nombre}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))
+                ))
+            ))}
+
+            {/* Una consulta no ordena nada: trae su respuesta del motor y se
+                lee aquí mismo, sin gastar el turno. */}
+            {plan.acciones.filter(a => a.datos).map((a, i) => (
+              <div key={`c${i}`} className="tarjeta"
+                   style={{ marginTop: '0.8rem', background: 'var(--superficie-2)' }}>
+                <Titulo ayuda={D.consulta}>{a.descripcion}</Titulo>
+                <dl className="hoja-datos">
+                  {Object.entries(a.datos).map(([k, v]) => (
+                    <div key={k}>
+                      <dt>{rotulo(CAMPO_CONSULTA, k)}</dt>
+                      <dd className="num">{formatear(v)}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
             ))}
 
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
@@ -225,6 +248,28 @@ export default function Consola() {
                 )}
               </div>
             ))}
+            {/* LO QUE NO SE EJECUTÓ. Antes desaparecía en silencio: la sala
+                confirmaba tres órdenes, se ejecutaban dos, y el hueco no
+                aparecía en ningún sitio hasta el debriefing. */}
+            {resultado.omitidas?.length > 0 && (
+              <div style={{ marginTop: '0.9rem', paddingTop: '0.7rem',
+                            borderTop: '1px solid var(--borde)' }}>
+                <p className="eyebrow" style={{ color: 'var(--medio)' }}>
+                  No se ejecutó ({resultado.omitidas.length})
+                  <Ayuda etiqueta="Por qué una orden confirmada no se ejecuta">
+                    {D.omitidas}
+                  </Ayuda>
+                </p>
+                {resultado.omitidas.map((o, i) => (
+                  <p key={i} style={{ margin: '0.25rem 0', fontSize: '0.86rem',
+                                      color: 'var(--texto-2)' }}>
+                    <span className="chip chip-medio">{rotulo(ESTADO_PLAN, o.estado)}</span>{' '}
+                    {o.motivo}
+                  </p>
+                ))}
+              </div>
+            )}
+
             {!resultado.resultados?.length && resultado.eventos?.length > 0 && (
               <ul style={{ fontSize: '0.88rem', color: 'var(--texto-2)' }}>
                 {resultado.eventos.slice(0, 8).map((e, i) => (
@@ -237,6 +282,18 @@ export default function Consola() {
       </div>
     </div>
   )
+}
+
+/** Un valor de la hoja de datos, legible. Las listas se cuentan, no se vuelcan. */
+function formatear(v) {
+  if (Array.isArray(v)) {
+    return v.length <= 4
+      ? v.map(x => (typeof x === 'object' ? Object.values(x)[0] : x)).join(' · ')
+      : `${v.length} elementos`
+  }
+  if (v && typeof v === 'object') return Object.values(v).join(' · ')
+  if (typeof v === 'boolean') return v ? 'sí' : 'no'
+  return String(v)
 }
 
 /** El campo cuyo valor está en duda. Solo se pueden tocar campos declarados. */

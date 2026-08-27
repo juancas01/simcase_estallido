@@ -1077,7 +1077,7 @@ La lista completa, con sus propuestas de diseño, en
 
 ---
 
-*Motor v2 · 63 pruebas en verde · semilla `20210511`. Diseño en
+*Motor v2 · 110 pruebas en verde · semilla `20210511`. Diseño en
 [`propuesta.md`](propuesta.md); diagnóstico del motor anterior en
 [`historial/mapa_de_palancas.md`](historial/mapa_de_palancas.md).*
 

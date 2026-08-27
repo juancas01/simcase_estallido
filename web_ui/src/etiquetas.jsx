@@ -112,3 +112,35 @@ export const TIPO_UNIDAD = {
   policia: 'Policía',
   militar: 'Militar',
 }
+
+// --- el canal de órdenes ---------------------------------------------------
+//
+// En qué punto del cauce se quedó una acción. `no_viable` y `falta_dato` no son
+// lo mismo y la distinción importa: una no se puede pedir, la otra sí en cuanto
+// se complete un dato.
+
+export const ESTADO_PLAN = {
+  lista: 'Lista',
+  falta_dato: 'Falta un dato',
+  ambigua: 'Ambigua',
+  no_viable: 'No viable',
+}
+
+// Los campos de la hoja de datos. Las claves del motor son estables y feas; en
+// pantalla se leen a distancia.
+
+export const CAMPO_CONSULTA = {
+  ambito: 'Ámbito',
+  aviso: 'Aviso',
+  esmad_total: 'ESMAD, total',
+  esmad_sin_comprometer: 'ESMAD sin comprometer',
+  fatiga_media: 'Fatiga media',
+  instalaciones_bajo_custodia: 'Instalaciones bajo custodia',
+  asistencia_militar: 'Asistencia militar',
+  corredores: 'Corredores',
+  regiones: 'Regiones',
+  reservas: 'Reservas',
+  comite_disponible: 'Comité disponible',
+  posicion_gremios: 'Posición de los gremios',
+  banderas_activas: 'Banderas activas',
+}
