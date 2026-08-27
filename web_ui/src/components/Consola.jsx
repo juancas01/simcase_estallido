@@ -18,9 +18,12 @@
 
 import { useState } from 'react'
 import Ayuda, { Titulo } from './Ayuda'
+import Navegacion from './Navegacion'
 import { D } from '../definiciones.jsx'
 import { CAMPO_CONSULTA, ESTADO_PLAN, FASE, FRANJA, rotulo } from '../etiquetas.jsx'
-import { api, FASES, useDatos } from '../comun.jsx'
+import Cronometro from './Cronometro'
+import GuiaFases from './GuiaFases'
+import { api, useDatos } from '../comun.jsx'
 
 export default function Consola() {
   const { datos: tablero, recargar } = useDatos('/tablero', 5000)
@@ -43,11 +46,27 @@ export default function Consola() {
     }))
   })
 
+  // AÑADIR NO GASTA EL TURNO. Es lo que permite dictar de una en una durante
+  // los 2,5 minutos completos de la fase de órdenes: antes, confirmar la
+  // primera orden resolvía el turno entero y cortaba la fase en seco, de modo
+  // que varias órdenes solo cabían metidas todas en un mismo texto.
+  const encolar = () => hacer(async () => {
+    const r = await api('/consola/encolar', {
+      method: 'POST', body: JSON.stringify({ plan_id: plan.plan_id }),
+    })
+    setResultado(r); setPlan(null); setTexto(''); recargar()
+  })
+
   const ejecutar = () => hacer(async () => {
     const r = await api('/consola/ejecutar', {
       method: 'POST', body: JSON.stringify({ plan_id: plan.plan_id }),
     })
     setResultado(r); setPlan(null); setTexto(''); recargar()
+  })
+
+  const resolver = () => hacer(async () => {
+    setResultado(await api('/consola/resolver', { method: 'POST' }))
+    setPlan(null); recargar()
   })
 
   const noche = () => hacer(async () => {
@@ -62,15 +81,22 @@ export default function Consola() {
     }))
   })
 
-  const fase = (f) => hacer(async () => {
-    await api(`/consola/fase/${f}`, { method: 'POST' }); recargar()
+  // EL ÚNICO SITIO DESDE EL QUE ARRANCA EL EJERCICIO. A partir de ese clic el
+  // tiempo corre solo y la fase se calcula: los siete botones que había aquí
+  // hacían depender el ritmo de la sala de que alguien se acordara de pulsar,
+  // y ese alguien está además transcribiendo órdenes.
+  const reloj = (accion) => hacer(async () => {
+    await api(`/consola/reloj/${accion}`, { method: 'POST' }); recargar()
   })
 
   return (
     <div className="pantalla">
       <header className="cabecera">
         <div>
-          <span className="eyebrow">Consola · no proyectar</span>
+          <div className="cabecera-rotulo">
+            <span className="eyebrow">Consola · no se proyecta</span>
+            <Navegacion />
+          </div>
           <h1>Transcripción de órdenes</h1>
         </div>
         <div style={{ textAlign: 'right' }}>
@@ -108,27 +134,61 @@ export default function Consola() {
 
         {/* --- El reloj de fases: lo lleva el sistema, no una persona ------- */}
         <div className="tarjeta" style={{ marginBottom: '1rem' }}>
-          <Titulo ayuda={D.fases}>Fase del turno</Titulo>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-            {FASES.map(f => (
-              <button
-                key={f.id}
-                onClick={() => fase(f.id)}
-                disabled={ocupado}
-                className={tablero?.fase === f.id ? 'primario' : ''}
-                style={{ fontSize: '0.8rem', padding: '0.35rem 0.7rem' }}
-              >
-                {f.nombre} · {f.min} min
-              </button>
-            ))}
+          <Titulo ayuda={D.fases}>Reloj de sala</Titulo>
+
+          <div className="reloj-panel">
+            <div>
+              <Cronometro cronometro={tablero?.cronometro} />
+
+              <div className="reloj-mandos">
+                {!tablero?.cronometro?.corriendo ? (
+                  <button className="primario" onClick={() => reloj('iniciar')}
+                          disabled={ocupado}>
+                    Iniciar el ejercicio
+                  </button>
+                ) : (
+                  <>
+                    {/* Para cuando la sala termina antes de tiempo. No es la
+                        forma normal de avanzar: la normal es que se agote. */}
+                    <button onClick={() => reloj('siguiente')} disabled={ocupado}>
+                      Saltar a la fase siguiente
+                    </button>
+                    <button onClick={() => reloj('turno')} disabled={ocupado}>
+                      Empezar el turno siguiente
+                    </button>
+                    <button onClick={() => reloj('reiniciar')} disabled={ocupado}>
+                      Reiniciar el reloj
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Qué paso corre y qué debería estar pasando en la sala. Va aquí y
+                no en el tablero: el tablero enuncia hechos y no instruye, pero
+                a esta consola la opera alguien que no montó el sistema. */}
+            <GuiaFases cronometro={tablero?.cronometro} />
           </div>
-          {tablero?.congelado && (
-            <p style={{ margin: '0.6rem 0 0', fontSize: '0.8rem', color: 'var(--medio)' }}>
-              Pantallas congeladas
-              <Ayuda etiqueta="Qué significa congelado">{D.congelado}</Ayuda>
-            </p>
-          )}
         </div>
+
+        {/* --- Lo confirmado que todavía no se ha resuelto ---------------- */}
+        {tablero?.en_cola > 0 && (
+          <div className="tarjeta cola-turno">
+            <div>
+              <span className="eyebrow">En cola para este turno</span>
+              <div className="cola-n">
+                {tablero.en_cola}
+                <span>
+                  {tablero.en_cola === 1 ? 'orden confirmada' : 'órdenes confirmadas'}
+                  {' y sin resolver'}
+                </span>
+              </div>
+            </div>
+            <button className="primario" onClick={resolver} disabled={ocupado}>
+              Resolver el turno
+            </button>
+          </div>
+        )}
 
         {/* --- Paso 3 · órdenes ------------------------------------------- */}
         <div className="tarjeta">
@@ -146,7 +206,7 @@ export default function Consola() {
                         flexWrap: 'wrap' }}>
             <button className="primario" onClick={interpretar}
                     disabled={ocupado || !texto.trim()}>
-              Interpretar y leer de vuelta
+              Interpretar la orden
             </button>
             <button onClick={noche} disabled={ocupado}>
               Resolver el interludio nocturno
@@ -158,7 +218,7 @@ export default function Consola() {
         {/* --- El plan de vuelta ------------------------------------------- */}
         {plan && (
           <div className="tarjeta" style={{ marginTop: '1rem', borderColor: 'var(--acento)' }}>
-            <Titulo ayuda={D.plan_interpretado}>Plan interpretado · léalo en voz alta</Titulo>
+            <Titulo ayuda={D.plan_interpretado}>Plan interpretado · para leer en voz alta</Titulo>
             <pre className="lectura">{plan.lectura_en_voz_alta}</pre>
 
             {plan.avisos?.map((a, i) => (
@@ -209,13 +269,20 @@ export default function Consola() {
             ))}
 
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-              <button className="primario" onClick={ejecutar} disabled={ocupado}>
-                Ejecutar
+              <button className="primario" onClick={encolar} disabled={ocupado}>
+                Añadir al turno
+              </button>
+              <button onClick={ejecutar} disabled={ocupado}>
+                Añadir y resolver el turno
               </button>
               <button onClick={() => setPlan(null)} disabled={ocupado}>
                 Corregir
               </button>
             </div>
+            <p className="nota-boton">
+              <strong>Añadir no gasta el turno.</strong> La orden queda en cola y
+              la mesa puede dictar la siguiente. El turno avanza al resolverlo.
+            </p>
             <p className="procedencia">
               Interpretado por: {plan.interpretado_por}
               <Ayuda etiqueta="Qué capa tradujo la orden">{D.interpretado_por}</Ayuda>
@@ -226,7 +293,10 @@ export default function Consola() {
         {/* --- Paso 7 · reportar, DESPUÉS de ejecutar ---------------------- */}
         {resultado && (
           <div className="tarjeta" style={{ marginTop: '1rem' }}>
-            <h2>Lo que ocurrió</h2>
+            <h2>
+              {resultado.turno_avanzado !== false ? 'Lo que ocurrió'
+                : resultado.acciones_encoladas > 0 ? 'En cola' : 'Respuesta'}
+            </h2>
             <p className="num" style={{ marginTop: 0, color: 'var(--texto)' }}>
               {resultado.resumen}
             </p>
@@ -296,8 +366,17 @@ function formatear(v) {
   return String(v)
 }
 
-/** El campo cuyo valor está en duda. Solo se pueden tocar campos declarados. */
+/**
+ * El campo cuyo valor está en duda. Solo se pueden tocar campos declarados.
+ *
+ * Lo dice el motor: cada entidad viaja con el argumento del que salió. Antes se
+ * adivinaba aquí buscando el valor crudo entre los argumentos, y para los
+ * campos de LISTA —los tres puntos de `asignar_duplas`— no aparecía nunca,
+ * porque los que no resuelven no se guardan. Se caía en 'nodo_id', que esa
+ * herramienta no declara, y el botón de corregir devolvía un 400.
+ */
 function campoDe(accion, entidad) {
+  if (entidad.campo) return entidad.campo
   const par = Object.entries(accion.argumentos)
     .find(([, v]) => v === entidad.crudo)
   return par ? par[0] : 'nodo_id'

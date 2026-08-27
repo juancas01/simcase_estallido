@@ -37,6 +37,8 @@
 // ---------------------------------------------------------------------------
 
 import Ayuda, { Titulo } from './Ayuda'
+import Navegacion from './Navegacion'
+import Cronometro from './Cronometro'
 import { D } from '../definiciones.jsx'
 import { CHIP_CLASE, CLASE_ACCION, FRANJA, rotulo } from '../etiquetas.jsx'
 import { Cargando, ROLES, useDatos } from '../comun.jsx'
@@ -51,19 +53,23 @@ export default function VistaPrivada({ rol }) {
     <div className="pantalla">
       <header className="cabecera">
         <div>
-          <span className="eyebrow">{ficha?.frente} · vista personal</span>
+          <div className="cabecera-rotulo">
+            <span className="eyebrow">{ficha?.frente} · vista personal</span>
+            <Navegacion />
+          </div>
           <h1>{ficha?.nombre || rol}</h1>
         </div>
-        <div style={{ textAlign: 'right' }}>
-          <div className="num" style={{ fontSize: '1rem', fontWeight: 600 }}>
-            Turno {datos.turno} · {rotulo(FRANJA, datos.franja)}
-          </div>
-          {datos.congelado && (
-            <div className="congelado">
-              Congelado
-              <Ayuda etiqueta="Qué significa congelado">{D.congelado}</Ayuda>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
+          <div style={{ textAlign: 'right' }}>
+            <div className="num" style={{ fontSize: '1rem', fontWeight: 600 }}>
+              Turno {datos.turno} · {rotulo(FRANJA, datos.franja)}
             </div>
-          )}
+          </div>
+          {/* El mismo cronómetro que el tablero. Que el titular vea en su
+              dispositivo lo que la sala ve en la pared es la mitad del asunto:
+              la otra mitad es que no tenga que preguntar cuánto queda. */}
+          <Cronometro cronometro={datos.cronometro} />
+          <Ayuda etiqueta="Cómo corre el reloj del turno">{D.cronometro}</Ayuda>
         </div>
       </header>
 
@@ -79,7 +85,7 @@ export default function VistaPrivada({ rol }) {
 
         {/* --- BLOQUE 2 · su detalle ------------------------------------- */}
         <div className="tarjeta">
-          <Titulo ayuda={D.detalle_privado}>Su detalle</Titulo>
+          <Titulo ayuda={D.detalle_privado}>El detalle de su cartera</Titulo>
           <Detalle datos={datos.detalle} />
         </div>
 

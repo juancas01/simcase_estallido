@@ -67,6 +67,14 @@
 // Sigue siendo barra y no pestaña: una pestaña sustituye una cosa por la otra y
 // vuelve a eliminar lo que hay que enseñar.
 //
+// EL ACCESO A LAS OCHO VISTAS PERSONALES
+// --------------------------------------
+// Vive DENTRO del rótulo de la cabecera, y está escondido a propósito. Una fila
+// de pestañas sobre la pantalla proyectada ocuparía el sitio de los datos e
+// invitaría a la sala a pedir que se proyecte una vista personal — y ahí se
+// acaba la asimetría de información que sostiene el ejercicio. El porqué
+// completo, en `AccesoVistas.jsx`.
+//
 // LO QUE NUNCA MUESTRA: la mezcla real de un punto, ni si una denuncia es
 // cierta. Tampoco por la puerta de atrás de un delta. Si eso se filtrara, el
 // dilema central del caso desaparecería.
@@ -76,6 +84,9 @@ import { useEffect, useRef, useState } from 'react'
 import MapaEsquematico, { COLOR_CORREDOR } from './MapaEsquematico'
 import EsferaContenido, { ENCUADRE, sinVerificar } from './EsferaContenido'
 import Reloj from './Reloj'
+import Cronometro from './Cronometro'
+import Navegacion from './Navegacion'
+import AccesoVistas from './AccesoVistas'
 import Ayuda, { Titulo } from './Ayuda'
 import { D } from '../definiciones.jsx'
 import { ESTADO_PUNTO, FASE, MODO_APERTURA, SEMAFORO, rotulo } from '../etiquetas.jsx'
@@ -141,16 +152,29 @@ export default function Tablero() {
     <div className="pantalla">
       <header className="cabecera">
         <div>
-          <span className="eyebrow">Tablero de situación · proyectar</span>
+          {/* El acceso a las ocho vistas va en la línea de la versalita:
+              una línea que ya existía, encima del título y no dentro de él.
+              Una fila de pestañas sobre la pantalla proyectada ocuparía el
+              sitio de los datos e invitaría a proyectar una vista privada,
+              que es lo único que el ejercicio no puede permitirse. */}
+          <div className="cabecera-rotulo">
+            <span className="eyebrow">Tablero de situación · para proyectar</span>
+            <AccesoVistas />
+            {/* Quien conduce tiene que llegar a la consola en un clic. Va en la
+                misma línea que las vistas y con el mismo aspecto: la consola no
+                se proyecta, pero el enlace a ella no es un secreto. */}
+            <Navegacion destinos={['consola']} />
+          </div>
           <h1>Puesto de Mando Unificado</h1>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-          {datos.congelado && (
-            <div className="congelado">
-              Congelado · {rotulo(FASE, datos.fase)}
-              <Ayuda etiqueta="Qué significa congelado">{D.congelado}</Ayuda>
-            </div>
-          )}
+          {/* El reloj de sala. La misma pieza que ven la consola y las ocho
+              vistas, contando sobre el mismo instante: si la pared y el móvil
+              de alguien discreparan, dejaría de haber un reloj común. */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <Cronometro cronometro={datos.cronometro} />
+            <Ayuda etiqueta="Cómo corre el reloj del turno">{D.cronometro}</Ayuda>
+          </div>
           <button
             onClick={() => setAbierta(a => !a)}
             aria-expanded={abierta}
@@ -231,8 +255,10 @@ export default function Tablero() {
             <p className="pie-cifra">Escuadrones sin comprometer</p>
             {datos.fuerza.frentes_rurales_descubiertos > 0 && (
               <p className="pie-aviso">
-                {datos.fuerza.frentes_rurales_descubiertos} frente(s) rural(es)
-                descubierto(s)
+                {datos.fuerza.frentes_rurales_descubiertos === 1
+                  ? '1 frente rural descubierto'
+                  : `${datos.fuerza.frentes_rurales_descubiertos} frentes `
+                    + 'rurales descubiertos'}
               </p>
             )}
           </div>

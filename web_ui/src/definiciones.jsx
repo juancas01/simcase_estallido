@@ -28,8 +28,9 @@
 const NOTA_DELTA = (
   <>
     <p>
-      <strong>Las flechas ▲▼</strong> dicen cuánto se movió la magnitud desde
-      la última vez que la sala miró, es decir, en la última ventana resuelta.
+      <strong>Las flechas ▲▼</strong> indican cuánto se movió la magnitud en la
+      última ventana resuelta, esto es, desde la anterior vez que la sala miró
+      el tablero.
     </p>
     <p>
       Una magnitud sin flecha no se movió. El color indica si el movimiento fue a
@@ -74,8 +75,8 @@ export const D = {
         </dd>
       </dl>
       <p>
-        El plazo condiciona la jugada tanto como el dato: una concertación tarda
-        dos turnos en rendir, de modo que abrirla en la jornada 5 es no abrirla.
+        El plazo pesa tanto como el dato: una concertación tarda dos turnos en
+        rendir, de modo que iniciarla en la jornada 5 equivale a no iniciarla.
       </p>
     </>
   ),
@@ -104,7 +105,7 @@ export const D = {
       </p>
       <p>
         Son hechos sobre el estado del expediente, no una lista de tareas. Qué
-        hacer con cada uno —y si vale la pena— es de la mesa.
+        hacer con cada uno, y si conviene hacer algo, lo decide la mesa.
       </p>
     </>
   ),
@@ -112,7 +113,7 @@ export const D = {
   coste_humano: (
     <>
       <p>
-        <strong>Las dos magnitudes que no perdonan.</strong>
+        <strong>Las dos magnitudes del coste humano del ejercicio.</strong>
       </p>
       <p>
         Las muertes evitables son un acumulador irreversible: no descienden
@@ -130,10 +131,10 @@ export const D = {
       <p><strong>Intensidad de la movilización</strong>, en escala de 0 a 100.</p>
       <p>
         Es la única magnitud del tablero en la que un valor alto indica
-        deterioro. Responde a las decisiones del Puesto de Mando con rendimientos
-        decrecientes —cada repetición de una misma medida conserva el 60 % del
-        efecto de la anterior— y decae de forma proporcional a razón del 4 % por
-        turno en ausencia de nuevos estímulos.
+        deterioro. Responde a las decisiones del Puesto de Mando con
+        rendimientos decrecientes —cada repetición de una misma medida conserva
+        el 60 % del efecto de la anterior— y decae un 4 % por turno mientras no
+        reciba nuevos estímulos.
       </p>
     </>
   ),
@@ -240,8 +241,8 @@ export const D = {
   formas_mapa: (
     <>
       <p>
-        La forma del punto indica <strong>por qué vía se abrió</strong>, que no
-        es un dato accesorio: determina cuánto dura la apertura.
+        La forma del punto indica <strong>por qué vía se abrió</strong>, y de
+        esa vía depende cuánto dura la apertura.
       </p>
       <dl>
         <dt>◆</dt><dd>Fuerza — se revierte en el interludio nocturno</dd>
@@ -255,9 +256,8 @@ export const D = {
   hechos_mapa: (
     <>
       <p>
-        <strong>Un anillo dice que en ese punto pasó algo</strong> desde la última
-        vez que la sala miró, es decir, en la última ventana resuelta. Se apaga
-        solo en la siguiente.
+        <strong>Un anillo señala que en ese punto ocurrió algo</strong> durante
+        la última ventana resuelta. Se apaga solo en la siguiente.
       </p>
       <dl>
         <dt>Rojo</dt>
@@ -346,9 +346,9 @@ export const D = {
         nominado.</strong>
       </p>
       <p>
-        Una decisión sin responsable se consigna igualmente, y así consta. Cada
-        decisión con responsable aporta 2 puntos de cohesión; la ausencia de
-        registro escrito descuenta 8.
+        Una decisión sin responsable se consigna de todos modos, y queda marcada
+        como tal. Cada decisión con responsable aporta 2 puntos de cohesión; la
+        ausencia de registro escrito descuenta 8.
       </p>
     </>
   ),
@@ -362,9 +362,9 @@ export const D = {
         que el tablero registra como cierto.
       </p>
       <p>
-        Las dos superficies se muestran de forma simultánea y no alternada: la
-        divergencia entre ambas es objeto del ejercicio y solo se percibe cuando
-        se ven a la vez.
+        Las dos superficies se muestran a la vez y no alternadas: la divergencia
+        entre ambas es parte de lo que el ejercicio enseña, y solo se aprecia
+        comparándolas.
       </p>
     </>
   ),
@@ -393,9 +393,9 @@ export const D = {
         internacional; desmentir una falsa aporta 3 de legitimidad.
       </p>
       <p>
-        Cada verificación consume una dupla del bolsillo de la Defensoría del
-        Pueblo, que es de tres y se comparte con la verificación de puntos y el
-        acompañamiento de operaciones.
+        Cada verificación consume una de las tres duplas de la Defensoría del
+        Pueblo, que son también las que verifican puntos y acompañan
+        operaciones.
       </p>
     </>
   ),
@@ -407,10 +407,9 @@ export const D = {
         desconoce, y el tablero no lo supone.
       </p>
       <p>
-        La Defensoría del Pueblo puede verificarlo con una dupla. El bolsillo
-        disponible es de tres y se comparte con la verificación de denuncias y el
-        acompañamiento de operaciones: emplear una aquí es no emplearla en otro
-        sitio.
+        La Defensoría del Pueblo puede verificarlo con una dupla. Dispone de
+        tres en total, y las mismas tres sirven para verificar denuncias y
+        acompañar operaciones: la que se emplea aquí no queda para otro sitio.
       </p>
     </>
   ),
@@ -440,10 +439,9 @@ export const D = {
         para esta cartera.</strong>
       </p>
       <p>
-        El tablero general responde qué está pasando; esta vista responde cuánto,
-        dónde exactamente y desde cuándo. El detalle no migra al tablero: por eso
-        el titular sigue siendo necesario en todos los turnos y no solo en el
-        primero.
+        El tablero general responde qué está pasando; esta vista responde
+        cuánto, dónde exactamente y desde cuándo. El detalle no sube al tablero:
+        si su titular no lo comunica a la mesa, nadie más lo tiene.
       </p>
     </>
   ),
@@ -455,9 +453,9 @@ export const D = {
         ante la mesa y se transcriben en la consola.
       </p>
       <p>
-        Esta vista es de solo lectura: no se ordena desde ella. Una orden que no
-        se dijo en voz alta no la oyó nadie, y el ejercicio trata precisamente de
-        lo que se dice en voz alta.
+        Esta vista es de solo lectura: desde ella no se ordena nada. Para que
+        una acción se ejecute hay que pedirla en voz alta ante la mesa y
+        transcribirla en la consola.
       </p>
     </>
   ),
@@ -477,8 +475,8 @@ export const D = {
     <>
       <p>
         <strong>Personal, no confidencial.</strong> El sistema la muestra
-        únicamente a su titular, pero nada impide comunicar su contenido a la
-        mesa, y el ejercicio busca que se comunique.
+        únicamente a su titular, pero su contenido puede comunicarse a la mesa,
+        y el ejercicio espera que se comunique.
       </p>
       <p>
         Lo consignado aquí no se traslada al tablero general. En el turno
@@ -489,29 +487,40 @@ export const D = {
 
   // --- la consola -----------------------------------------------------------
 
-  fases: (
+  cronometro: (
     <>
       <p>
-        <strong>Secuencia de fases del turno y su duración prevista</strong>, en
-        minutos.
+        <strong>Reloj de sala.</strong> Arranca desde la consola, y a partir de
+        ese momento corre solo: la fase que rige se calcula a partir del tiempo
+        transcurrido, no la elige nadie.
       </p>
       <p>
-        El reloj lo lleva el sistema. No hay moderador como figura aparte: quien
-        opera esta consola puede ser cualquiera de los ocho, y se limita a
-        transcribir.
+        Las siete fases del turno suman 13 minutos. Durante el parte privado, la
+        apertura y la deliberación ninguna superficie se actualiza —los valores
+        mostrados son los del último cierre— y así se indica.
+      </p>
+      <p>
+        Agotado el ciclo, la última fase se mantiene y el exceso se cuenta como
+        prórroga: pasar al turno siguiente es una decisión de la sala. Arriba
+        queda lo que resta de la fase; abajo, lo que lleva la sesión entera.
       </p>
     </>
   ),
 
-  congelado: (
+  fases: (
     <>
       <p>
-        <strong>Pantallas congeladas.</strong> Durante el parte privado, la
-        apertura y la deliberación ninguna superficie se actualiza.
+        <strong>Secuencia de fases del turno y su duración prevista.</strong>
+        Las siete suman 13 minutos.
       </p>
       <p>
-        Los valores mostrados corresponden al último cierre. Mientras la sala
-        delibera no hay ninguna razón para volver a mirar una pantalla.
+        El reloj lo lleva el sistema: arranca aquí una sola vez y después la
+        fase avanza sola. Los mandos son excepciones —adelantar una fase que la
+        sala terminó antes, abrir el turno siguiente, poner el reloj a cero.
+      </p>
+      <p>
+        No hay moderador como figura aparte: quien opera esta consola puede ser
+        cualquiera de los ocho, y se limita a transcribir.
       </p>
     </>
   ),
@@ -530,12 +539,12 @@ export const D = {
   plan_interpretado: (
     <>
       <p>
-        <strong>Interpretación de la orden dictada</strong>, con las entidades
-        resueltas y la banda de riesgo de cada acción.
+        <strong>Interpretación de la orden dictada</strong>, con los lugares y
+        las unidades ya identificados y la banda de riesgo de cada acción.
       </p>
       <p>
-        Ninguna consecuencia se enuncia antes de la ejecución: el modelo traduce;
-        el motor decide, valida, ejecuta y reporta.
+        Ninguna consecuencia se enuncia antes de ejecutar: lo que aparece aquí
+        es lo que se va a intentar, no lo que va a ocurrir.
       </p>
     </>
   ),
@@ -567,15 +576,12 @@ export const D = {
         no consume el turno y no ordena nada.
       </p>
       <p>
-        La consulta es una acción más del plan, no un modo aparte: un mismo texto
-        puede contener una pregunta y una orden. Un sistema que tuviera que
-        clasificar entre las dos antes de leerlas emitiría, cuando se
-        equivocase, una orden que nadie dio.
+        No hace falta cambiar de modo para preguntar: un mismo texto puede
+        contener una pregunta y una orden, y la consola atiende las dos.
       </p>
       <p>
-        Los datos se entregan estructurados y por tema. Un canal que devolviera
-        un párrafo con totales agregados obligaría a inventar en cuanto se
-        preguntara por algo concreto.
+        Los datos se entregan estructurados y por tema, de modo que una pregunta
+        concreta obtiene una cifra concreta y no un resumen.
       </p>
     </>
   ),
@@ -586,13 +592,13 @@ export const D = {
         <strong>Órdenes que constaban en el plan y no llegaron al motor.</strong>
       </p>
       <p>
-        Solo se ejecuta lo que está enteramente resuelto. Una acción con un lugar
-        sin identificar, una ambigüedad sin dirimir o un valor fuera de la
-        enumeración se queda fuera y se enuncia con su motivo.
+        Solo se ejecuta lo que está enteramente resuelto. Una acción con un
+        lugar sin identificar, una ambigüedad sin dirimir o un valor que no está
+        entre los admitidos se queda fuera.
       </p>
       <p>
-        La alternativa —ejecutarla con los valores por defecto— produciría una
-        operación que nadie ordenó, informada como cumplida.
+        Cada una aparece con su motivo. Para que se ejecute hay que volver a
+        dictarla con el dato que le faltaba.
       </p>
     </>
   ),

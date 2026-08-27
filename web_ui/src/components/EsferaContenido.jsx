@@ -102,7 +102,7 @@ export default function EsferaContenido({ datos }) {
               <td>Comité Nacional del Paro</td>
               <td style={{ textAlign: 'right' }}>
                 <span className={`chip chip-${datos.comite_disponible ? 'bien' : 'mal'}`}>
-                  {datos.comite_disponible ? 'Se sienta' : 'Suspendió'}
+                  {datos.comite_disponible ? 'Disponible' : 'Suspendida'}
                 </span>
               </td>
             </tr>

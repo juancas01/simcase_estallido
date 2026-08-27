@@ -26,6 +26,10 @@
 //
 // ESTA PORTADA ES UN LANZADOR, no un documento. Cada tarjeta dice su nombre y su
 // ruta; para qué sirve cada una está detrás de su marca de ayuda.
+//
+// Y LOS OCHO ROLES SON OCHO DESTINOS EQUIVALENTES: misma caja, mismo peso, texto
+// centrado. Quien llega busca el suyo, no compara. La rejilla que lo garantiza
+// es `.rejilla-roles`, en `index.css`.
 // ---------------------------------------------------------------------------
 
 import Tablero from './components/Tablero'
@@ -43,9 +47,10 @@ const AYUDA_TABLERO = (
       abastecimiento y el pliego de decisiones.
     </p>
     <p>
-      Lleva la <strong>esfera pública</strong> —lo que se dice— como barra
-      lateral plegable. Las dos se ven a la vez a propósito: la distancia entre
-      una y otra es el caso, y solo se percibe simultánea.
+      Lleva la <strong>esfera pública</strong> —lo que se dice— en una barra
+      lateral plegable. Las dos se muestran a la vez porque lo que el ejercicio
+      enseña es la distancia entre ambas, y esa distancia solo se aprecia
+      comparándolas.
     </p>
   </>
 )
@@ -53,13 +58,13 @@ const AYUDA_TABLERO = (
 const AYUDA_CONSOLA = (
   <>
     <p>
-      <strong>Se transcribe lo que la mesa acordó</strong> y la pantalla devuelve
-      el plan interpretado con su banda de riesgo, para leerlo en voz alta antes
-      de ejecutar.
+      <strong>Aquí se transcribe lo que la mesa acordó.</strong> La pantalla
+      devuelve el plan interpretado con su banda de riesgo, para leerlo en voz
+      alta antes de ejecutarlo.
     </p>
     <p>
-      No proyectar. Puede operarla cualquiera de los ocho: quien la opera
-      transcribe, no conduce ni decide el ritmo.
+      No se proyecta a la sala. Puede operarla cualquiera de los ocho: quien lo
+      hace transcribe, y no conduce el ejercicio ni decide su ritmo.
     </p>
   </>
 )
@@ -67,13 +72,13 @@ const AYUDA_CONSOLA = (
 const AYUDA_VISTAS = (
   <>
     <p>
-      <strong>Cada rol en su propio dispositivo.</strong> Responde cuánto, dónde
-      exactamente y desde cuándo, con un grado de resolución que el tablero
-      general no tiene.
+      <strong>Cada rol abre la suya en su propio dispositivo.</strong> Responde
+      cuánto, dónde exactamente y desde cuándo, con un detalle que el tablero
+      general no da.
     </p>
     <p>
-      Personal, no confidencial: el sistema la muestra solo a su titular, y el
-      ejercicio busca que su contenido se comunique a la mesa.
+      Es personal, no confidencial: el sistema la muestra solo a su titular, y el
+      ejercicio espera que su contenido se comparta con la mesa.
     </p>
   </>
 )
@@ -111,13 +116,17 @@ function Portada() {
           </div>
         </Seccion>
 
-        <Seccion titulo="Vista personal de cada rol" ayuda={AYUDA_VISTAS}>
+        {/* Ocho destinos equivalentes: rejilla propia, dos filas de cuatro y
+            todas las cajas de la misma altura. Con `auto-fit` salían tres
+            columnas, una última fila de dos y alturas distintas según el cargo
+            envolviera a una línea o a dos. */}
+        <Seccion titulo="Vista personal de cada rol" ayuda={AYUDA_VISTAS}
+                 rejilla="rejilla-roles">
           {ROLES.map(r => (
-            <a key={r.id} href={`/vista/${encodeURIComponent(r.id)}`} className="tarjeta"
-               style={{ textDecoration: 'none', color: 'inherit', display: 'block',
-                        padding: '0.7rem 0.9rem' }}>
+            <a key={r.id} href={`/vista/${encodeURIComponent(r.id)}`}
+               className="tarjeta tarjeta-rol">
               <span className="eyebrow">{r.frente}</span>
-              <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>{r.nombre}</div>
+              <span className="tarjeta-rol-nombre">{r.nombre}</span>
             </a>
           ))}
         </Seccion>
@@ -134,7 +143,10 @@ function Portada() {
   )
 }
 
-function Seccion({ titulo, ayuda, children }) {
+/** Un bloque de la portada. `rejilla` nombra la clase que reparte las tarjetas:
+    la de los ocho roles necesita una propia y las demás se quedan con la de la
+    portada, que acomoda una sola tarjeta ancha. */
+function Seccion({ titulo, ayuda, rejilla = 'rejilla-portada', children }) {
   return (
     <div style={{ width: '100%', maxWidth: '52rem' }}>
       <div style={{ marginBottom: '0.5rem' }}>
@@ -143,11 +155,7 @@ function Seccion({ titulo, ayuda, children }) {
           {ayuda && <Ayuda etiqueta={`Para qué sirve: ${titulo}`}>{ayuda}</Ayuda>}
         </span>
       </div>
-      <div className="rejilla" style={{
-        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0.6rem',
-      }}>
-        {children}
-      </div>
+      <div className={rejilla}>{children}</div>
     </div>
   )
 }

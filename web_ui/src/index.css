@@ -785,3 +785,405 @@ tr.aviso > td:first-child { padding-left: 0.65rem; }
   color: var(--texto);
   overflow-wrap: anywhere;
 }
+
+/* ---------------------------------------------------------------------------
+   LA PORTADA · LA REJILLA DE LOS OCHO ROLES
+
+   La portada es un lanzador: ocho destinos equivalentes entre los que hay que
+   escoger el propio en dos segundos. Y con `auto-fit` no lo eran.
+
+   Con ocho tarjetas, `repeat(auto-fit, minmax(240px, 1fr))` reparte en tres
+   columnas y deja una última fila de dos. La fila coja se lee como jerarquía
+   —esos dos parecen otra cosa— y las alturas cambian de fila en fila según el
+   cargo envuelva a una línea o a dos: «Ministro de Defensa» contra «Delegado de
+   la Defensoría del Pueblo». Ocho destinos equivalentes con ocho cajas
+   distintas.
+
+   De modo que la rejilla se fija en cuatro columnas —dos filas exactas— y
+   `grid-auto-rows: 1fr` iguala también la altura ENTRE filas, no solo dentro de
+   cada una. El texto va centrado en los dos ejes: con cajas de altura fija, un
+   cargo de una línea alineado arriba deja un hueco que parece un error.
+   --------------------------------------------------------------------------- */
+
+/* Las secciones de una sola tarjeta ancha: tablero y consola. */
+.rejilla-portada {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.6rem;
+}
+
+.rejilla-roles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  gap: 0.6rem;
+}
+
+@media (max-width: 880px) {
+  .rejilla-roles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 400px) {
+  .rejilla-roles { grid-template-columns: 1fr; }
+}
+
+.tarjeta-rol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 5.4rem;
+  padding: 0.85rem 0.7rem;
+  text-align: center;
+  text-wrap: balance;
+  text-decoration: none;
+  color: inherit;
+}
+
+.tarjeta-rol:hover { border-color: var(--acento); }
+
+/* El frente queda anclado arriba y el cargo se centra en lo que sobra. Centrar
+   el bloque entero alineaba mal las versalitas: en las tarjetas cuyo cargo
+   envuelve a dos líneas subían, y la fila volvía a verse despareja aunque las
+   ocho cajas midieran exactamente lo mismo. */
+.tarjeta-rol-nombre {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+/* ---------------------------------------------------------------------------
+   EL ACCESO A LAS VISTAS PERSONALES
+
+   Un menú escondido dentro de un rótulo que ya estaba en la cabecera. No añade
+   ni un píxel a la pantalla proyectada: la versalita «Tablero de situación ·
+   para proyectar» es el tirador, y un chevrón de bajo contraste es la única
+   señal de que ahí hay algo que pulsar.
+
+   Una fila de ocho pestañas habría hecho lo contrario de lo que hace falta:
+   ocupar el sitio de los datos e invitar a proyectar una vista personal, que es
+   justo lo que borra la asimetría de información del ejercicio.
+   --------------------------------------------------------------------------- */
+
+.acceso { position: relative; display: inline-block; }
+
+/* --- el paso de una superficie a otra --------------------------------------
+
+   Un solo aspecto para las dos cosas que llevan de una pantalla a otra: el
+   tirador de las vistas privadas y los enlaces de vuelta al tablero y al menú.
+   Van en la línea de la versalita, encima del título: es una línea que ya
+   existía, de modo que no le quitan altura a los datos.
+
+   En blanco y en negrita a propósito. Están ENCIMA del título y no dentro de
+   él, así que no se confunden con el nombre de la pantalla, y quien nunca ha
+   visto el sistema los encuentra sin que nadie se los señale. */
+
+.enlace-superficie {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  font-family: var(--sans);
+  font-size: 0.76rem;
+  font-weight: 650;
+  letter-spacing: 0;
+  text-transform: none;
+  text-decoration: none;
+  color: var(--texto);
+  cursor: pointer;
+}
+
+.enlace-superficie:hover { background: none; color: var(--acento); }
+.enlace-superficie:hover .acceso-chevron,
+.enlace-superficie:hover .enlace-flecha { color: var(--acento); }
+
+.enlace-flecha,
+.acceso-chevron {
+  font-size: 0.72rem;
+  color: var(--texto-3);
+}
+
+.acceso-chevron { font-size: 0.62rem; transform: translateY(-0.05em); }
+
+.nav-superficies {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.1rem;
+  flex-wrap: wrap;
+}
+
+/* La versalita de la cabecera y el control que la acompaña, en una sola línea. */
+.cabecera-rotulo {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.15rem;
+}
+
+.acceso-panel {
+  position: absolute;
+  top: calc(100% + 0.55rem);
+  left: 0;
+  z-index: 40;
+  width: 17rem;
+  padding: 0.8rem 0.85rem 0.6rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--superficie-2);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+}
+
+.acceso-titulo { display: block; margin-bottom: 0.6rem; }
+
+.acceso-grupo { margin-bottom: 0.55rem; }
+
+.acceso-frente {
+  display: block;
+  font-size: 0.6rem;
+  color: var(--texto-3);
+  opacity: 0.75;
+  margin-bottom: 0.2rem;
+}
+
+.acceso-rol {
+  display: block;
+  padding: 0.3rem 0.45rem;
+  margin-left: -0.45rem;
+  border-radius: 5px;
+  font-size: 0.84rem;
+  color: var(--texto);
+  text-decoration: none;
+}
+
+.acceso-rol:hover { background: var(--superficie); color: var(--acento); }
+
+/* La advertencia va ANTES del clic. Esta pantalla se proyecta, y quien la pulsa
+   está cambiando lo que ve toda la sala. */
+.acceso-pie {
+  margin: 0.5rem 0 0;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--borde);
+  font-size: 0.7rem;
+  line-height: 1.4;
+  color: var(--texto-3);
+}
+
+/* ---------------------------------------------------------------------------
+   EL CRONÓMETRO DE SALA
+
+   Va en la cabecera de las tres superficies, y es la misma pieza en las tres:
+   quien mira el tablero proyectado y quien mira su móvil tienen que estar
+   viendo LO MISMO, o el reloj deja de ser un reloj común.
+
+   Compacto a propósito. En el tablero comparte cabecera con el botón de la
+   esfera, y ahí no sobra sitio.
+   --------------------------------------------------------------------------- */
+
+.cronometro {
+  min-width: 12.5rem;
+  /* Sin tope se estira al ancho de la tarjeta de la consola, y la fase se aleja
+     tanto del número que dejan de leerse como una sola cosa. */
+  max-width: 17rem;
+  padding: 0.4rem 0.65rem 0.45rem;
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  background: var(--superficie-2);
+}
+
+.cronometro-cabeza {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.cronometro-fase {
+  font-size: 0.8rem;
+  font-weight: 650;
+  color: var(--texto);
+  white-space: nowrap;
+}
+
+.cronometro-resta {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--acento);
+  font-variant-numeric: tabular-nums;   /* sin esto el número baila cada segundo */
+}
+
+.cronometro-barra {
+  height: 3px;
+  margin: 0.35rem 0 0.3rem;
+  border-radius: 2px;
+  background: var(--borde-suave);
+  overflow: hidden;
+}
+
+.cronometro-barra > div {
+  height: 100%;
+  background: var(--acento);
+}
+
+.cronometro-pie {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.68rem;
+  color: var(--texto-3);
+  white-space: nowrap;
+}
+
+.cronometro-pie .num { font-variant-numeric: tabular-nums; }
+
+/* La prórroga no es un error: es la sala tomándose el tiempo que necesita. Se
+   señala en ámbar, no en rojo. */
+.cronometro.en-prorroga { border-color: var(--medio); }
+.cronometro.en-prorroga .cronometro-resta { color: var(--medio); }
+.cronometro.en-prorroga .cronometro-barra > div { background: var(--medio); }
+
+.cronometro.sin-iniciar { border-style: dashed; }
+.cronometro.sin-iniciar .cronometro-fase,
+.cronometro.sin-iniciar .cronometro-resta { color: var(--texto-3); }
+
+/* --- los mandos del reloj, solo en la consola ------------------------------ */
+
+.reloj-mandos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+
+/* ---------------------------------------------------------------------------
+   LA GUÍA DEL TURNO · solo en la consola
+
+   Siete pasos, y el que corre desplegado con lo que debería estar pasando en la
+   sala. Los siete textos a la vez son un documento, y un documento en pantalla
+   durante un ejercicio de dos horas no lo lee nadie.
+   --------------------------------------------------------------------------- */
+
+.reloj-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 17rem) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+@media (max-width: 800px) {
+  .reloj-panel { grid-template-columns: 1fr; }
+}
+
+.guia-fases {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.guia-fases > li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.2rem 0.45rem;
+  border-radius: 5px;
+  color: var(--texto-3);
+}
+
+.guia-marca {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-top: 0.05rem;
+  border-radius: 50%;
+  border: 1px solid var(--borde);
+  font-family: var(--mono);
+  font-size: 0.62rem;
+}
+
+.guia-cuerpo { min-width: 0; flex: 1; }
+
+.guia-titulo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.82rem;
+}
+
+.guia-min { font-size: 0.68rem; color: var(--texto-3); flex: none; }
+
+.guia-texto {
+  margin: 0.2rem 0 0.15rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--texto-2);
+  text-wrap: pretty;
+}
+
+/* Cumplida: sigue ahí, pero deja de pedir atención. */
+.guia-fases > li.cumplida { opacity: 0.45; }
+.guia-fases > li.cumplida .guia-marca { border-color: var(--borde-suave); }
+
+.guia-fases > li.es-actual {
+  background: var(--acento-suave);
+  color: var(--texto);
+}
+.guia-fases > li.es-actual .guia-marca {
+  border-color: var(--acento);
+  color: var(--acento);
+}
+.guia-fases > li.es-actual .guia-titulo { font-weight: 650; }
+
+/* ---------------------------------------------------------------------------
+   LO QUE ESPERA SIN RESOLVER
+
+   Encolar y resolver son dos cosas desde que la mesa puede dictar de una en una.
+   Y en cuanto se separan, hace falta que se vea CUÁNTO hay esperando: una orden
+   confirmada que nadie resolvió es exactamente el hueco que no aparecía hasta el
+   debriefing.
+   --------------------------------------------------------------------------- */
+
+.cola-turno {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  border-color: var(--acento);
+}
+
+.cola-n {
+  margin-top: 0.15rem;
+  font-size: 1.35rem;
+  font-weight: 650;
+  color: var(--texto);
+  font-variant-numeric: tabular-nums;
+}
+
+.cola-n > span {
+  margin-left: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--texto-2);
+}
+
+/* La nota bajo los botones del plan. Dice la única cosa que no es evidente:
+   que añadir no gasta el turno. */
+.nota-boton {
+  margin: 0.55rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--texto-3);
+}

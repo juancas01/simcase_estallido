@@ -21,15 +21,11 @@ export const ROLES = [
   { id: 'Minas', nombre: 'Ministro de Minas y Energía', frente: 'Logística' },
 ]
 
-export const FASES = [
-  { id: 'parte_privado', nombre: 'Parte privado', min: 1, congela: true },
-  { id: 'apertura', nombre: 'Apertura', min: 1, congela: true },
-  { id: 'deliberacion', nombre: 'Deliberación', min: 6, congela: true },
-  { id: 'ordenes', nombre: 'Órdenes', min: 2.5, congela: false },
-  { id: 'resolucion', nombre: 'Resolución', min: 1, congela: false },
-  { id: 'consecuencias', nombre: 'Consecuencias', min: 1, congela: false },
-  { id: 'registro', nombre: 'Registro', min: 0.5, congela: false },
-]
+// LA TABLA DE FASES YA NO ESTÁ AQUÍ. Vivía duplicada —una copia en este
+// archivo y otra en `api/main.py`— y desde que el reloj corre solo, esa copia
+// decidía la duración de las fases en la pantalla mientras la otra la decidía
+// en el servidor. El motor la sirve ahora dentro de `cronometro` en cada
+// respuesta, y `Cronometro.jsx` dibuja lo que llega.
 
 export async function api(ruta, opciones) {
   const r = await fetch(`/api${ruta}`, {
