@@ -1,8 +1,8 @@
 # Cómo funciona — del juego al motor
 
 Cómo está construido el simulador de la [propuesta](propuesta.md), leído
-siempre en el mismo orden: **primero lo que pasa en la sala, después cómo el
-motor lo produce, y al final dónde está el código.**
+siempre en el mismo orden: **primero lo que pasa en la sala, después el cálculo
+que lo produce.**
 
 No hace falta saber programar para leerlo. Cada sección tiene la misma forma:
 
@@ -10,18 +10,22 @@ No hace falta saber programar para leerlo. Cada sección tiene la misma forma:
 > **En el motor** · qué cálculo lo produce, con los números reales
 > **En el código** · qué archivo y qué función, para poder ir a mirar
 
-Describe **el motor que corre hoy**. El anterior está en
-[`historial/como_funciona_motor_v1.md`](historial/como_funciona_motor_v1.md),
-y el diagnóstico del que salió esta versión, en
+**Si lo que busca es el código** —cómo está organizado el repositorio, cómo
+añadir una acción, qué convenciones hay—, ese es
+[`EL_CODIGO.md`](EL_CODIGO.md).
+
+Este documento describe **el motor que corre hoy**. El anterior está en
+[`historial/como_funciona_motor_v1.md`](historial/como_funciona_motor_v1.md), y
+el diagnóstico del que salió esta versión, en
 [`historial/mapa_de_palancas.md`](historial/mapa_de_palancas.md).
 
 ---
 
 ## Índice
 
-**A · El mapa**
+**A · La sala**
 
-1. [Qué archivo hace qué](#1-qué-archivo-hace-qué)
+1. [Qué se está simulando, y qué no](#1-qué-se-está-simulando-y-qué-no)
 2. [Un turno completo, de principio a fin](#2-un-turno-completo-de-principio-a-fin)
 3. [Las cuatro superficies, en tres rutas](#3-las-cuatro-superficies-en-tres-rutas)
 
@@ -34,7 +38,7 @@ y el diagnóstico del que salió esta versión, en
 8. [La información: verdad, vistas y denuncias](#8-la-información-verdad-vistas-y-denuncias)
 9. [La mesa: reservas, banderas y acuerdos](#9-la-mesa-reservas-banderas-y-acuerdos)
 
-**C · Lo que v2 cambió**
+**C · Lo que la sala puede hacer**
 
 10. [Las treinta y cuatro acciones](#10-las-treinta-y-cuatro-acciones)
 11. [Las ocho vistas privadas, por dentro](#11-las-ocho-vistas-privadas-por-dentro)
@@ -44,55 +48,68 @@ y el diagnóstico del que salió esta versión, en
 ---
 ---
 
-# A · El mapa
+# A · La sala
 
-## 1. Qué archivo hace qué
+## 1. Qué se está simulando, y qué no
+
+Ocho personas, dos horas, y **un país que responde a lo que deciden**. No hay
+marcador, no hay respuesta correcta y no hay una jugada que gane.
+
+### Lo que el ejercicio pone a prueba
+
+No es si la sala sabe de orden público. Es si **ocho mandatos legítimos que
+miran cosas distintas pueden producir una sola línea de acción** en cinco
+turnos, con información incompleta y repartida.
+
+De ahí salen las tres tensiones que el motor está construido para sostener:
+
+| | La tensión | Cómo se siente en la sala |
+|---|---|---|
+| **1** | abrir el país **o** salvar a la gente | los caminos y el oxígeno se piden fuerza mutuamente |
+| **2** | actuar rápido **o** actuar bien | la fuerza abre en un turno y reabre esa noche; concertar tarda dos y aguanta |
+| **3** | decidir con lo que se sabe **o** gastar en saber | verificar cuesta una dupla que hace falta en otro sitio |
+
+**Ninguna se resuelve. Se administran**, y el debriefing trata de cómo cada sala
+las administró.
+
+### Lo que el motor sí modela
 
 ```
-src/engine/                EL MOTOR. Único dueño del estado.
-                           Sin IA, determinista salvo por una semilla registrada.
-
-  parameters.py    319 l   Todas las constantes, con nombre y unidad.
-                           Si un número gobierna algo, vive aquí y en ningún otro sitio.
-
-  state.py         545 l   De qué está hecho el país: puntos, corredores,
-                           regiones, unidades, reservas, banderas, denuncias,
-                           acuerdos — y `vista_publica()`, el tablero general.
-
-  loader.py        215 l   Construye el estado heredado (t=0) desde `data/` y
-                           verifica las invariantes que fallan ruidosamente.
-
-  mobilization.py  183 l   El adversario reflexivo. Si solo se implementa uno, es este.
-  force.py         367 l   Riesgo, mitigadores, incidentes, ESMAD y escolta.
-  aperture.py      224 l   Las tres vías de abrir, las reaperturas y los acuerdos.
-  supply.py        202 l   El reloj, el oxígeno y la prioridad de combustible.
-  information.py   300 l   Verdad, estimaciones sesgadas, duplas y denuncias.
-
-  views.py         421 l   LAS OCHO VISTAS PRIVADAS. La pieza central de la v2.
-  actions.py     1 516 l   Las 34 acciones de los ocho roles.
-  simulation.py    416 l   El bucle de turnos. `paso()` es la única forma de que
-                           el tiempo avance.
-
-src/api/main.py            Capa delgada: sirve las superficies.
-data/escenario/            El caso, en datos y no en código.
-scripts/                   El corredor sin interfaz, para calibrar sin montar la sala.
-tests/                     49 verificadores sin modelo, en 0,2 s.
+el territorio ......... 24 puntos de cierre, 5 corredores, 4 regiones
+la fuerza ............. escuadrones, fatiga, riesgo de incidente
+el abastecimiento ..... oxígeno, combustible, alimentos — con su reloj
+la calle .............. una movilización que REACCIONA a lo que se decide
+la información ....... una verdad oculta y cuatro estimaciones sesgadas
+la mesa ............... cuatro reservas que se gastan y se recomponen
 ```
 
-**La regla que ordena todo esto:** el motor **corre entero sin llamar a ningún
-modelo de lenguaje**. Las ocho vistas son proyecciones deterministas del estado,
-no texto generado. Si algún día una vista necesitara un modelo para existir, la
-arquitectura estaría mal.
+### Lo que NO modela, y por qué
 
-### Para entenderlo por dentro, en este orden
+Esto importa tanto como lo anterior. La regla que gobierna el alcance:
 
-1. **`scripts/correr_ejercicio.py --vistas`** — mira las ocho alertas de un turno
-   real. Es la v2 en una pantalla.
-2. **[`state.py`](../src/engine/state.py)** — de qué está hecho el mundo.
-3. **[`force.py`](../src/engine/force.py)**, la función `evaluar_riesgo` — el
-   cálculo más importante del motor.
-4. **[`simulation.py`](../src/engine/simulation.py)**, el método `paso()` — el que
-   ordena todo lo demás.
+> **Se modela lo que la sala puede cambiar con una decisión en cinco turnos.**
+> Todo lo demás es contexto y va en la ficha, no en el motor.
+
+Por eso no hay economía nacional, ni opinión pública individual, ni
+procedimientos judiciales, ni geografía real. **El mapa es un esquema de líneas
+sin escala**: la topología es la información; la geometría sería decoración.
+
+Y por eso mismo **no hay un rol de «la protesta»**. La movilización es un
+adversario reflexivo del motor, no una persona en la mesa: el ejercicio es sobre
+la coordinación del Estado, y sentar a alguien a jugar la protesta lo convertiría
+en otra cosa.
+
+### La regla que ordena la construcción
+
+> **El LLM traduce. El motor decide, valida, ejecuta y reporta.**
+
+El ejercicio **corre entero sin llave de API**. Las ocho vistas son proyecciones
+deterministas del estado, no texto generado. Esa degradación no es una comodidad
+de desarrollo: es la prueba operativa de que ninguna decisión de la simulación
+está delegada a un modelo.
+
+> Dónde vive cada cosa en el repositorio, y cómo añadirle algo, está en
+> [`EL_CODIGO.md`](EL_CODIGO.md).
 
 ---
 
@@ -792,7 +809,7 @@ del paquete detonante**, que es un disparador independiente.
 ---
 ---
 
-# C · Lo que v2 cambió
+# C · Lo que la sala puede hacer
 
 ## 10. Las treinta y cuatro acciones
 
@@ -1006,30 +1023,29 @@ primera corrida con personas es una medición, no un ejercicio.**
 
 ## 13. Cómo comprobarlo uno mismo
 
-```bash
-# Un ejercicio completo, turno a turno
-uv run python scripts/correr_ejercicio.py --estrategia constituida
+Todo lo de este documento se puede verificar en un rato, sin montar la sala y
+**sin llave de API**:
 
-# Las ocho vistas privadas de un turno real — la v2 en una pantalla
+```bash
+# Un ejercicio completo, turno a turno, con la cadena causal
+uv run python scripts/correr_ejercicio.py --detalle
+
+# Las ocho vistas privadas de un turno real — el diseño en una pantalla
 uv run python scripts/correr_ejercicio.py --vistas
 
-# Comparar las seis estrategias: el criterio de calibración
+# Las seis estrategias: el criterio es que NINGUNA domine
 uv run python scripts/correr_ejercicio.py --comparar
 
-# Cambiar la semilla y ver cuánto es ruido y cuánto es señal
-uv run python scripts/correr_ejercicio.py --semilla 7 --comparar
-
-# Las 59 pruebas, sin modelo, en dos décimas de segundo
-uv run pytest -q
-
-# La API con sus superficies
-uv run python -m src.api.main       # http://localhost:8000/api/tablero
-                                    #                      /api/vista/Minas
+# Otra semilla, para separar el ruido de la señal
+uv run python scripts/correr_ejercicio.py --comparar --semilla 99
 ```
 
-**Ninguno de estos comandos necesita clave de API.** El motor corre entero sin
-llamar a ningún modelo de lenguaje, y esa es la prueba operativa de que la
-arquitectura de cuatro capas se respeta.
+**La más reveladora es `--vistas`.** Las ocho alertas de un mismo turno, una
+debajo de otra: se ve de golpe que los ocho están mirando la misma crisis y
+ninguno la misma parte.
+
+> Puesta en marcha completa, pruebas y el resto de comandos, en
+> [`EL_CODIGO.md`](EL_CODIGO.md#12-puesta-en-marcha).
 
 ### Qué falta todavía
 

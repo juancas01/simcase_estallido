@@ -22,29 +22,22 @@ puede cerrar dos, y eso sale de la aritmética del motor, no de un guion.
 
 ### Por dónde empezar
 
-**Tres documentos, en este orden.** No hace falta saber programar para ninguno.
+**Cuatro documentos, en este orden.** Los tres primeros no piden saber
+programar.
 
 | | Lee | Para qué |
 |---|---|---|
-| **1** | [`docs/propuesta.md`](docs/propuesta.md) | **El diseño del juego.** Qué ve cada uno de los ocho, qué puede hacer y cómo se afectan. Incluye el modelo del mundo y un glosario |
-| **2** | [`docs/COMO_FUNCIONA.md`](docs/COMO_FUNCIONA.md) | **Cómo está construido.** Del juego al código: qué pasa en la sala, qué cálculo lo produce, y en qué archivo está |
-| **3** | [`PENDIENTES.md`](PENDIENTES.md) | **Qué falta y cómo probarlo.** Las cuatro pruebas en orden y las decisiones que esperan al equipo docente |
+| **1** | [`docs/propuesta.md`](docs/propuesta.md) | **El diseño del juego.** Qué ve cada uno de los ocho, qué puede hacer y cómo se afectan entre sí. Incluye el modelo del mundo y un glosario |
+| **2** | [`docs/COMO_FUNCIONA.md`](docs/COMO_FUNCIONA.md) | **Del juego al motor.** Qué pasa en la sala y qué cálculo lo produce, con los números reales. **Es el documento central** |
+| **3** | [`PENDIENTES.md`](PENDIENTES.md) | **Qué falta.** Separado por lo que se hace sin convocar a nadie, lo que necesita personas en una sala, y lo que decide el equipo docente |
+| **4** | [`docs/EL_CODIGO.md`](docs/EL_CODIGO.md) | **Cómo está organizado el repositorio.** Dónde vive cada cosa, cómo añadir una acción o un punto, qué custodia cada prueba. Este sí pide saber programar |
 
-Y dos más, según lo que busques:
+Y dos más, según lo que busque:
 
 | Lee | Para qué |
 |---|---|
 | [`docs/guia_arquitectura_simulaciones.md`](docs/guia_arquitectura_simulaciones.md) | Montar **otro** caso con esta arquitectura. Describe la forma, no el caso |
-| [`docs/historial/`](docs/historial/) | De dónde salieron las decisiones actuales: la propuesta inicial, el primer motor, y el diagnóstico que produjo esta versión |
-
----|---|
-| **entender cómo funciona el motor v2** | [`docs/COMO_FUNCIONA.md`](docs/COMO_FUNCIONA.md) — del juego al código: qué pasa en la sala, qué cálculo lo produce y en qué archivo está |
-| entender el motor **anterior** | [`docs/historial/como_funciona_motor_v1.md`](docs/historial/como_funciona_motor_v1.md) — la versión previa, con sus números |
-| saber **por qué** está diseñado así | [`docs/historial/propuesta_inicial.md`](docs/historial/propuesta_inicial.md) — el documento de diseño completo |
-| entender **el diseño del juego v2** | [`docs/propuesta.md`](docs/propuesta.md) — vista privada por rol, el modelo del mundo, 34 acciones y el turno sin moderador |
-| montar **otro** caso con esta arquitectura | [`docs/guia_arquitectura_simulaciones.md`](docs/guia_arquitectura_simulaciones.md) |
-| entender **el ejercicio como juego** — qué puede hacer cada rol y cómo se afectan | [`docs/historial/mapa_de_palancas.md`](docs/historial/mapa_de_palancas.md) — las reglas, las ocho fichas, el mapa de interdependencias, y qué de todo eso sostiene el motor |
-| **empezar a probar**, y saber qué falta | [`PENDIENTES.md`](PENDIENTES.md) — las cuatro pruebas en orden, las decisiones abiertas, el código sin escribir y la calibración, en un solo sitio |
+| [`docs/historial/`](docs/historial/) | De dónde salieron las decisiones actuales: la propuesta inicial, el primer motor y el diagnóstico que produjo esta versión |
 
 ---
 

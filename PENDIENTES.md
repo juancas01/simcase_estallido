@@ -42,8 +42,10 @@ lunes por la mañana:
 | **A5** | cerrar el territorio ficticio | — | nombres provisionales puestos |
 | **A6** | ¿el mapa muestra dónde está la fuerza? | se decide tras P3 | esperando |
 
-Lo que **sí** funciona está en el README, sección «Estado actual», y en
-[`docs/COMO_FUNCIONA.md`](docs/COMO_FUNCIONA.md).
+Lo que **sí** funciona está en el README, sección «Estado actual»; el
+ejercicio explicado del juego al motor, en
+[`docs/COMO_FUNCIONA.md`](docs/COMO_FUNCIONA.md); y dónde vive cada cosa del
+repositorio, en [`docs/EL_CODIGO.md`](docs/EL_CODIGO.md).
 
 ---
 
@@ -369,7 +371,7 @@ Ninguna de las cuatro señales nombra un remedio.
 - ¿Alguien pregunta dónde están los escuadrones? Esa pregunta es **A6**, y la
   respuesta a P3 la decide.
 
-> Las 30 definiciones viven en un solo archivo,
+> Las 36 definiciones viven en un solo archivo,
 > [`definiciones.jsx`](web_ui/src/definiciones.jsx). Si un umbral cambia en
 > `parameters.py`, hay exactamente un párrafo que corregir.
 
@@ -719,7 +721,7 @@ decisión de la simulación se delegó al modelo.
 | **—** | el mapa no existía | [`MapaEsquematico.jsx`](web_ui/src/components/MapaEsquematico.jsx) · esquema de líneas, con la forma del nodo diciendo cómo se abrió, un `?` en lo que nadie ha mirado y **un anillo sobre lo que cambió en la última ventana** |
 | **—** | el tablero no decía qué hora era | `Estado.reloj()` · cinco jornadas del 11 al 15 de mayo, nueve ventanas, y la noche se ve distinta |
 | **—** | un número solo no decía si iba a mejor | `MotorCrisis.deltas()` · ▲▼ contra la ventana anterior, no contra el arranque |
-| **—** | cada cifra llevaba su glosa impresa debajo | Marca **(?)** y 30 definiciones formales en [`definiciones.jsx`](web_ui/src/definiciones.jsx) |
+| **—** | cada cifra llevaba su glosa impresa debajo | Marca **(?)** y 36 definiciones formales en [`definiciones.jsx`](web_ui/src/definiciones.jsx) |
 | **—** | el reloj de fases lo llevaba el moderador | Lo lleva el sistema, fase por fase |
 
 ---

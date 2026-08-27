@@ -1,7 +1,7 @@
 # Documentación
 
-Tres documentos vigentes, uno de referencia y una carpeta de historial. Se leen
-en este orden.
+Cuatro documentos vigentes, uno de referencia y una carpeta de historial. Se
+leen en este orden.
 
 ---
 
@@ -23,11 +23,18 @@ cálculo lo produce, y en qué archivo está.
 
 > Para entender el motor sin leer 4.000 líneas de Python.
 
-### 3 · [`../PENDIENTES.md`](../PENDIENTES.md) — **qué falta y cómo probarlo**
+### 3 · [`EL_CODIGO.md`](EL_CODIGO.md) — **cómo está organizado el repositorio**
 
-Las cuatro pruebas en orden, las decisiones que esperan al equipo docente, el
-código sin escribir y la calibración. **Es el único sitio donde se lleva la
-cuenta.**
+Para quien va a tocar el código: dónde vive cada cosa, cómo añadir una acción o
+un punto sin romper nada, qué custodia cada prueba y qué convenciones hay.
+
+> Este sí pide saber programar. El anterior no.
+
+### 4 · [`../PENDIENTES.md`](../PENDIENTES.md) — **qué falta y cómo probarlo**
+
+Separado por lo único que decide qué se puede hacer el lunes: **lo que se hace
+sin convocar a nadie**, lo que **necesita personas en una sala**, y las
+decisiones del equipo docente. **Es el único sitio donde se lleva la cuenta.**
 
 ---
 
