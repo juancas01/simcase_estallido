@@ -1,30 +1,38 @@
 // ---------------------------------------------------------------------------
-// LA FRANJA DE RELOJ — qué hora es, cuánto queda, qué sigue sin cerrar.
+// LA FRANJA DE RELOJ — qué jornada es, y qué sigue sin cerrar.
 //
-// Es la espina del tablero y va arriba del todo, porque **las tres cosas que
+// Es la espina del tablero y va arriba del todo, porque **las dos cosas que
 // deciden una jugada no son magnitudes: son el plazo y los cabos sueltos.**
 //
-//   IZQUIERDA   la fecha y la franja · 12 de mayo, 06:00–18:00, día
-//   CENTRO      las nueve ventanas del ejercicio, cumplidas y pendientes
+//   IZQUIERDA   jornada 3 de 5 · 13 de mayo · día
+//   CENTRO      las cinco jornadas, cumplidas y pendientes
 //   DERECHA     lo que sigue sin cerrar, contado
 //
-// POR QUÉ EL PLAZO IMPORTA TANTO COMO EL DATO
-// -------------------------------------------
-// Una concertación tarda dos turnos en rendir. Abrirla en la jornada 5 es no
-// abrirla. Con cinco jornadas, **saber cuántas quedan cambia qué se decide**, y
-// hasta ahora el tablero decía «Turno 3» sin decir de cuántos.
+// SE HA QUEDADO EN LA MITAD, Y ESO ES LO QUE SE ARREGLÓ
+// ----------------------------------------------------
+// Aquí había además la hora de la ventana —«06:00 – 18:00 del 13 de mayo»—,
+// las horas transcurridas —«+48 h»— y dos marcas por jornada, una de día y otra
+// de noche. Diez marcas y tres líneas de cifras para decir algo que se dice con
+// cinco marcas y una línea.
 //
-// «Turno 3» es neutro. «Jornada 3 de 5, quedan dos» es una presión — y no le
-// dice a nadie qué hacer con ella.
+// Y ninguna de las cifras que se fueron cambiaba una decisión. Nadie ordena
+// distinto por saber que la ventana termina a las 18:00: la fecha ficticia es
+// un ancla —sitúa el episodio y le pone nombre a la jornada— y con eso cumple.
+//
+//     La fecha es un indicador, no un calendario.
+//
+// LO QUE NO SE FUE es lo único del reloj que sí cambia lo que se decide:
+// **cuántas jornadas quedan.** Una concertación tarda dos en rendir; abrirla en
+// la jornada 5 es no abrirla. «Jornada 3 de 5» es una presión, y no le dice a
+// nadie qué hacer con ella.
 //
 // LA NOCHE SE VE DISTINTA, y no es decoración: de noche no se delibera, se
-// sufre. Lo abierto por la fuerza vuelve a cerrarse, el riesgo se multiplica por
-// 1,6 y la sala no puede intervenir. Si la franja cambia de color, nadie tiene
-// que explicarlo dos veces.
+// sufre. Lo abierto por la fuerza vuelve a cerrarse y la consola no recibe
+// órdenes. Si la franja cambia de color, nadie tiene que explicarlo dos veces.
 //
 // LOS CONTADORES DE «SIN CERRAR» son la pieza más delicada de todo el tablero.
 // Enuncian un hecho —hay tres puntos que nadie ha mirado— y **jamás un remedio**.
-// La distancia entre «3 puntos sin verificar» y «verifique P7» es la distancia
+// La distancia entre «3 puntos sin verificar» y «verifique N003» es la distancia
 // entre un ejercicio y un tutorial.
 // ---------------------------------------------------------------------------
 
@@ -39,7 +47,7 @@ export default function Reloj({ reloj, pendientes }) {
 
   return (
     <div className={`reloj${noche ? ' es-noche' : ''}`}>
-      {/* --- la fecha --------------------------------------------------- */}
+      {/* --- la jornada -------------------------------------------------- */}
       <div>
         <div className="eyebrow">
           {sinEmpezar
@@ -53,16 +61,18 @@ export default function Reloj({ reloj, pendientes }) {
             {rotulo(FRANJA, reloj.franja)}
           </span>
         </div>
-        <div className="reloj-horas">
-          {reloj.hora_inicio} – {reloj.hora_fin}
-          {reloj.cruza_medianoche && ` del ${reloj.fecha_fin}`}
-          <span className="reloj-transcurrido">
-            +{reloj.horas_transcurridas} h
-          </span>
-        </div>
+        {!sinEmpezar && (
+          <div className="reloj-restantes">
+            {reloj.jornadas_restantes === 0
+              ? 'última jornada'
+              : reloj.jornadas_restantes === 1
+                ? 'queda una jornada más'
+                : `quedan ${reloj.jornadas_restantes} jornadas más`}
+          </div>
+        )}
       </div>
 
-      {/* --- las nueve ventanas ----------------------------------------- */}
+      {/* --- las cinco jornadas ------------------------------------------ */}
       <div>
         <div className="eyebrow" style={{ marginBottom: '0.4rem' }}>
           Mayo
@@ -71,27 +81,23 @@ export default function Reloj({ reloj, pendientes }) {
         <div className="jornadas">
           {reloj.linea.map(j => (
             <div key={j.jornada}
-                 className={`jornada${j.dia === 'actual' || j.noche === 'actual'
-                   ? ' es-actual' : ''}`}>
-              <div className="jornada-barras">
-                <span className={`ventana ${j.dia}`} />
-                <span className={`ventana ${j.noche || 'vacia'}`} />
-              </div>
+                 className={`jornada${j.estado === 'actual' ? ' es-actual' : ''}`}>
+              <div className={`ventana ${j.estado}`} />
               <div className="jornada-fecha">{j.fecha}</div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* --- lo que sigue sin cerrar ------------------------------------ */}
+      {/* --- lo que sigue sin cerrar ------------------------------------- */}
       <div>
         <div className="eyebrow" style={{ marginBottom: '0.35rem' }}>
           Sin cerrar
           <Ayuda etiqueta="Qué cuentan estos números">{D.sin_cerrar}</Ayuda>
         </div>
         <div className="pendientes">
-          {/* Fracción y no número suelto. `24` no dice si la sala avanza; `24/24`
-              sí, y `9/24` tres turnos después se lee sin explicar nada. */}
+          {/* Fracción y no número suelto. `11` no dice si la sala avanza;
+              `11/11` sí, y `4/11` dos jornadas después se lee sin explicar. */}
           {pendientes.map(p => (
             <div key={p.nombre} className={`pendiente${p.n ? ' hay' : ''}`}>
               <span>{p.nombre}</span>

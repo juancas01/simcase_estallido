@@ -5,7 +5,7 @@ test_canal_ordenes.py — La capa 4, que es la que habla con personas.
 
 Hasta esta tanda, **la capa 4 no tenía ni una sola prueba**. Sesenta y tres
 verificadores custodiaban el motor —que nadie toca durante el ejercicio— y cero
-custodiaban el canal por el que entran las órdenes de ocho personas en dos horas.
+custodiaban el canal por el que entran las órdenes de nueve personas en dos horas.
 Todo lo que hay aquí nació de sondear el canal con órdenes reales, y **cada
 prueba corresponde a algo que estaba roto**.
 
@@ -27,6 +27,8 @@ la suite dejaría de ser reproducible y dejaría de correr en cada cambio.
 from __future__ import annotations
 
 import importlib
+
+from dataclasses import replace
 
 import pytest
 from fastapi.testclient import TestClient
@@ -103,7 +105,7 @@ def test_un_lugar_que_no_existe_ofrece_los_que_se_le_parecen(estado):
     a = solo(estado, "operen el Puente de Brooklyn")
     nombres = [c["nombre"] for c in a.entidades[0].candidatos]
     assert nombres, "sin sugerencias no hay por dónde corregir"
-    assert all("Puente" in n for n in nombres)
+    assert any("Puente" in n for n in nombres), "los que se llaman igual, primero"
 
 
 def test_un_nombre_que_no_se_parece_a_nada_no_inventa_sugerencias(estado):
@@ -122,7 +124,7 @@ def test_un_corredor_donde_se_esperaba_un_punto_lo_dice(estado):
     Antes respondía «no corresponde a ningún punto, corredor ni región» — y es
     un corredor. El filtro por tipo tapaba la única respuesta útil.
     """
-    a = solo(estado, "operen el Anillo hospitalario")
+    a = solo(estado, "operen el Corredor hospitalario")
     assert a.estado == "falta_dato"
     assert "es un corredor" in (a.motivo or "")
     # Y dice qué pedir en su lugar: los puntos del corredor, que son públicos.
@@ -250,7 +252,7 @@ def test_una_orden_compuesta_no_le_roba_el_lugar_a_la_otra(estado):
     operar = next(a for a in p.acciones if a.herramienta == "operar_punto")
     concertar = next(a for a in p.acciones if a.herramienta == "abrir_mesa_local")
 
-    assert operar.estado == "ambigua", "«el puente» sigue siendo tres puentes"
+    assert operar.estado == "ambigua", "«el puente» sigue siendo dos puentes"
     assert concertar.argumentos["nodo_id"] == "N004"
 
 
@@ -320,9 +322,17 @@ def test_un_criterio_produce_una_accion_por_punto(estado):
     el expansor devolvía veinticuatro identificadores y el código se quedaba con
     `ids[0]`. La sala creía haber ordenado veinticuatro operaciones.
     """
+    cerrados = [n for n in estado.nodos.values() if not n.abierto]
+    p = plan(estado, "operen todos los puntos")
+    assert len(p.acciones) == len(cerrados) <= nlu.TOPE_ACCIONES
+    assert len({a.argumentos["nodo_id"] for a in p.acciones}) == len(cerrados)
+
+    # Y el tope sigue vivo: con más puntos que el tope, se corta y se avisa.
+    for i in range(nlu.TOPE_ACCIONES + 2):
+        estado.nodos[f"NX{i:02d}"] = replace(
+            cerrados[0], nodo_id=f"NX{i:02d}", nombre=f"Cierre de prueba {i}")
     p = plan(estado, "operen todos los puntos")
     assert len(p.acciones) == nlu.TOPE_ACCIONES
-    assert len({a.argumentos["nodo_id"] for a in p.acciones}) == nlu.TOPE_ACCIONES
     assert any("tope" in av.lower() for av in p.avisos)
 
 
@@ -592,7 +602,7 @@ def test_sin_llave_el_canal_traduce_igual_y_lo_dice(estado):
 def test_si_el_proveedor_falla_se_degrada_y_se_dice_que_se_degrado(estado,
                                                                    monkeypatch):
     """
-    Un error del proveedor no puede dejar a ocho personas mirando la pantalla. Y
+    Un error del proveedor no puede dejar a nueve personas mirando la pantalla. Y
     la sala tiene que enterarse de que está en modo degradado: descubrirlo a
     mitad del ejercicio es peor que empezar sabiéndolo.
     """
@@ -739,7 +749,7 @@ def test_una_raiz_tiene_que_aguantar_la_conjugacion(estado):
 # ===========================================================================
 
 def test_el_canal_no_se_da_a_si_mismo_la_alcaldia(estado):
-    a = solo(estado, "concertar en la Glorieta La Ceiba")
+    a = solo(estado, "concertar en el Puente Amarillo")
     assert a.argumentos["con_alcaldia"] is False
     assert a.estado == "no_viable"
     assert "Alcaldía" in (a.motivo or "")
@@ -747,7 +757,7 @@ def test_el_canal_no_se_da_a_si_mismo_la_alcaldia(estado):
 
 
 def test_la_alcaldia_dicha_si_cuenta(estado):
-    a = solo(estado, "concertar en la Glorieta La Ceiba con la Alcaldia")
+    a = solo(estado, "concertar en el Puente Amarillo con la Alcaldia")
     assert a.argumentos["con_alcaldia"] is True
     assert a.estado == "lista"
 
@@ -758,7 +768,7 @@ def test_la_ausencia_de_la_alcaldia_se_dice_en_voz_alta(estado):
     línea sería ruido—. Este se dice en los dos sentidos, porque su ausencia es
     lo que hace inviable la acción y la sala tiene que oírlo ANTES.
     """
-    a = solo(estado, "concertar en la Glorieta La Ceiba")
+    a = solo(estado, "concertar en el Puente Amarillo")
     assert "SIN la Alcaldía" in a.en_claro()
 
 
@@ -1071,7 +1081,7 @@ def test_sin_llave_la_esfera_publica_usa_plantilla_y_lo_dice(estado):
 #
 # Hay booleanos que no describen la orden: CONCEDEN un requisito o rebajan un
 # riesgo. El sistema ya se lo pide al modelo y aun así lo hace — medido:
-# «concertar en la Glorieta La Ceiba» volvía con `con_alcaldia: true` sin que
+# «concertar en el Puente Amarillo» volvía con `con_alcaldia: true` sin que
 # nadie hubiera nombrado a la Alcaldía. Misma lección que ENUMS: restringir la
 # salida no impide que el modelo se salga, así que la comprobación es
 # determinista.
@@ -1082,8 +1092,8 @@ def test_el_modelo_no_puede_concederse_la_alcaldia(estado):
     a = nlu._a_accion_plan(
         estado,
         {"nombre": "abrir_mesa_local",
-         "argumentos": {"nodo_id": "N002", "con_alcaldia": True}},
-        "concertar en la Glorieta La Ceiba")
+         "argumentos": {"nodo_id": "N003", "con_alcaldia": True}},
+        "concertar en el Puente Amarillo")
     assert a.argumentos["con_alcaldia"] is False
     assert a.estado == "no_viable"
     assert a.correcciones, "y se dice que se quitó, no se quita en silencio"
@@ -1093,8 +1103,8 @@ def test_lo_que_la_sala_si_dijo_se_respeta(estado):
     a = nlu._a_accion_plan(
         estado,
         {"nombre": "abrir_mesa_local",
-         "argumentos": {"nodo_id": "N002", "con_alcaldia": True}},
-        "concertar en la Glorieta La Ceiba con la Alcaldia")
+         "argumentos": {"nodo_id": "N003", "con_alcaldia": True}},
+        "concertar en el Puente Amarillo con la Alcaldia")
     assert a.argumentos["con_alcaldia"] is True
     assert not a.correcciones
 
@@ -1135,7 +1145,7 @@ def test_una_eleccion_tipada_no_pasa_por_la_correccion(estado):
     a = nlu._a_accion_plan(
         estado,
         {"nombre": "abrir_mesa_local",
-         "argumentos": {"nodo_id": "N002", "con_alcaldia": True}})
+         "argumentos": {"nodo_id": "N003", "con_alcaldia": True}})
     assert a.argumentos["con_alcaldia"] is True
 
 
@@ -1166,3 +1176,97 @@ def test_lo_que_no_se_puede_convertir_se_avisa_y_no_se_inventa(estado):
                                     "argumentos": {"n_escuadrones": "unos pocos"}})
     assert a.estado == "falta_dato"
     assert "no es un número" in (a.motivo or "")
+
+
+# ===========================================================================
+# DE NOCHE NO SE ORDENA, Y NO ES UN RÓTULO
+#
+# La jornada son quince minutos: trece de día en que se ordena y dos de noche en
+# que no. La consola se apaga sola — pero apagar una pantalla no cierra un canal:
+# basta una pestaña vieja abierta, o un doble clic tardío, para meter una orden
+# en mitad de las consecuencias.
+#
+#     Una regla que el software garantiza vale más que una que el software
+#     recomienda.
+# ===========================================================================
+
+def test_de_noche_el_canal_de_ordenes_esta_cerrado(consola):
+    consola.post("/api/consola/reloj/iniciar")
+    assert consola.get("/api/tablero").json()["admite_ordenes"] is True
+
+    consola.post("/api/consola/reloj/noche")
+    t = consola.get("/api/tablero").json()
+    assert (t["fase"], t["admite_ordenes"]) == ("noche", False)
+
+    for ruta, cuerpo in (("interpretar", {"texto": "operen el Puente Amarillo"}),
+                         ("encolar", {"plan_id": "x"}),
+                         ("ejecutar", {"plan_id": "x"}),
+                         ("resolver", None)):
+        r = consola.post(f"/api/consola/{ruta}", json=cuerpo)
+        assert r.status_code == 409, ruta
+        assert "de noche" in r.json()["detail"]
+
+
+def test_con_el_reloj_parado_se_puede_transcribir_siempre(consola):
+    """
+    Montar y depurar no debería exigir cronometrar una sala. Mientras nadie pulse
+    «Iniciar», el canal se comporta como antes de que hubiera reloj.
+    """
+    r = consola.post("/api/consola/interpretar",
+                     json={"texto": "operen el Puente Amarillo"})
+    assert r.status_code == 200
+
+
+def test_el_reloj_encadena_las_jornadas(consola):
+    consola.post("/api/consola/reloj/iniciar")
+    t = consola.get("/api/tablero").json()
+    assert (t["reloj"]["jornada"], t["reloj"]["fecha"]) == (1, "11 de mayo")
+
+    consola.post("/api/consola/reloj/noche")
+    consola.post("/api/consola/reloj/jornada")
+    t = consola.get("/api/tablero").json()
+    assert (t["reloj"]["jornada"], t["reloj"]["fecha"]) == (2, "12 de mayo")
+    assert t["admite_ordenes"] is True
+
+
+def test_las_consecuencias_se_sirven_durante_la_noche(consola):
+    """
+    Los dos minutos de noche existen para leerlas. Si hubiera que ir a buscarlas
+    a cinco tarjetas distintas, no daría tiempo.
+    """
+    consola.post("/api/consola/reloj/iniciar")
+    assert consola.get("/api/tablero").json()["consecuencias"] is None
+
+    consola.post("/api/consola/reloj/noche")
+    c = consola.get("/api/tablero").json()["consecuencias"]
+    assert c and c["jornada"] == 1 and c["resumen"]
+
+    # Y se retiran al abrir la jornada siguiente: son de la que acaba de pasar.
+    consola.post("/api/consola/reloj/jornada")
+    assert consola.get("/api/tablero").json()["consecuencias"] is None
+
+
+def test_pausar_detiene_el_reloj_de_las_diez_pantallas(consola):
+    """
+    El mando de las interrupciones reales. El tiempo del ejercicio no corre
+    mientras la sala no está en el ejercicio.
+    """
+    consola.post("/api/consola/reloj/iniciar")
+    c = consola.post("/api/consola/reloj/pausa").json()
+    assert c["pausado"] is True and c["pausa_desde"] is not None
+
+    c = consola.post("/api/consola/reloj/pausa").json()
+    assert c["pausado"] is False and c["pausa_desde"] is None
+
+
+def test_el_ejercicio_se_cierra_con_la_quinta_jornada(consola):
+    consola.post("/api/consola/reloj/iniciar")
+    for _ in range(5):
+        consola.post("/api/consola/reloj/noche")
+        consola.post("/api/consola/reloj/jornada")
+
+    t = consola.get("/api/tablero").json()
+    assert t["cronometro"]["cerrado"] is True
+    assert t["reloj"]["jornada"] == 5
+    r = consola.post("/api/consola/interpretar", json={"texto": "operen el puente"})
+    assert r.status_code == 409 and "terminó" in r.json()["detail"]

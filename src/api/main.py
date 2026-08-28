@@ -14,14 +14,17 @@ LAS SUPERFICIES
     /api/consola/*        la CONSOLA, donde se transcriben las órdenes
 
 NO HAY MODERADOR COMO FIGURA APARTE. La consola es una superficie más y quien la
-opera —puede ser uno de los ocho— solo transcribe: no conduce, no reparte
+opera —puede ser uno de los nueve— solo transcribe: no conduce, no reparte
 información, no decide el ritmo y no sabe nada que los demás no sepan.
 """
 
 from __future__ import annotations
 
 import argparse
+import asyncio
+import threading
 import time
+from contextlib import asynccontextmanager
 from dataclasses import asdict
 from pathlib import Path
 
@@ -44,60 +47,67 @@ _estado = cargar_estado()
 motor = MotorCrisis(_estado)
 
 # ---------------------------------------------------------------------------
-# EL RELOJ DE SALA
+# EL RELOJ DE SALA — dos mitades por jornada, y solo dos
 #
-# Antes la fase se cambiaba a mano, con siete botones en la consola. El ritmo del
-# ejercicio dependía entonces de que alguien se acordara de pulsar, y ese alguien
-# está además transcribiendo órdenes. Ahora el tiempo corre solo.
+# La jornada dura quince minutos de mundo real y se parte en dos tramos con
+# reglas OPUESTAS:
+#
+#     DÍA    13 min   se leen los tableros, se discute y SE ORDENA. En cualquier
+#                     momento: no hay que esperar a que llegue el turno de las
+#                     órdenes, porque ya no existe tal turno.
+#     NOCHE   2 min   el motor resolvió. Se miran las consecuencias y se
+#                     interpretan. NO SE RECIBEN ÓRDENES.
+#
+# HABÍA SIETE FASES Y AHORA HAY DOS. Las siete describían bien la coreografía de
+# una sala ideal y mal la de una sala real: obligaban a saber en qué minuto se
+# estaba antes de poder decir nada, y la única frontera que cambia lo que se
+# puede hacer —¿se ordena o no se ordena?— quedaba escondida entre otras seis.
+#
+# Y ESA FRONTERA LA GARANTIZA EL SERVIDOR, no un rótulo. De noche la consola se
+# apaga sola y lo que llegue igualmente se rechaza con un 409. Una regla que el
+# software garantiza vale más que una que el software recomienda.
 #
 # VIVE AQUÍ Y NO EN EL NAVEGADOR, y no es un detalle de implementación: hay diez
-# pantallas mirando a la vez —el tablero, la consola y las ocho vistas—, y un
+# pantallas mirando a la vez —el tablero, la consola y las nueve vistas—, y un
 # cronómetro por pantalla es un cronómetro distinto por pantalla en cuanto una se
-# recarga. El servidor guarda DOS INSTANTES y cada superficie deriva de ellos lo
+# recarga. El servidor guarda TRES INSTANTES y cada superficie deriva de ellos lo
 # que muestra:
 #
-#     sesion_desde   cuándo se pulsó «Iniciar». No se mueve nunca.
-#     turno_desde    cuándo empezó el ciclo de fases del turno en curso.
+#     sesion_desde    cuándo se pulsó «Iniciar». Solo se corre al reanudar.
+#     jornada_desde   cuándo empezó el día de la jornada en curso.
+#     pausa_desde     desde cuándo está detenido el reloj, o None.
 #
-# La fase no se guarda: se CALCULA a partir de `turno_desde` y de esta tabla. Un
-# valor derivado no se puede desincronizar de aquello de lo que deriva, y saltar
-# de fase se reduce entonces a mover `turno_desde` hacia atrás.
-#
-# La tabla se sirve a las pantallas en cada respuesta. La interfaz tenía su
-# propia copia en `comun.jsx`, y un dato en dos sitios se desincroniza.
+# Las transiciones —resolver el día, abrir el siguiente— las dispara
+# `_sincronizar()`, y solo él. La tabla de fases se sirve a las pantallas en cada
+# respuesta: la interfaz tuvo su propia copia, y un dato en dos sitios se
+# desincroniza.
 # ---------------------------------------------------------------------------
 
-# `guia` es la coreografía de §6.2 de `docs/propuesta.md`, palabra por palabra:
-# qué debería estar pasando en la sala mientras corre esa fase. Viaja con la
-# tabla hasta la consola, de modo que quien la opera no tiene que acordarse.
+# `guia` es qué debería estar pasando en la sala mientras corre ese tramo. Viaja
+# con la tabla hasta la consola, de modo que quien la opera no tiene que
+# acordarse.
 FASES_TURNO = (
-    {"id": "parte_privado", "nombre": "Parte privado",
-     "minutos": float(P.MIN_PARTE_PRIVADO), "congela": True,
-     "guia": "Cada rol lee su vista en su dispositivo. Nadie habla."},
-    {"id": "apertura", "nombre": "Apertura", "minutos": 1.0, "congela": True,
-     "guia": "El tablero muestra qué cambió desde la última ventana. "
-             "Se lee en voz alta."},
-    {"id": "deliberacion", "nombre": "Deliberación", "minutos": 6.0, "congela": True,
-     "guia": "Las pantallas se congelan. Se habla."},
-    {"id": "ordenes", "nombre": "Órdenes", "minutos": 2.5, "congela": False,
-     "guia": "Se transcribe lo que la mesa acordó. La pantalla devuelve el plan "
-             "interpretado con su banda de riesgo, y la mesa confirma o corrige."},
-    {"id": "resolucion", "nombre": "Resolución", "minutos": 1.0, "congela": False,
-     "guia": "Se resuelve el turno con todo lo que quedó en cola."},
-    {"id": "consecuencias", "nombre": "Consecuencias", "minutos": 1.0, "congela": False,
-     "guia": "Prensa, redes, gremios y respaldo internacional responden."},
-    {"id": "registro", "nombre": "Registro", "minutos": 0.5, "congela": False,
-     "guia": "La decisión pasa al pliego, con su responsable nominado."},
+    {"id": "dia", "nombre": "Día", "minutos": P.MIN_DIA, "admite_ordenes": True,
+     "guia": "Se leen los tableros y se delibera. La consola acepta órdenes en "
+             "cualquier momento de estos minutos: se pueden dictar de una en "
+             "una y se acumulan hasta que caiga la noche."},
+    {"id": "noche", "nombre": "Noche", "minutos": P.MIN_NOCHE,
+     "admite_ordenes": False,
+     "guia": "El motor ya resolvió. Se miran las consecuencias y se interpretan. "
+             "No se reciben órdenes: la consola está apagada."},
 )
 
 FASES = tuple(f["id"] for f in FASES_TURNO)
 
-# El ciclo entero es el turno de decisión de §6.2. Si alguien cambia una fase sin
-# cambiar el presupuesto, esto lo dice en el arranque y no en mitad de la sala.
-assert abs(sum(f["minutos"] for f in FASES_TURNO) - P.MIN_TURNO_DECISION) < 1e-9
+# Si alguien cambia un tramo sin cambiar el presupuesto, esto lo dice en el
+# arranque y no en mitad de la sala.
+assert abs(sum(f["minutos"] for f in FASES_TURNO) - P.MIN_JORNADA) < 1e-9
 
-# Cuántos planes sin ejecutar se guardan. Con 2,5 minutos de órdenes por turno,
-# más de un puñado significa que algo se quedó a medias.
+SEGUNDOS_DIA = P.MIN_DIA * 60.0
+SEGUNDOS_JORNADA = P.MIN_JORNADA * 60.0
+
+# Cuántos planes sin ejecutar se guardan. Con trece minutos de día, más de un
+# puñado significa que algo se quedó a medias.
 PLANES_EN_MEMORIA = 8
 
 # Contador MONOTÓNICO de planes. Antes el identificador salía de
@@ -106,64 +116,201 @@ PLANES_EN_MEMORIA = 8
 # reutilizara un identificador vivo y sobrescribiera aquel plan sin avisar.
 _planes_emitidos = 0
 
+# UN SOLO CERROJO PARA TODO LO QUE MUEVE EL MUNDO.
+#
+# Los endpoints de FastAPI declarados con `def` corren en un pool de hilos, y
+# encima hay un latido de fondo que también dispara transiciones. Sin esto, dos
+# pantallas consultando el tablero en el segundo en que expira el día podían
+# resolver la jornada DOS VECES, y nadie se enteraría hasta ver dos noches
+# seguidas en el historial.
+_cerrojo = threading.RLock()
+
 sala = {
     # La fase de reserva: la que rige mientras el reloj no corre. En cuanto
     # alguien pulsa «Iniciar» manda la fase calculada, y esta deja de leerse.
-    "fase": "parte_privado",
-    # Los dos instantes del reloj de sala. `None` en los dos = sin empezar.
-    "reloj": {"sesion_desde": None, "turno_desde": None},
-    # Las pantallas se congelan durante la deliberación. Si algo cambia mientras
-    # la gente habla, la gente mira la pantalla.
-    "congelado": True,
+    "fase": "dia",
+    # Los tres instantes del reloj de sala. Todos `None` = sin empezar.
+    "reloj": {"sesion_desde": None, "jornada_desde": None, "pausa_desde": None},
+    # Se levanta al resolver la última jornada. A partir de ahí no se abre otra.
+    "cerrado": False,
     "planes": {},
     "esfera": {"publicaciones": [], "generado_por": "aún no hay hechos"},
+    # Lo que produjo el último cierre de jornada, para que la consola lo enseñe
+    # durante los dos minutos de noche sin que nadie tenga que pedirlo.
+    "consecuencias": None,
 }
 
 
-def _congelado_en(fase: str) -> bool:
-    return any(f["id"] == fase and f["congela"] for f in FASES_TURNO)
-
-
-def _segundos_antes_de(fase: str) -> float:
-    """Cuánto dura el ciclo hasta el comienzo de `fase`. Es lo que hay que
-    restarle al reloj para plantarse justo en ella."""
-    acumulado = 0.0
+def _fase_de(fase_id: str) -> dict:
     for f in FASES_TURNO:
-        if f["id"] == fase:
-            return acumulado
-        acumulado += f["minutos"] * 60
-    return acumulado
+        if f["id"] == fase_id:
+            return f
+    return FASES_TURNO[0]
 
 
-def _fase_ahora(ahora: float | None = None) -> tuple[str, bool]:
+def _transcurrido(ahora: float | None = None) -> float | None:
     """
-    La fase que toca, y si congela. Mientras el reloj no corre manda la fase de
-    reserva, de modo que un montaje que nunca pulse «Iniciar» se comporta como
-    antes.
+    Segundos de jornada corridos, descontando lo que estuvo en pausa.
 
-    **Agotado el ciclo NO se encadena nada.** Se queda en la última fase y el
-    tiempo de más se cuenta como prórroga: nada avanza sin que una persona lo
-    decida, que es la regla de la que cuelga todo este ejercicio.
+    Devuelve `None` si el reloj no ha empezado, que es lo que permite montar y
+    depurar sin cronometrar nada.
     """
-    desde = sala["reloj"]["turno_desde"]
-    if desde is None:
-        return sala["fase"], _congelado_en(sala["fase"])
+    r = sala["reloj"]
+    if r["jornada_desde"] is None:
+        return None
+    fin = r["pausa_desde"] if r["pausa_desde"] is not None else (
+        time.time() if ahora is None else ahora)
+    return max(0.0, fin - r["jornada_desde"])
 
-    t = (time.time() if ahora is None else ahora) - desde
-    acumulado = 0.0
-    for f in FASES_TURNO:
-        acumulado += f["minutos"] * 60
-        if t < acumulado:
-            return f["id"], f["congela"]
 
-    ultima = FASES_TURNO[-1]
-    return ultima["id"], ultima["congela"]
+def _admite_ordenes() -> bool:
+    return bool(_fase_de(sala["fase"])["admite_ordenes"]) and not sala["cerrado"]
+
+
+def _exigir_ventana_de_ordenes() -> None:
+    """
+    De noche no se ordena, y no es un rótulo: es un 409.
+
+    Con el reloj parado no se exige nada — un montaje que nunca pulse «Iniciar»
+    se comporta como antes, y así se puede probar el canal sin cronometrar.
+    """
+    if sala["reloj"]["jornada_desde"] is None:
+        return
+    if sala["cerrado"]:
+        raise HTTPException(409, (
+            "El ejercicio terminó. Lo que queda es la proyección y el "
+            "debriefing, no más órdenes."))
+    if not _admite_ordenes():
+        raise HTTPException(409, (
+            "Es de noche: las consecuencias ya están resueltas y no se reciben "
+            "órdenes. La consola vuelve a abrir con la jornada siguiente."))
+
+
+# ---------------------------------------------------------------------------
+# LAS DOS BISAGRAS
+# ---------------------------------------------------------------------------
+
+def _abrir_jornada() -> dict:
+    """Empieza el día de la jornada siguiente. **No avanza el mundo.**"""
+    with _cerrojo:
+        if sala["cerrado"]:
+            return _cronometro()
+        _reanudar_si_estaba_en_pausa()
+        motor.abrir_jornada()
+        sala["fase"] = "dia"
+        sala["consecuencias"] = None
+        ahora = time.time()
+        if sala["reloj"]["sesion_desde"] is None:
+            sala["reloj"]["sesion_desde"] = ahora
+        sala["reloj"]["jornada_desde"] = ahora
+        return _cronometro()
+
+
+def _cerrar_jornada() -> dict:
+    """
+    Resuelve el día con lo que la mesa dejó en cola, pasa la noche y planta el
+    reloj al comienzo de los dos minutos de consecuencias.
+
+    **Solo hacia adelante.** Si la jornada se cierra porque se agotó el tiempo,
+    el reloj ya está dentro de la noche y no se rebobina; si se cierra a mano
+    antes de tiempo, la noche empieza ahora.
+    """
+    with _cerrojo:
+        pasos = motor.cerrar_jornada()
+        eventos = [ev for pa in pasos for ev in pa.eventos]
+        _refrescar_esfera(eventos)
+
+        sala["fase"] = "noche"
+        r = sala["reloj"]
+        if r["jornada_desde"] is not None:
+            _reanudar_si_estaba_en_pausa()
+            r["jornada_desde"] = min(r["jornada_desde"],
+                                     time.time() - SEGUNDOS_DIA)
+
+        dia = pasos[0]
+        sala["consecuencias"] = {
+            "jornada": dia.turno,
+            "resumen": dia.resumen,
+            "resultados": [{"accion": n, "ok": x.ok, "mensaje": x.mensaje,
+                            "datos": x.datos}
+                           for n, x in dia.resultados],
+            "eventos": eventos,
+            "umbrales": dia.umbrales_cruzados,
+            "ultima": _estado.turno_decision >= P.TURNOS_DECISION,
+        }
+        if _estado.turno_decision >= P.TURNOS_DECISION:
+            sala["cerrado"] = True
+        return sala["consecuencias"]
+
+
+def _reanudar_si_estaba_en_pausa() -> None:
+    """
+    Mover el mundo reanuda el reloj.
+
+    Dejarlo detenido mientras el ejercicio avanza sería un cronómetro que
+    miente, y el cronómetro es lo único que las diez pantallas comparten.
+    """
+    r = sala["reloj"]
+    if r["pausa_desde"] is None:
+        return
+    detenido = time.time() - r["pausa_desde"]
+    for k in ("sesion_desde", "jornada_desde"):
+        if r[k] is not None:
+            r[k] += detenido
+    r["pausa_desde"] = None
+
+
+def _sincronizar() -> None:
+    """
+    Lleva el mundo al punto donde el reloj dice que está.
+
+    Lo llama el latido de fondo cada segundo y, por si el latido faltara,
+    también cada lectura del tablero. Es idempotente: dos llamadas en el mismo
+    instante hacen exactamente una transición, porque el cerrojo las serializa y
+    la condición mira `sala["fase"]`, que la primera ya cambió.
+    """
+    with _cerrojo:
+        t = _transcurrido()
+        if t is None:
+            return
+        if sala["fase"] == "dia" and t >= SEGUNDOS_DIA:
+            _cerrar_jornada()
+        elif (sala["fase"] == "noche" and t >= SEGUNDOS_JORNADA
+                and not sala["cerrado"]):
+            _abrir_jornada()
+
+
+async def _latido() -> None:
+    """
+    Un segundo. Es lo que hace que la consola se apague sola en el minuto trece
+    aunque en ese momento no haya ninguna pantalla preguntando.
+    """
+    while True:
+        try:
+            await asyncio.sleep(1.0)
+            _sincronizar()
+        except asyncio.CancelledError:
+            raise
+        except Exception:      # un latido roto no puede tumbar el servidor
+            pass
+
+
+@asynccontextmanager
+async def _ciclo_de_vida(_app: FastAPI):
+    tarea = asyncio.create_task(_latido())
+    try:
+        yield
+    finally:
+        tarea.cancel()
+
+
+app.router.lifespan_context = _ciclo_de_vida
 
 
 def _cronometro() -> dict:
     """
     Lo que necesita una pantalla para dibujar el cronómetro **sin preguntar dos
-    veces**: los dos instantes, la tabla de fases y el reloj del servidor.
+    veces**: los tres instantes, la tabla de fases y el reloj del servidor.
 
     `ahora` es la pieza que las mantiene de acuerdo. Cada superficie compara su
     reloj con este y guarda el desfase, así que las diez cuentan sobre el mismo
@@ -171,14 +318,18 @@ def _cronometro() -> dict:
     entre respuesta y respuesta, sin esperar a la siguiente.
     """
     r = sala["reloj"]
-    fase, congelado = _fase_ahora()
     return {
-        "corriendo": r["turno_desde"] is not None,
+        "corriendo": r["jornada_desde"] is not None,
+        "pausado": r["pausa_desde"] is not None,
+        "cerrado": sala["cerrado"],
         "ahora": time.time(),
         "sesion_desde": r["sesion_desde"],
-        "turno_desde": r["turno_desde"],
-        "fase": fase,
-        "congelado": congelado,
+        "jornada_desde": r["jornada_desde"],
+        "pausa_desde": r["pausa_desde"],
+        "fase": sala["fase"],
+        "admite_ordenes": _admite_ordenes(),
+        "jornada": _estado.jornada_visible,
+        "jornadas_totales": P.TURNOS_DECISION,
         "fases": [dict(f) for f in FASES_TURNO],
     }
 
@@ -196,13 +347,19 @@ def tablero():
     de ninguna denuncia. Es la invariante más importante de esta capa: si eso se
     filtrara, el dilema central del caso desaparecería.
     """
+    # Red de seguridad del latido: si por lo que sea no estuviera corriendo, el
+    # mundo avanza igual en cuanto alguien mira el tablero.
+    _sincronizar()
     d = _estado.vista_publica()
     d["cronometro"] = _cronometro()
     # Lo que la mesa ya confirmó y todavía no se ha resuelto. La consola lo lee
     # de aquí, así que sobrevive a que alguien recargue la pantalla.
     d["en_cola"] = len(motor.cola_inmediata)
     d["fase"] = d["cronometro"]["fase"]
-    d["congelado"] = d["cronometro"]["congelado"]
+    d["admite_ordenes"] = d["cronometro"]["admite_ordenes"]
+    # Lo que produjo el último cierre de jornada. Va aquí y no solo en la
+    # consola porque los dos minutos de noche son para leerlo.
+    d["consecuencias"] = sala["consecuencias"]
     d["registro"] = [asdict(x) for x in _estado.registro[-12:]]
     # Qué se movió desde la última vez que la sala miró. Un delta no revela nada
     # que el valor actual no revelara ya: se calcula sobre las mismas magnitudes
@@ -215,7 +372,7 @@ def tablero():
 
 
 # ===========================================================================
-# Superficie 2 · Las ocho vistas privadas
+# Superficie 2 · Las nueve vistas privadas
 # ===========================================================================
 
 @app.get("/api/vista/{rol}")
@@ -233,10 +390,15 @@ def vista_privada(rol: str):
     try:
         v = views.vista(_estado, rol)
     except KeyError:
-        raise HTTPException(404, f"Rol desconocido: {rol}. Los ocho son {views.ROLES}")
+        raise HTTPException(404, f"Rol desconocido: {rol}. Los nueve son {views.ROLES}")
     v["cronometro"] = _cronometro()
-    v["congelado"] = v["cronometro"]["congelado"]
-    v["acciones"] = catalogo_por_rol().get(rol, [])
+    v["admite_ordenes"] = v["cronometro"]["admite_ordenes"]
+    # EL REPERTORIO VIENE CON SU SEMÁFORO. Cada acción dice si se puede pedir
+    # AHORA y, si no, qué falta — en general y sin nombrar el remedio concreto.
+    # Sin eso, la vista enumeraba cinco acciones de las que dos llevaban tres
+    # turnos bloqueadas y su titular no tenía forma de saberlo hasta que la
+    # consola le devolvía un rechazo delante de la mesa.
+    v["acciones"] = catalogo_por_rol(_estado).get(rol, [])
     return v
 
 
@@ -307,6 +469,7 @@ def interpretar(orden: TextoOrden):
     resolución de entidades, la validación y la banda de riesgo son
     deterministas, y el texto que se lee en voz alta también.
     """
+    _exigir_ventana_de_ordenes()
     global _planes_emitidos
     _planes_emitidos += 1
     plan_id = f"plan-{_planes_emitidos}"
@@ -380,6 +543,7 @@ def ejecutar(c: Confirmacion):
     sido escrita antes de que la orden se ejecutara. Es el primero de los ocho
     modos de falla, y el más difícil de detectar.
     """
+    _exigir_ventana_de_ordenes()
     plan = _sacar_plan(c.plan_id)
     if _solo_consultas(plan):
         return _respuesta_consulta()
@@ -480,25 +644,20 @@ def _encolar_plan(plan) -> tuple[int, list[dict]]:
 
 
 def _resolver_turno(encoladas: int = 0, omitidas: list[dict] | None = None) -> dict:
-    """Da el paso del turno con lo que haya en la cola, y reporta desde
-    resultados reales."""
-    r = motor.paso(franja="dia")
-    _refrescar_esfera(r.eventos)
-    # Resolver ES la fase de resolución. Si el reloj corre, se planta en las
-    # consecuencias en vez de dejar correr los minutos de una fase que la sala
-    # acaba de terminar. Solo hacia adelante: rebobinar el reloj de una sala
-    # porque alguien resolvió tarde sería peor que no tocarlo.
-    _ir_a_fase("consecuencias", solo_adelante=True)
-    sala["fase"] = "consecuencias"
-    sala["congelado"] = False
-    return {"turno": r.turno, "resumen": r.resumen, "eventos": r.eventos,
+    """
+    Cierra la jornada con lo que haya en cola, y reporta desde resultados reales.
+
+    **Resolver el día ES pasar a la noche.** No son dos actos: en cuanto el motor
+    da el paso, lo que la sala tiene delante son consecuencias, y la consola deja
+    de admitir órdenes hasta que se abra la jornada siguiente.
+    """
+    c = _cerrar_jornada()
+    return {"turno": c["jornada"], "resumen": c["resumen"], "eventos": c["eventos"],
             "acciones_encoladas": encoladas,
             "omitidas": omitidas or [],
             "turno_avanzado": True,
             "en_cola": len(motor.cola_inmediata),
-            "resultados": [{"accion": n, "ok": x.ok, "mensaje": x.mensaje,
-                            "datos": x.datos}
-                           for n, x in r.resultados]}
+            "resultados": c["resultados"]}
 
 
 @app.post("/api/consola/encolar")
@@ -510,12 +669,13 @@ def encolar_orden(c: Confirmacion):
     la fase de órdenes, en vez de tener que meterlas todas en un mismo texto. El
     reloj no se mueve: la fase corre entera.
     """
+    _exigir_ventana_de_ordenes()
     plan = _sacar_plan(c.plan_id)
     if _solo_consultas(plan):
         return _respuesta_consulta()
 
     encoladas, omitidas = _encolar_plan(plan)
-    return {"turno": _estado.turno_decision,
+    return {"turno": _estado.jornada_visible,
             "resumen": (f"{encoladas} en cola para este turno. "
                         "El turno no ha avanzado."),
             "eventos": [], "acciones_encoladas": encoladas,
@@ -526,28 +686,25 @@ def encolar_orden(c: Confirmacion):
 
 @app.post("/api/consola/resolver")
 def resolver():
-    """Cierra el turno con todo lo que la mesa dejó en cola."""
+    """Cierra el día con todo lo que la mesa dejó en cola y pasa a la noche."""
+    _exigir_ventana_de_ordenes()
     return _resolver_turno()
 
 
-@app.post("/api/consola/noche")
-def interludio_nocturno():
-    """El interludio nocturno: no se delibera, se sufre. Tres minutos."""
-    r = motor.paso(franja="noche")
-    _refrescar_esfera(r.eventos)
-    return {"turno": r.turno, "resumen": r.resumen, "eventos": r.eventos}
-
-
-def _ir_a_fase(fase: str, solo_adelante: bool = False) -> None:
-    """Planta el reloj al comienzo de `fase`, corriendo `turno_desde` hacia
-    atrás. Si el reloj no corre no hace nada: no se salta lo que no empezó."""
-    if sala["reloj"]["turno_desde"] is None:
-        return
-    destino = time.time() - _segundos_antes_de(fase)
-    if solo_adelante and destino > sala["reloj"]["turno_desde"]:
-        return
-    sala["reloj"]["turno_desde"] = destino
-
+# ---------------------------------------------------------------------------
+# LOS MANDOS DEL RELOJ
+#
+# El ritmo normal lo lleva el sistema: trece minutos de día, dos de noche, y la
+# jornada siguiente. Estos mandos existen para lo OTRO — la sala que termina
+# antes, la que se interrumpe de verdad, el proyector que se cae. Son cuatro y
+# ninguno decide nada del caso:
+#
+#     iniciar     arranca el ejercicio y abre la jornada 1
+#     pausa       detiene el reloj interno · lo reanuda el mismo botón
+#     noche       cierra el día YA y enseña las consecuencias
+#     jornada     abre el día siguiente YA
+#     reiniciar   deja el reloj a cero y parado. NO rebobina el mundo
+# ---------------------------------------------------------------------------
 
 @app.post("/api/consola/reloj/iniciar")
 def reloj_iniciar():
@@ -556,55 +713,91 @@ def reloj_iniciar():
     y a partir de ese instante las diez pantallas cuentan lo mismo.
 
     `sesion_desde` solo se fija la primera vez: es cuánto lleva la sala reunida,
-    y eso no se reinicia al empezar un turno nuevo.
+    y eso no se reinicia al empezar una jornada nueva.
     """
-    ahora = time.time()
-    if sala["reloj"]["sesion_desde"] is None:
-        sala["reloj"]["sesion_desde"] = ahora
-    sala["reloj"]["turno_desde"] = ahora
+    with _cerrojo:
+        if sala["reloj"]["sesion_desde"] is None:
+            sala["reloj"]["sesion_desde"] = time.time()
+        _abrir_jornada()
     return _cronometro()
 
 
-@app.post("/api/consola/reloj/siguiente")
-def reloj_siguiente_fase():
-    """Adelanta a la fase siguiente, para cuando la sala termina antes. En la
-    última no hace nada: de ahí se sale con un turno nuevo, no con un salto."""
-    if sala["reloj"]["turno_desde"] is None:
-        raise HTTPException(409, "El reloj no ha empezado. Pulse «Iniciar».")
-    actual, _ = _fase_ahora()
-    orden = [f["id"] for f in FASES_TURNO]
-    i = orden.index(actual)
-    if i + 1 < len(orden):
-        _ir_a_fase(orden[i + 1])
+@app.post("/api/consola/reloj/pausa")
+def reloj_pausa():
+    """
+    Detiene el reloj interno del ejercicio, o lo reanuda.
+
+    Es el mando de las interrupciones reales: una pregunta que se alarga, alguien
+    que entra, un proyector que se apaga. **El tiempo del ejercicio no corre
+    mientras la sala no está en el ejercicio**, y el cronómetro de las diez
+    pantallas se detiene a la vez.
+    """
+    with _cerrojo:
+        r = sala["reloj"]
+        if r["jornada_desde"] is None:
+            raise HTTPException(409, "El reloj no ha empezado. Pulse «Iniciar».")
+        if r["pausa_desde"] is None:
+            r["pausa_desde"] = time.time()
+        else:
+            _reanudar_si_estaba_en_pausa()
     return _cronometro()
 
 
-@app.post("/api/consola/reloj/turno")
-def reloj_turno_siguiente():
-    """Vuelve el ciclo de fases a su comienzo. El tiempo total de la sesión
-    sigue corriendo: lo que empieza de nuevo es el turno, no la reunión."""
-    if sala["reloj"]["sesion_desde"] is None:
-        raise HTTPException(409, "El reloj no ha empezado. Pulse «Iniciar».")
-    sala["reloj"]["turno_desde"] = time.time()
+@app.post("/api/consola/reloj/noche")
+def reloj_pasar_a_la_noche():
+    """Cierra el día ahora mismo: resuelve lo que haya en cola y enseña las
+    consecuencias. Para cuando la sala terminó antes de los trece minutos."""
+    with _cerrojo:
+        if sala["cerrado"]:
+            raise HTTPException(409, "El ejercicio ya terminó.")
+        if sala["fase"] != "dia":
+            raise HTTPException(409, "Ya es de noche: las consecuencias están servidas.")
+        _cerrar_jornada()
+    return _cronometro()
+
+
+@app.post("/api/consola/reloj/jornada")
+def reloj_jornada_siguiente():
+    """
+    Abre el día siguiente ahora mismo.
+
+    Si todavía es de día, primero lo cierra: saltar a la jornada siguiente sin
+    resolver la actual dejaría en cola órdenes que la mesa dio en voz alta y
+    nadie ejecutó jamás.
+    """
+    with _cerrojo:
+        if sala["cerrado"]:
+            raise HTTPException(409, "El ejercicio ya terminó.")
+        if sala["fase"] == "dia" and sala["reloj"]["jornada_desde"] is not None:
+            _cerrar_jornada()
+        if sala["cerrado"]:
+            return _cronometro()
+        _abrir_jornada()
     return _cronometro()
 
 
 @app.post("/api/consola/reloj/reiniciar")
 def reloj_reiniciar():
-    """Deja el reloj a cero y parado. Vuelve a mandar la fase de reserva."""
-    sala["reloj"] = {"sesion_desde": None, "turno_desde": None}
+    """
+    Deja el reloj a cero y parado. Vuelve a mandar la fase de reserva.
+
+    **No rebobina el mundo**: lo que el motor ya resolvió, resuelto está. Esto
+    solo detiene la cuenta.
+    """
+    with _cerrojo:
+        sala["reloj"] = {"sesion_desde": None, "jornada_desde": None,
+                         "pausa_desde": None}
     return _cronometro()
 
 
 @app.post("/api/consola/fase/{fase}")
 def cambiar_fase(fase: str):
-    """Ir a una fase concreta. La consola ya no lo ofrece —el reloj lleva el
-    ritmo— pero sigue aquí para montar y depurar sin cronometrar."""
+    """Poner la sala en una fase concreta sin cronometrar. Para montar y depurar:
+    el ritmo normal lo lleva el reloj."""
     if fase not in FASES:
-        raise HTTPException(400, f"Fase desconocida: {fase}. Las siete son {FASES}")
-    _ir_a_fase(fase)
-    sala["fase"] = fase
-    sala["congelado"] = _congelado_en(fase)
+        raise HTTPException(400, f"Fase desconocida: {fase}. Las dos son {FASES}")
+    with _cerrojo:
+        sala["fase"] = fase
     return _cronometro()
 
 

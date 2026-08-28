@@ -99,7 +99,7 @@ UNIDADES_EN_CLARO = {"esmad": "ESMAD", "policia": "policía", "militar": "milita
 # fuerza» es correcto y no lo dice nadie así.
 TEMA_EN_CLARO = {
     "fuerza": "la capacidad de fuerza disponible",
-    "corredores": "el estado de los cinco corredores",
+    "corredores": "el estado de los corredores",
     "abastecimiento": "el abastecimiento de las cuatro regiones",
     "mesa": "el estado de la mesa y sus reservas",
 }
@@ -525,7 +525,7 @@ def _traducir(estado: Estado, texto: str) -> tuple[list[dict], str]:
             **cfg.extra_nlu(),
         )
     except Exception as exc:                                  # pragma: no cover
-        # Un error del proveedor no puede dejar a ocho personas mirando la
+        # Un error del proveedor no puede dejar a nueve personas mirando la
         # pantalla. Se degrada y se dice que se degradó.
         return (herramientas.interpretar_sin_modelo(estado, texto),
                 f"determinista (el modelo falló: {type(exc).__name__})")
@@ -599,7 +599,7 @@ def _a_accion_plan(estado: Estado, llamada: dict, texto: str = "") -> AccionPlan
 
     # LO QUE NADIE DIJO NO SE DA POR PUESTO. Aquí se contrasta contra el texto
     # que escribió la sala, no contra lo que devolvió el modelo — que es quien
-    # se lo inventa. Medido: «concertar en la Glorieta La Ceiba» volvía con
+    # se lo inventa. Medido: «concertar en un punto del epicentro» volvía con
     # `con_alcaldia: true` sin que nadie hubiera nombrado a la Alcaldía, y eso
     # abre la única puerta que obliga al Interior a traer al Alcalde.
     #
@@ -746,7 +746,7 @@ def hoja_de_datos(estado: Estado, tema: str) -> dict:
         }
     if tema == "corredores":
         return {
-            "ambito": "los cinco corredores",
+            "ambito": "los corredores del pais",
             "corredores": [
                 {"nombre": c.nombre,
                  "flujo": round(c.caudal_efectivo(estado.nodos), 2),

@@ -45,6 +45,8 @@ from src.engine.actions import (                            # noqa: E402
     AdoptarCriterioPriorizacion, OrganizarCaravana, NegociarConGremios,
     FijarPrioridadCombustible, DeclararInfraestructuraCritica,
     EntregarCalendarioAgotamiento,
+    FijarClasePrioridadAlimentaria, InstalarMesaTecnicaAgropecuaria,
+    ActivarInstrumentosSectoriales, AcordarAcopioYVentanas,
 )
 
 SEP = "=" * 78
@@ -190,6 +192,50 @@ def plan_logistica(motor, turno: int) -> None:
         motor.encolar(NegociarConGremios())
 
 
+def plan_agroalimentaria(motor, turno: int) -> None:
+    """
+    La sala juega el frente rural: clase alimentaria, mesas técnicas y acopio.
+
+    Existe por la misma razón que `humanitaria` existe para el oxígeno: **para
+    comprobar que el hambre es evitable y que se evita con estas decisiones y no
+    con cualquiera.** Si su columna de muertes y su índice de precios salieran
+    iguales que los de `pasiva`, el frente agroalimentario estaría desacoplado y
+    el noveno rol sería decoración.
+
+    Y para lo contrario, que importa igual: si esta estrategia domina, el rol
+    resuelve solo lo que el caso quiere que se negocie, y hay que abaratarla.
+    """
+    e = motor.estado
+    if turno == 1:
+        motor.encolar(FijarClasePrioridadAlimentaria())
+        motor.encolar(DisponerESMAD(n_escuadrones=6))
+        return
+
+    # Las mesas técnicas se instalan CADA JORNADA o se congelan. Es la regla que
+    # más se olvida en la sala, y una estrategia de referencia que la olvidara
+    # mediría otra cosa.
+    for nodo in sorted(e.nodos.values(), key=lambda n: -n.control_voceria):
+        if nodo.abierto or nodo.region_id == e.region_epicentro:
+            continue
+        if nodo.control_voceria < 0.25:
+            continue
+        motor.encolar(InstalarMesaTecnicaAgropecuaria(nodo_id=nodo.nodo_id))
+
+    peor = min(e.regiones.values(), key=lambda r: r.dias_autonomia_alimentos)
+    motor.encolar(ActivarInstrumentosSectoriales(region_id=peor.region_id))
+
+    # Escolta primero, acopio después: el despacho concentrado no pide escolta,
+    # hace rendir la que ya está puesta.
+    for c in e.corredores.values():
+        if "alimentario" not in c.clases_prioridad:
+            continue
+        if c.punto_que_bloquea(e.nodos):
+            continue
+        motor.encolar(Escoltar(corredor_id=c.corredor_id, clase_carga="alimentario"))
+        motor.encolar(AcordarAcopioYVentanas(corredor_id=c.corredor_id))
+        break
+
+
 def plan_pasiva(motor, turno: int) -> None:
     """La sala no decide. Para medir el costo de no decidir."""
     return
@@ -201,6 +247,7 @@ ESTRATEGIAS = {
     "constituida": plan_constituida,
     "humanitaria": plan_humanitaria,
     "logistica": plan_logistica,
+    "agroalimentaria": plan_agroalimentaria,
     "pasiva": plan_pasiva,
 }
 
@@ -483,7 +530,7 @@ def comparar(semilla: int, detalle: bool = False) -> None:
     print(SEP)
     print("  COMPARACIÓN DE ESTRATEGIAS — ninguna debería dominar")
     print(SEP)
-    print(f"  {'estrategia':<14}{'netas':>7}{'reap':>6}{'muert':>7}"
+    print(f"  {'estrategia':<17}{'netas':>7}{'reap':>6}{'muert':>7}"
           f"{'legit':>7}{'cohes':>7}{'credib':>8}{'resp':>7}")
     print("  " + "-" * 69)
     resultados = {}
@@ -492,7 +539,7 @@ def comparar(semilla: int, detalle: bool = False) -> None:
         resultados[nombre] = r
         m = r["metricas"]
         res = m["reservas"]
-        print(f"  {nombre:<14}{m['aperturas_netas']:>7}{m['reaperturas']:>6}"
+        print(f"  {nombre:<17}{m['aperturas_netas']:>7}{m['reaperturas']:>6}"
               f"{m['muertes_evitables']:>7}{res['legitimidad']:>7.0f}"
               f"{res['cohesion_mesa']:>7.0f}{res['credibilidad_mesa']:>8.0f}"
               f"{res['respaldo_internacional']:>7.0f}")
@@ -512,7 +559,7 @@ def comparar(semilla: int, detalle: bool = False) -> None:
 
 
 def mostrar_vistas(semilla: int, turnos: int = 2) -> None:
-    """Las ocho vistas privadas después de N turnos, para revisar su contenido."""
+    """Las nueve vistas privadas después de N turnos, para revisar su contenido."""
     estado = cargar_estado()
     motor = MotorCrisis(estado, semilla=semilla)
     for t in range(1, turnos + 1):

@@ -6,7 +6,7 @@ que lo produce.**
 
 No hace falta saber programar para leerlo. Cada sección tiene la misma forma:
 
-> **En la sala** · qué viven las ocho personas
+> **En la sala** · qué viven las nueve personas
 > **En el motor** · qué cálculo lo produce, con los números reales
 > **En el código** · qué archivo y qué función, para poder ir a mirar
 
@@ -35,13 +35,14 @@ el diagnóstico del que salió esta versión, en
 5. [La fuerza y el riesgo](#5-la-fuerza-y-el-riesgo)
 6. [Las tres vías de abrir un camino](#6-las-tres-vías-de-abrir-un-camino)
 7. [El reloj y el oxígeno](#7-el-reloj-y-el-oxígeno)
+7 bis. [La infraestructura relevante](#7-bis-la-infraestructura-relevante)
 8. [La información: verdad, vistas y denuncias](#8-la-información-verdad-vistas-y-denuncias)
 9. [La mesa: reservas, banderas y acuerdos](#9-la-mesa-reservas-banderas-y-acuerdos)
 
 **C · Lo que la sala puede hacer**
 
-10. [Las treinta y cuatro acciones](#10-las-treinta-y-cuatro-acciones)
-11. [Las ocho vistas privadas, por dentro](#11-las-ocho-vistas-privadas-por-dentro)
+10. [Las treinta y nueve acciones](#10-las-treinta-y-nueve-acciones)
+11. [Las nueve vistas privadas, por dentro](#11-las-nueve-vistas-privadas-por-dentro)
 12. [Los siete arreglos, medidos](#12-los-siete-arreglos-medidos)
 13. [Cómo comprobarlo uno mismo](#13-cómo-comprobarlo-uno-mismo)
 
@@ -52,12 +53,12 @@ el diagnóstico del que salió esta versión, en
 
 ## 1. Qué se está simulando, y qué no
 
-Ocho personas, dos horas, y **un país que responde a lo que deciden**. No hay
+Nueve personas, dos horas, y **un país que responde a lo que deciden**. No hay
 marcador, no hay respuesta correcta y no hay una jugada que gane.
 
 ### Lo que el ejercicio pone a prueba
 
-No es si la sala sabe de orden público. Es si **ocho mandatos legítimos que
+No es si la sala sabe de orden público. Es si **nueve mandatos legítimos que
 miran cosas distintas pueden producir una sola línea de acción** en cinco
 turnos, con información incompleta y repartida.
 
@@ -75,7 +76,7 @@ las administró.
 ### Lo que el motor sí modela
 
 ```
-el territorio ......... 24 puntos de cierre, 5 corredores, 4 regiones
+el territorio ......... 10 puntos de cierre, 4 corredores, 4 regiones
 la fuerza ............. escuadrones, fatiga, riesgo de incidente
 el abastecimiento ..... oxígeno, combustible, alimentos — con su reloj
 la calle .............. una movilización que REACCIONA a lo que se decide
@@ -91,8 +92,50 @@ Esto importa tanto como lo anterior. La regla que gobierna el alcance:
 > Todo lo demás es contexto y va en la ficha, no en el motor.
 
 Por eso no hay economía nacional, ni opinión pública individual, ni
-procedimientos judiciales, ni geografía real. **El mapa es un esquema de líneas
-sin escala**: la topología es la información; la geometría sería decoración.
+procedimientos judiciales, ni geografía real. **El país del mapa está
+inventado** —Valcanto, con sus dos mares y su puerto— y no tiene escala: la
+geometría sitúa, no mide. No hay distancias ni tiempos de desplazamiento porque
+el motor no los tiene.
+
+> **La silueta y la red vial, en cambio, son reales.** Salen de datos
+> cartográficos abiertos de una costa de verdad —su línea de costa y sus
+> carreteras principales—, normalizadas al lienzo y simplificadas. **Qué costa
+> es no se registra en ninguna parte**, y es deliberado: el territorio del
+> ejercicio es ficticio, y saber a qué se parece el dibujo no aporta nada al
+> material —solo invita a buscarle correspondencias que no existen. Es el mismo
+> trato que Macondo tuvo con Mocoa: lo prestado es el trazo, no el lugar.
+>
+> Se usan datos reales por una razón práctica: **un país inventado a mano se
+> nota.** Las costas de verdad tienen estuarios, cabos y entrantes, y las redes
+> viales de verdad tienen troncales que concentran y comarcales que rodean —
+> cosas que nadie dibuja por intuición. Y lo que hace falta es que la sala mire
+> un país, no un diagrama.
+
+> **El mapa era un esquema de líneas y ya no lo es.** Aquel decía la verdad
+> sobre la topología —un corredor ES una secuencia ordenada de puntos— y no
+> decía nada sobre el país: diez motas sobre un lienzo vacío, sin costa, sin
+> puerto y sin forma. Una sala que mira eso durante trece minutos no llega a
+> preguntarse dónde está. La topología sigue siendo la información; lo que ha
+> cambiado es que ahora hay un sitio donde ponerla.
+
+> **La red vial va casi transparente, y eso es el diseño.** Las carreteras no
+> son la información: son el suelo sobre el que se lee la información. Tienen
+> que estar —un bloqueo flotando sobre un polígono de color no se lee como una
+> carretera cortada— y tienen que callarse. Lo que resalta son los corredores y
+> los puntos de cierre.
+>
+> Y **cada corredor se dibuja por el camino que existe**: su trazado se rutea
+> con Dijkstra sobre la red real y se guarda en el escenario. Antes se unían sus
+> puntos con una curva suave, y esa curva afirmaba algo falso —que entre un
+> bloqueo y el siguiente la vía pasa por ahí—. Ahora dos puntos que en línea
+> recta parecen vecinos pueden estar a media vuelta por carretera, y el mapa lo
+> enseña en vez de esconderlo.
+>
+> **Los diez puntos de cierre están sobre vértices reales de esa red**, no en un
+> descampado: un bloqueo está en una carretera. Se siembran a lo largo del
+> trazado ya ruteado de su corredor, y no al revés — colocarlos primero a ojo y
+> rutear después convertía cada hueco del grafo en media vuelta al país dibujada
+> como si fuera el corredor.
 
 Y por eso mismo **no hay un rol de «la protesta»**. La movilización es un
 adversario reflexivo del motor, no una persona en la mesa: el ejercicio es sobre
@@ -103,7 +146,7 @@ en otra cosa.
 
 > **El LLM traduce. El motor decide, valida, ejecuta y reporta.**
 
-El ejercicio **corre entero sin llave de API**. Las ocho vistas son proyecciones
+El ejercicio **corre entero sin llave de API**. Las nueve vistas son proyecciones
 deterministas del estado, no texto generado. Esa degradación no es una comodidad
 de desarrollo: es la prueba operativa de que ninguna decisión de la simulación
 está delegada a un modelo.
@@ -117,20 +160,30 @@ está delegada a un modelo.
 
 ### En la sala
 
-```
-0 · PARTE PRIVADO    1,0 min   Cada rol lee su vista. NADIE HABLA.
-1 · APERTURA         1,0 min   El tablero muestra qué cambió. Se lee en voz alta
-2 · DELIBERACIÓN     6,0 min   Las pantallas se congelan. Se habla
-3 · ÓRDENES          2,5 min   Se transcriben; el sistema devuelve el plan
-                               CON SU BANDA DE RIESGO y la mesa confirma
-4 · RESOLUCIÓN       1,0 min   El sistema ejecuta
-5 · CONSECUENCIAS    1,0 min   Prensa, redes, gremios, internacional
-6 · REGISTRO         0,5 min   La decisión al pliego, con responsable nominado
-```
+La jornada dura **quince minutos de mundo real** y se parte en dos tramos con
+reglas opuestas —trece de día en que se ordena y dos de noche en que no—, sin más
+divisiones. **Cómo se juega ese tramo está en
+[`propuesta.md` §6.2](propuesta.md#62-la-jornada-dos-tramos-no-siete-fases);**
+aquí está lo que hace que la frontera sea real y no un rótulo.
+
+**La garantiza el servidor.** De noche el cuadro de
+órdenes se atenúa y sus botones se desactivan; una orden que llegue igualmente
+—una pestaña vieja, un doble clic tardío— recibe un 409. Una regla que el
+software garantiza vale más que una que el software recomienda.
+
+**El ritmo lo lleva el sistema.** Se pulsa «Iniciar» una vez y a partir de ahí la
+jornada se cierra sola al minuto trece y la siguiente se abre sola dos minutos
+después. Quedan cuatro mandos, y son para lo que el reloj no puede prever:
+
+| Mando | Para qué |
+|---|---|
+| **Pausar** | una interrupción real. El tiempo del ejercicio no corre mientras la sala no está en el ejercicio, y el número se congela en las diez pantallas a la vez |
+| **Cerrar el día** | la sala terminó antes de los trece minutos |
+| **Empezar la jornada siguiente** | ya leyeron las consecuencias y no hace falta esperar |
+| **Reiniciar el reloj** | deja la cuenta a cero. **No rebobina el mundo** |
 
 **No hay moderador como figura aparte.** Quien opera la consola —puede ser uno de
-los ocho— solo transcribe. El reloj de cada fase lo lleva el sistema, el parte de
-apertura lo muestra la pantalla, y el plan de vuelta sale del motor.
+los nueve— solo transcribe.
 
 ### En el motor
 
@@ -232,12 +285,9 @@ porque el número cambió y solo él tiene el nuevo.
 | Vista privada | `GET /api/vista/{rol}` | [`views.py`](../src/engine/views.py) · `vista()` |
 | Consola | `POST /api/consola/*` | [`api/main.py`](../src/api/main.py) |
 
-**Tres pruebas custodian la separación** y están en
-[`tests/test_invariantes.py`](../tests/test_invariantes.py):
-
-- `test_la_vista_publica_jamas_expone_la_mezcla_real`
-- `test_las_ocho_vistas_privadas_tampoco_la_exponen`
-- `test_solo_minas_ve_los_dias_exactos`
+**Tres cosas están garantizadas por construcción y no por disciplina:** la vista
+pública jamás expone la mezcla real de un punto, las nueve vistas privadas tampoco
+la exponen, y **solo Minas ve los días exactos**.
 
 ### Cómo el tablero señala un problema sin decir qué hacer
 
@@ -247,7 +297,7 @@ medio posible:
 | Si el tablero… | Lo que pasa |
 |---|---|
 | dice «abra el corredor hospitalario» | el ejercicio se acabó: el tablero pensó por la sala |
-| es un muro de números iguales | nadie se entera de nada en seis minutos de deliberación |
+| es un muro de números iguales | nadie se entera de nada en trece minutos de deliberación |
 
 La salida no es un punto intermedio: es **cambiar de mecanismo**.
 
@@ -268,7 +318,7 @@ dice cuánto queda; qué hacer con eso es de la sala.
 
 `Estado.reloj()` vive en el motor y no en la interfaz. Cuatro superficies
 calculando cada una su propia hora son cuatro relojes, y con el tablero
-proyectado junto a ocho dispositivos la discrepancia se ve el primer turno.
+proyectado junto a nueve dispositivos la discrepancia se ve el primer turno.
 
 **3 · El orden.** Corredores y regiones van **peor primero**. El ojo aterriza
 arriba a la izquierda y ahí está el problema, sin que nadie lo señale. La
@@ -281,7 +331,36 @@ sala avanza y `9/24` tres turnos después sí.
 > **La distancia entre «3 puntos sin verificar» y «verifique P7» es la distancia
 > entre un ejercicio y un tutorial.**
 
-**5 · Lo que pasó en cada punto.** El mapa dibuja un anillo sobre los puntos
+**5 · Dos niveles, y seis lecturas en cada uno.** El mapa del país tiñe cada
+región de su **estado de bloqueo** —cuántos de sus puntos no dejan pasar nada— y
+al posarse encima entrega el promedio de sus puntos. Un clic acerca la región y
+enseña sus puntos con nombre y los corredores que la cruzan.
+
+| | Punto | Región |
+|---|---|---|
+| **Paso** | banda del caudal | media de sus puntos |
+| **Dureza** | cinco peldaños | media |
+| **Gente en la calle** | ≈420 personas | total ≈1.600 · ≈260 por punto |
+| **Días de cierre** | 15 días | 11 de media · el más antiguo, 15 |
+| **Apoyo del barrio** | cinco peldaños | media |
+| **Vocería reconocida** | tres bandas | media |
+
+Las cifras las calcula el motor (`territory.py`), no la pantalla. **Un promedio
+por región calculado en JavaScript es un promedio que nadie verifica nunca** —y
+`PENDIENTES.md · B9` documenta lo que cuesta eso.
+
+Y **ninguna sale como el número interno.** Un nivel se interpreta; un número se
+optimiza. Las dos únicas que llevan cifra son las dos que se cuentan de verdad:
+personas y días. La misma frontera que en el resto del tablero separa
+«Legitimidad: alta» de «Muertes evitables: 3».
+
+> **La vocería lleva tres bandas y no cinco, y es deliberado.** Es el dato
+> exclusivo de Interior y del Alcalde, y la lectura de Interior va sesgada +0,20:
+> con cinco bandas de 0,20 el sesgo sería exactamente un peldaño y el tablero lo
+> desmentiría solo. Con tres, la banda gruesa coincide casi siempre y **la
+> discrepancia sigue siendo cosa de la mesa**, que es donde tiene que resolverse.
+
+**6 · Lo que pasó en cada punto.** El mapa dibuja un anillo sobre los puntos
 donde ocurrió algo en la última ventana, y se apaga en la siguiente. Es la misma
 regla del delta aplicada al territorio: *un punto rojo dice que está cerrado; un
 punto rojo con anillo dice que se cerró anoche, que es otra conversación.*
@@ -299,16 +378,15 @@ punto rojo con anillo dice que se cerró anoche, que es otra conversación.*
 > la sala necesita verlo para saber si su decisión surtió efecto. La
 > **ubicación, la asignación y la fatiga** de cada escuadrón existen en el motor
 > y viven en la vista de la Dirección General de la Policía. Si aparecieran en
-> el tablero, uno de los ocho roles dejaría de hacer falta.
+> el tablero, uno de los nueve roles dejaría de hacer falta.
 
-Lo custodia `test_el_mapa_cuenta_lo_que_se_hizo_y_no_donde_esta_la_fuerza`, y que
-el anillo no se acumule,
-`test_el_anillo_del_mapa_se_apaga_a_la_ventana_siguiente`.
+Las dos reglas —que el mapa no diga dónde está la fuerza, y que el anillo no se
+acumule de una ventana a la siguiente— son invariantes del motor, no del
+componente que dibuja.
 
 **Y el delta no abre una puerta trasera.** `_indicadores()` se restringe a lo que
 `vista_publica()` ya serializa: un delta calculado sobre la mezcla real de un
-punto la filtraría igual de bien que mostrarla. Lo custodia
-`test_el_delta_no_abre_una_puerta_trasera_a_lo_oculto`.
+punto la filtraría igual de bien que mostrarla.
 
 Los hechos del mapa llevan **lista blanca de campos** por la misma razón: un
 evento del motor puede llevar dentro cualquier cosa —`veraz`, por ejemplo— y
@@ -455,7 +533,7 @@ militares fatigados de noche, con los seis     P = 0,70   la curva saturó
 ```
 
 > **El estándar protege a quien ya venía operando con cuidado y no rescata a quien
-> no.** Hay una prueba que lo verifica: `test_el_estandar_no_rescata_a_quien_opera_sin_cuidado`.
+> no.** Es consecuencia directa de la curva, no una regla añadida.
 
 **Dos cosas se resuelven aparte del incidente**, y esto importa:
 
@@ -538,17 +616,73 @@ dos vías por las que la mezcla real de un punto tiene consecuencia.**
 turnos** y aun así solo se dispara con `p = 0,20` por turno. Si fuera barato y
 rápido dominaría a las otras dos y la sala descubriría que basta con esperar.
 
+### Una mesa local hay que instalarla CADA JORNADA
+
+La concertación tarda **dos sesiones, no dos días**. `turnos_en_negociacion` sube
+una vez por sesión y solo por sesión, de modo que:
+
+> **No instalar una mesa un día equivale a congelar las negociaciones.** No se
+> pierde lo andado, pero tampoco se avanza — y el reloj del ejercicio corre
+> igual. Abrir una mesa en la jornada 4 y no volver a ella es no haberla abierto.
+
+Eso ya era cierto y no lo sabía nadie: vivía dentro de `avanzar_concertacion()` y
+no salía a ninguna pantalla. Ahora hay tres sitios donde se ve, y ninguno cambia
+la aritmética:
+
+| Dónde | Qué se ve |
+|---|---|
+| **El mapa** | un anillo verde en los puntos con mesa que ha sesionado hoy; ámbar a trazos en la instalada que hoy nadie ha convocado |
+| **Las consecuencias de la noche** | el hecho `mesa_congelada`, con cuántas jornadas lleva parada |
+| **La vista privada** | una **pregunta al abrir el día** para los dos que pueden convocarla |
+
+La pregunta le llega al **Ministro del Interior** (todo el país) y al **Alcalde**
+(su jurisdicción), y a nadie más: una notificación que le llega a quien no puede
+hacer nada con ella es ruido en una pantalla que tiene que caber sin
+desplazamiento. Y es una pregunta, no una instrucción — dice qué hay instalado y
+qué lleva parado; qué hacer con eso es de la sala.
+
+```
+Estado.jornada_visible ← el reloj de la lectura, no el del motor
+```
+
+`sesionada_hoy` se compara contra la jornada **que la sala está viviendo** y no
+contra la última resuelta. Mientras se delibera la jornada 2 el motor todavía va
+por la 1, y con `turno_decision` la mesa de ayer seguía diciendo «instalada hoy»
+durante toda la deliberación de hoy: la pregunta no aparecía nunca.
+
+### Y el mapa dice qué se está haciendo en cada punto
+
+`modo_apertura` responde **cómo se abrió**, así que de los puntos cerrados —la
+mayoría durante casi todo el ejercicio— no dice nada. Un punto operado con ESMAD
+que no cedió y un punto que nadie ha tocado salían con la misma forma y el mismo
+color, y son dos conversaciones distintas. `territory.intervencion_nodo()` añade
+la lectura que faltaba:
+
+| | Estado | Cuándo |
+|---|---|---|
+| ◆ | **fuerza** | se empleó fuerza aquí, cediera o no cediera |
+| ■ | **negociación** | hay mesa instalada, o está abierto porque se pactó |
+| ● | **ninguna** | no se está haciendo nada en absoluto |
+
+La precedencia: la fuerza empleada **hoy** manda sobre todo; una mesa viva manda
+sobre una fuerza de hace tres jornadas; y una fuerza empleada alguna vez, aunque
+no cediera, sigue siendo una intervención a la fuerza — es un hecho sobre el
+punto, no un estado que caduque.
+
 **Los acuerdos de la mesa nacional** valen mientras se cumplan, y cumplirlos
 significa **no operar sobre lo pactado**. Si alguien opera, el acuerdo se marca
 roto, los puntos vuelven a cerrarse, cae la credibilidad y sube la movilización.
 
 ### En el código
 
-[`aperture.py:38`](../src/engine/aperture.py) · `abrir_por_fuerza()`
-[`aperture.py:50`](../src/engine/aperture.py) · `avanzar_concertacion()` — con la trampa
-[`aperture.py:91`](../src/engine/aperture.py) · `revisar_desgaste()`
-[`aperture.py:124`](../src/engine/aperture.py) · `step()` — reaperturas nocturnas
-[`aperture.py:174`](../src/engine/aperture.py) · `revisar_acuerdos()`
+[`aperture.py`](../src/engine/aperture.py) · `abrir_por_fuerza()`
+[`aperture.py`](../src/engine/aperture.py) · `avanzar_concertacion()` — con la trampa
+[`aperture.py`](../src/engine/aperture.py) · `instalar_mesa()` · `cerrar_mesa()` · `revisar_mesas()`
+[`aperture.py`](../src/engine/aperture.py) · `revisar_desgaste()`
+[`aperture.py`](../src/engine/aperture.py) · `step()` — reaperturas nocturnas
+[`aperture.py`](../src/engine/aperture.py) · `revisar_acuerdos()`
+[`territory.py`](../src/engine/territory.py) · `intervencion_nodo()` · `mesa_nodo()` · `mesas_instaladas()`
+[`views.py`](../src/engine/views.py) · `_notificacion_mesas()`
 
 ---
 
@@ -633,6 +767,65 @@ que haga la sala — y eso no es un dilema, **es un guion que castiga**.
 
 ---
 
+## 7 bis. La infraestructura relevante
+
+### En la sala
+
+El escenario trae **una base de doce instalaciones con nombre, sitio y región**:
+la refinería, dos hospitales, dos plantas de agua, el terminal marítimo, el
+acopio de combustible, el aeropuerto, una subestación, una estación de bombeo, un
+terminal de transporte y un centro de acopio. Cada una dice **de qué depende** en
+una frase, y lleva su criticidad **en palabra y no en índice** — vital, alta,
+media.
+
+> **No hay ninguna acción en contra de esta infraestructura, y es deliberado.**
+> El ejercicio no simula un ataque a la refinería. Simula la decisión de
+> **inmovilizar fuerza para custodiarla**, que es la que enfrenta a Minas con
+> Defensa: lo que se protege sale exactamente de lo que desbloquea.
+
+Antes existía la acción y no existía el objeto: `DeclararInfraestructuraCritica`
+recibía una cadena de texto libre que nadie comprobaba contra nada. Se podía
+declarar crítica una instalación inventada, la orden salía ejecutada con éxito, e
+inmovilizaba fuerza igual. Y el Ministro de Minas no tenía en ninguna pantalla la
+lista de lo que le toca proteger, así que declaraba a ciegas.
+
+### En el motor
+
+La acción **resuelve contra el registro** —por identificador, por nombre exacto o
+por nombre contenido, sin coincidencia difusa— y rechaza lo que no está,
+enumerando lo que sí. Al proteger, marca la instalación, consume custodia y
+levanta `proximidad_infra_critica` en los puntos contiguos, que es exactamente lo
+que se está comprando.
+
+**El riesgo se acumula callado y se cobra al final:**
+
+```
+exposicion = Σ  peso(criticidad) × jornadas_sin_custodia
+             peso: vital 3,0 · alta 2,0 · media 1,0
+```
+
+No produce **ningún** evento durante la corrida y no toca ninguna reserva. Si lo
+hiciera, la sala vería moverse el número y jugaría contra él — y lo que este
+contador mide no es un daño que ocurrió, sino un riesgo que se asumió.
+
+> Un riesgo que se materializa es un guion. Un riesgo que se nombra al final es
+> una conversación sobre lo que se decidió no hacer.
+
+Sale entero en `MotorCrisis.metricas()['infraestructura']`, con el detalle por
+instalación: cuántas jornadas pasó sin custodia, de qué depende, y cuáles de
+criticidad **vital** se quedaron solas. El número solo no abre ninguna
+conversación; lo que la abre es la lista de nombres.
+
+### En el código
+
+[`state.py`](../src/engine/state.py) · `Infraestructura`
+[`loader.py`](../src/engine/loader.py) · carga y exige que cada una caiga dentro de su región
+[`actions.py`](../src/engine/actions.py) · `DeclararInfraestructuraCritica.resolver()`
+[`simulation.py`](../src/engine/simulation.py) · `_acumular_riesgo_infraestructura()` · `riesgo_infraestructura()`
+[`views.py`](../src/engine/views.py) · la cartera de Minas, con nombre y estado de custodia
+
+---
+
 ## 8. La información: verdad, vistas y denuncias
 
 ### En la sala
@@ -697,11 +890,10 @@ D-001  «Reportan personas trasladadas sin registro...»     nodo N003   veraz =
 D-002  «Circula que hubo una desaparición durante el...»   nodo N022   veraz = False
 ```
 
-**Desde fuera son idénticas.** El campo `veraz` nunca sale del motor, y hay una
-prueba que lo verifica.
+**Desde fuera son idénticas.** El campo `veraz` nunca sale del motor.
 
 Un ejercicio sobre el paro de 2021 en el que la única denuncia grave resulta
-inventada le enseña a ocho futuros funcionarios que las denuncias graves suelen
+inventada le enseña a nueve futuros funcionarios que las denuncias graves suelen
 serlo — y eso, sobre hechos con responsabilidad judicial viva, **es tomar
 partido**. Por eso [`loader.py`](../src/engine/loader.py) exige al menos dos, con
 veracidad distinta, y falla ruidosamente si no.
@@ -742,7 +934,7 @@ Cuatro reservas, **y las cuatro se leen igual: arriba es mejor**.
 | Legitimidad | 52 | el respaldo ciudadano a la respuesta |
 | Credibilidad de la mesa | 45 | si el canal de diálogo sirve para algo |
 | Respaldo internacional | 55 | cuánto margen queda antes de que el mundo se pronuncie |
-| **Cohesión del PMU** | 68 | si estos ocho actúan como uno o como ocho |
+| **Cohesión del PMU** | 68 | si estos nueve actúan como uno o como nueve |
 
 > **Cambio de v2:** la «exposición internacional» iba invertida —arriba era peor—
 > y obligaba a explicar el tablero. Ahora es **respaldo**, y solo la presión en la
@@ -750,7 +942,7 @@ Cuatro reservas, **y las cuatro se leen igual: arriba es mejor**.
 
 **Tres se heredan dañadas y una no.** La sala no rompió las tres primeras. **La
 cohesión empieza alta y es enteramente suya**: en el debriefing es la única serie
-de la que los ocho no pueden desentenderse.
+de la que los nueve no pueden desentenderse.
 
 ### En el motor
 
@@ -771,7 +963,7 @@ produce decisiones; un umbral sí.
 | Se opera sin… | Precio |
 |---|---|
 | reglas escritas | riesgo sin descuento |
-| registro escrito | el costo se reparte sobre los ocho · cohesión −8 |
+| registro escrito | el costo se reparte sobre los nueve · cohesión −8 |
 | protocolo de vocería | cohesión −5 **por turno de decisión** |
 | criterio de priorización | cohesión −3 **por turno de decisión** |
 | protocolo de verificación | cada desmentido cuesta 4 de legitimidad |
@@ -811,25 +1003,17 @@ del paquete detonante**, que es un disparador independiente.
 
 # C · Lo que la sala puede hacer
 
-## 10. Las treinta y cuatro acciones
+## 10. Las treinta y nueve acciones
 
 ### En la sala
 
-> **Cada rol tiene al menos una acción de cada clase**, y eso es lo que garantiza
-> que ningún participante pase el ejercicio sin nada que hacer.
+Treinta y nueve acciones repartidas en tres tipos —**protocolo**, **operación**,
+**información**— entre cuatro y cinco por rol. **El reparto exacto, con la
+razón de por qué unos tienen cinco y otros cuatro, está en
+[`propuesta.md` §5.1](propuesta.md#51-cuántas-y-por-qué-no-son-iguales);** cada
+acción por separado, con sus números, en [`LAS_ACCIONES.md`](LAS_ACCIONES.md).
 
-| Clase | Qué cambia | Se ve en el tablero |
-|---|---|---|
-| **Constituye** | cómo funciona la mesa · rinde en todo lo que venga después | no |
-| **Toca el mundo** | el territorio, la fuerza, el abastecimiento | de inmediato |
-| **Informa** | lo que el país tiene por cierto | en la esfera pública |
-
-| Rol | Acciones | | Rol | Acciones |
-|---|---:|---|---|---:|
-| Presidente | 5 | | Policía | 4 |
-| Defensoría | 5 | | Transporte | 4 |
-| Interior | 4 | | Minas | 4 |
-| Alcalde | 4 | | Defensa | 4 |
+Lo que importa aquí es cómo las ejecuta el motor.
 
 ### En el motor
 
@@ -852,15 +1036,10 @@ Validacion(
 )
 ```
 
-**Las cinco dependencias duras:**
-
-```
-Transporte quiere mover carga        → necesita ESCOLTA de la Policía
-Interior quiere pactar en el epicentro → necesita al ALCALDE
-Defensa quiere usar militares        → necesita la FIRMA del Presidente
-Minas quiere proteger instalaciones  → CONSUME los escuadrones del desbloqueo
-La Defensoría acompaña una operación → esa dupla NO verifica nada más
-```
+**Las cinco dependencias duras** —quién necesita a quién, y las cuatro sumas
+cero que las acompañan— están en
+[`propuesta.md` §5.3](propuesta.md#53-quién-habilita-a-quién). El motor las
+comprueba en `validar()`, y por eso el rechazo puede nombrar al habilitante.
 
 ### Tres correcciones que reequilibran el ejercicio
 
@@ -868,7 +1047,7 @@ La Defensoría acompaña una operación → esa dupla NO verifica nada más
 comprobaba jurisdicción: un alcalde municipal acababa pactando cierres en dos
 regiones ajenas. Ahora `AbrirMesaLocal` es de Interior y **exige al Alcalde en el
 epicentro**; `InstalarMesaConVoceros` es del Alcalde y **solo funciona en su
-jurisdicción**. Dos pruebas lo custodian.
+jurisdicción**.
 
 **La Policía recupera el ESMAD y la escolta.** El dueño del activo más escaso no
 podía asignarlo: los escuadrones se movían solos cuando alguien ordenaba una
@@ -879,37 +1058,90 @@ ningún rol podía invocarla, y por eso el reloj tenía una sola entrada.
 
 ### En el código
 
-[`actions.py`](../src/engine/actions.py) · las 34, agrupadas por rol
+[`actions.py`](../src/engine/actions.py) · las 39, agrupadas por rol
 [`actions.py:1497`](../src/engine/actions.py) · `catalogo_por_rol()` — se genera
 desde el código, no se escribe a mano en ningún prompt
 
 ---
 
-## 11. Las ocho vistas privadas, por dentro
+## 11. Las nueve vistas privadas, por dentro
 
 ### En la sala
 
-Cada vista tiene **dos bloques y nada más**: *su detalle* (3–4 datos de su
-cartera) y *su alerta* (una línea). Cabe en una pantalla sin desplazamiento.
+Cada vista tiene **tres bloques y nada más**: *su alerta* (una línea), *su
+detalle* (3–4 datos de su cartera) y *su repertorio* (qué puede pedir). Cabe en
+una pantalla sin desplazamiento.
 
-**Las ocho alertas de un turno real, medidas:**
+**Las nueve alertas de un turno real, medidas:**
 
 ```
-PRESIDENTE   8 de las últimas 8 decisiones salieron sin responsable nominado.
+PRESIDENTE   La mesa no ha constituido nada: 11 decisiones que rigen todo lo
+             demás siguen sin adoptarse, y ninguna cuesta un escuadrón.
 INTERIOR     Hay ventana para una sesión de mesa. Una operación hoy la cierra.
-ALCALDE      Bellaflor: menos de 1,3 días de oxígeno y la red hospitalaria al 92 %.
-DEFENSA      3 de 5 casos de financiación no aguantarían ante un juez.
-POLICÍA      6 denuncias sin verificar contra unidades. Si estallan afuera
+ALCALDE      1 punto con el apoyo del barrio ya cayendo: el esquema humanitario
+             los deshace sin fuerza.
+DEFENSA      4 de 5 casos de financiación no aguantarían ante un juez. Si uno se
+             cae, arrastra al resto.
+POLICÍA      2 denuncias sin verificar contra unidades. Si estallan afuera
              primero, la corrección se leerá como encubrimiento.
-DEFENSORÍA   6 denuncias graves sin verificar y 3 duplas. No alcanzan: hay que
-             elegir, y declarar públicamente que la otra está en verificación.
-TRANSPORTE   Los gremios están evaluando sumarse. Si lo hacen, esto deja de ser
-             orden público y pasa a ser cierre logístico nacional.
-MINAS        Las Cumbres: 0,5 días de oxígeno. Si mañana no entra nada, −0,5.
+DEFENSORÍA   Ningún mitigador está activo. El estándar completo divide la
+             probabilidad de incidente por casi cinco y no cuesta un escuadrón.
+TRANSPORTE   Los gremios camioneros están evaluando sumarse. Si lo hacen, esto
+             deja de ser orden público y pasa a ser cierre logístico nacional.
+MINAS        Las Cumbres: 0,8 días de oxígeno. Si mañana no entra nada, 0,0.
+AGRICULTURA  Puerto Espejo: 1,2 días de comida. Hoy no entra nada. La ventana de
+             los perecederos se mide en horas.
 ```
 
-> **Ocho urgencias legítimas y una escolta.** Ninguna es falsa, ninguna es
+> **Nueve urgencias legítimas y una escolta.** Ninguna es falsa, ninguna es
 > caprichosa, y no caben todas. Eso es el diseño.
+>
+> Y la última cambia la conversación: **la de Agricultura no es un pronóstico.**
+> Las otras dicen lo que va a pasar si no se decide; la suya dice lo que ya
+> pasó mientras se decidía.
+
+### El repertorio lleva semáforo
+
+Cada acción dice si se puede pedir **hoy** y, si no, qué falta:
+
+```
+Se puede pedir · Operación
+   Desbloquear un punto por la fuerza
+   Manda a la fuerza pública a abrir un punto.
+
+Aún no · Operación
+   Organizar una caravana
+   Junta la carga en una caravana por un corredor prioritario.
+   Falta escolta policial.
+   Lo habilita: Director General de la Policía Nacional (escoltar)
+
+Ya vigente · Protocolo
+   Exigir reglas, identificación y cámaras
+   Exige que la fuerza actúe con reglas escritas, identificada y grabando.
+```
+
+**El problema que resuelve.** El repertorio era una lista plana, y de sus cuatro
+o cinco líneas dos podían llevar tres jornadas bloqueadas sin que su titular
+tuviera forma de saberlo: lo descubría dictándolas en voz alta y recibiendo el
+rechazo delante de la mesa. Eso no es información incompleta —que es el objeto
+del ejercicio—, es una interfaz escondiendo una regla que ya conoce.
+
+**Y el requisito se enuncia en general.** «Requiere que el Presidente firme la
+asistencia militar» es un hecho sobre el mundo; «pida al Presidente que firme y
+opere el Puente Amarillo» sería la pantalla decidiendo por la sala. Es la misma
+línea que el tablero no cruza, aplicada aquí.
+
+**Lo que hace es empujar la conversación a la mesa**, no ahorrarla: quien lee
+«falta escolta · Director General de la Policía» sabe a quién tiene que
+pedírselo, y eso pasa en voz alta.
+
+**No es una segunda copia de las reglas.** `disponibilidad()` LLAMA a
+`validar()`, que es la misma función que decide si una orden entra. Lo único que
+cada acción aporta es una **sonda** —un ejemplar con el objetivo más favorable
+que hoy exista— para poder preguntar sin haber elegido todavía sobre qué punto.
+Que la sonda busque el objetivo más favorable es deliberado: la pregunta que
+contesta el semáforo es «¿esto se puede pedir hoy?», y «Aún no» significa
+entonces que **no hay ningún objetivo para el que salga.**
 
 ### En el motor
 
@@ -917,10 +1149,11 @@ Cada vista es una **proyección determinista del estado** — no texto generado.
 construye leyendo el estado y aplicando el sesgo de la fuente de ese rol.
 
 ```python
-def vista(estado, rol) -> {"rol", "turno", "detalle", "alerta"}
+def vista(estado, rol)        -> {"rol", "turno", "detalle", "alerta"}
+def catalogo_por_rol(estado)  -> cada acción, con su `disponibilidad`
 ```
 
-**Tres invariantes que las custodian**, con prueba cada una:
+**Tres invariantes, garantizadas por construcción:**
 
 - ninguna vista revela la mezcla real de un punto
 - ninguna vista revela si una denuncia es cierta
@@ -941,17 +1174,15 @@ uv run python scripts/correr_ejercicio.py --vistas
 ## 12. Los siete arreglos, medidos
 
 El [diagnóstico del motor anterior](historial/mapa_de_palancas.md) encontró siete
-problemas. Esto es lo que pasó con cada uno.
+problemas (D1–D7). **Qué era cada uno y cómo se cerró está en
+[`historial/resueltos.md` §2](historial/resueltos.md#2--del-diagnóstico-del-motor-anterior).**
+Aquí está lo otro, que es lo que no se puede afirmar sin medirlo: **cuánto
+cambiaron las corridas.**
 
-| # | El problema | Cómo quedó |
-|---|---|---|
-| **D1** | La mezcla real de los puntos no cambiaba **nada** | Conectada por dos vías. `test_la_mezcla_real_cambia_el_resultado_de_la_corrida` falla si se desconecta |
-| **D2** | El polo de negociación no podía negociar | Interior tiene 4 acciones, incluida la mesa nacional. `acuerdo_verificable` (−8) y `contraprestacion_tramitada` (−6) ya se disparan |
-| **D3** | El dueño del ESMAD no podía asignarlo | `DisponerESMAD` y `Escoltar` |
-| **D4** | El frente logístico no podía mover carga | Escolta, caravana, gremios, y la prioridad de combustible como criterio permanente |
-| **D5** | La cohesión era una rampa determinista | Solo se cobra de día, y ahora se puede reponer |
-| **D6** | El paquete detonante no existía | H2 y H3 en el motor; la jornada nacional en el calendario |
-| **D7** | El eje de Vocería no tenía mecánica | Parcial: el anuncio verificado y el parte clasificado sí; el encuadre sigue pendiente de la capa 3 |
+Dos de los siete eran los graves, porque no eran de coeficientes sino piezas que
+faltaban: **la cohesión era una rampa que no respondía a nada** (D5) y **el reloj
+tenía una sola entrada, así que las muertes salían idénticas** (el conjunto de
+D3, D4 y la prioridad de combustible).
 
 ### La cohesión, antes y después
 
@@ -983,35 +1214,47 @@ reloj tenía **una sola entrada**. **Ahora** tiene tres:
 ```
                         antes    ahora
   solo_fuerza             147       64
-  solo_mesa               147       64
   pasiva                  147       64
   constituida             147       48
-  logistica                 —       24
-  humanitaria              70       14
+  solo_mesa               147       31
+  logistica                 —       28
+  humanitaria              70       13
 ```
 
+**Y la tercera entrada es la que separó a `solo_mesa` de `pasiva`.** Antes las
+dos dejaban morir a los mismos: el reloj no distinguía entre una sala que
+negociaba y una que no hacía nada, porque ninguna de las dos abría un corredor
+por la fuerza y esa era la única entrada que existía.
+
 ### La medición completa
+
+**Esta tabla es el criterio de aceptación del proyecto**, y se reproduce con
+`uv run python scripts/correr_ejercicio.py --comparar`:
 
 ```
   estrategia      netas  reap  muert  legit  cohes  credib   resp
   ---------------------------------------------------------------------
-  solo_fuerza         1     2     64     11      0      21     20
-  solo_mesa           9     0     64     65     56      49     49
-  constituida         1     4     48     42     74      21     53
-  humanitaria         3     0     14     41     28      35     54
-  logistica           3     1     24     41     40      26     39
-  pasiva              1     0     64     23     28      45     43
+  solo_fuerza         0     3     64     16      0      21     26
+  solo_mesa           9     0     31     62     56      39     49
+  constituida         3     1     48     47     74      21     59
+  humanitaria         2     0     13     51     28      45     58
+  logistica           0     2     28     48     40      26     43
+  pasiva              0     0     64     30     28      45     49
 ```
 
-**Ninguna domina, y el reparto es el que debe ser.** `solo_mesa` abre nueve
-caminos y conserva las reservas — **y deja morir exactamente a la misma gente que
-`pasiva`**. `humanitaria` salva 50 de las 64 muertes y abre un tercio de los
-caminos. `constituida` tiene la mejor mesa y salva 16 muertes sin dejar de operar —
-y lo paga en credibilidad, que es lo que cuesta operar con la mesa puesta.
-`solo_fuerza` se queda sin nada.
+**Ninguna domina, y el reparto es el que debe ser.**
 
-El dilema central del caso está en esa primera línea: **abrir el país y dejar
-morir a la gente, o salvarla y entregar el país cerrado.**
+| Estrategia | Lo que consigue | Lo que paga |
+|---|---|---|
+| `solo_mesa` | **abre nueve caminos** —más que ninguna— y conserva las cuatro reservas | deja morir a **31**: más del doble que las dos logísticas |
+| `humanitaria` | **salva 51 de las 64 muertes**, el mejor resultado del cuadro | abre dos caminos. El país queda cerrado |
+| `logistica` | salva 36 muertes por la vía del abastecimiento | no abre ninguno neto |
+| `constituida` | la **mejor mesa** (cohesión 74) y salva 16 muertes sin dejar de operar | lo paga en credibilidad — es lo que cuesta operar con la mesa puesta |
+| `solo_fuerza` | — | se queda sin nada: cero caminos netos, las 64 muertes, y la cohesión en 0 |
+| `pasiva` | — | las 64 muertes, sin haber gastado nada |
+
+El dilema central del caso está en el contraste entre las dos primeras líneas:
+**abrir el país y dejar morir a la gente, o salvarla y entregar el país cerrado.**
 
 > **Se lee por las columnas que no bailan.** `netas` y `reap` son tiradas y
 > cambian con la semilla; `cohes` y `muert` no, porque dependen de qué banderas
@@ -1036,7 +1279,7 @@ Todo lo de este documento se puede verificar en un rato, sin montar la sala y
 # Un ejercicio completo, turno a turno, con la cadena causal
 uv run python scripts/correr_ejercicio.py --detalle
 
-# Las ocho vistas privadas de un turno real — el diseño en una pantalla
+# Las nueve vistas privadas de un turno real — el diseño en una pantalla
 uv run python scripts/correr_ejercicio.py --vistas
 
 # Las seis estrategias: el criterio es que NINGUNA domine
@@ -1046,39 +1289,33 @@ uv run python scripts/correr_ejercicio.py --comparar
 uv run python scripts/correr_ejercicio.py --comparar --semilla 99
 ```
 
-**La más reveladora es `--vistas`.** Las ocho alertas de un mismo turno, una
-debajo de otra: se ve de golpe que los ocho están mirando la misma crisis y
+**La más reveladora es `--vistas`.** Las nueve alertas de un mismo turno, una
+debajo de otra: se ve de golpe que los nueve están mirando la misma crisis y
 ninguno la misma parte.
 
-> Puesta en marcha completa, pruebas y el resto de comandos, en
+> Puesta en marcha completa y el resto de comandos, en
 > [`EL_CODIGO.md`](EL_CODIGO.md#12-puesta-en-marcha).
 
 ### Qué falta todavía
 
-**Sin convocar a nadie** — se puede hacer hoy:
+**La cuenta se lleva en un solo sitio: [`PENDIENTES.md`](../PENDIENTES.md).** Lo
+que conviene saber al terminar de leer este documento es que lo que falta se
+parte en dos, y que la segunda mitad no la puede cerrar ninguna línea de código:
 
-| | Qué | Dónde |
-|---|---|---|
-| **B1** | El archivo de la corrida · persistencia y telemetría en uno | el historial vive en memoria; reiniciar el servidor lo borra |
-| **B7** | El debriefing | veinte minutos de sesión sin nada que proyectar. Depende de **B1** |
-| **B2** | La identidad de los ocho roles, en datos | hoy duplicada en `comun.jsx`. Las **fichas y sus agendas** siguen en papel: son contexto del rol, no una pieza del motor |
-| **B3** | Decisiones alineadas con información privada | la medida de si la asimetría produjo conversación — derivada del motor, no de un observador |
+- **Sin convocar a nadie** — el archivo de la corrida (**B1**), el debriefing que
+  depende de él (**B7**), la identidad de los nueve roles en datos (**B2**) y la
+  medida de si la asimetría produjo conversación (**B3**).
+- **Con personas en una sala** — las tres corridas (**P2–P4**) y las cuatro
+  calibraciones (**C1–C4**). *El motor puede estar perfecto y el ejercicio no
+  funcionar.*
 
-**Con personas en una sala** — lo que ninguna prueba de código sustituye:
-
-| | Qué | Por qué no lo ve el motor |
-|---|---|---|
-| **P2–P4** | Las tres corridas con gente | el motor puede estar perfecto y el ejercicio no funcionar |
-| **C1–C4** | Cuatro calibraciones | solo se ven con ocho personas dentro |
-
-La lista completa, con sus propuestas de diseño, en
-[`PENDIENTES.md`](../PENDIENTES.md). Los stubs están marcados donde viven:
-`grep -rn "PENDIENTE" src/`
+Los stubs están marcados donde viven: `grep -rn "PENDIENTE" src/`
 
 ---
 
-*Motor v2 · 150 pruebas en verde · semilla `20210511`. Diseño en
-[`propuesta.md`](propuesta.md); diagnóstico del motor anterior en
+*Motor v2 · semilla `20210511`. Diseño del juego en
+[`propuesta.md`](propuesta.md); cada acción por separado en
+[`LAS_ACCIONES.md`](LAS_ACCIONES.md); diagnóstico del motor anterior en
 [`historial/mapa_de_palancas.md`](historial/mapa_de_palancas.md).*
 
 *Escuela de Gobierno · Universidad de La Sabana.*

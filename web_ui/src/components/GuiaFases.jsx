@@ -1,19 +1,17 @@
 // ---------------------------------------------------------------------------
-// LA GUÍA DEL TURNO — en qué paso va la sala y qué debería estar pasando ahí.
+// LA GUÍA DE LA JORNADA — en qué mitad va la sala y qué debería estar pasando.
 //
 // Va SOLO en la consola. El tablero enuncia hechos y no da instrucciones —esa es
 // la regla de la que cuelga todo el diseño de esa pantalla—, pero la consola es
 // otra cosa: la opera una persona que no montó el sistema, y que necesita saber
-// si el minuto que corre es para leer en silencio o para transcribir.
+// si el minuto que corre es para transcribir o para callarse.
 //
-// El texto de cada paso es la coreografía de §6.2 de `docs/propuesta.md`, y
-// llega del motor dentro de la tabla de fases. No está escrito aquí: si mañana
-// una fase cambia de duración o de sentido, hay un solo sitio que corregir.
+// Dos tramos, no siete. El texto de cada uno llega del motor dentro de la tabla
+// de fases: si mañana el día pasa de trece a diez minutos, hay un solo sitio que
+// corregir.
 //
-// SOLO SE DESPLIEGA LA GUÍA DE LA FASE EN CURSO. Los siete textos a la vez son
-// un documento, y un documento en pantalla durante un ejercicio de dos horas no
-// lo lee nadie. Los demás pasos quedan como recorrido: de dónde viene la sala y
-// cuánto le falta.
+// SOLO SE DESPLIEGA LA GUÍA DEL TRAMO EN CURSO. El otro queda como recorrido: de
+// dónde viene la sala y cuánto le falta.
 // ---------------------------------------------------------------------------
 
 /** Coma decimal, como en el resto de la aplicación: «2,5 min» y no «2.5 min». */
@@ -23,7 +21,7 @@ export default function GuiaFases({ cronometro }) {
   const fases = cronometro?.fases || []
   if (!fases.length) return null
 
-  // Sin reloj no hay fase en curso: la lista entera queda por delante.
+  // Sin reloj no hay tramo en curso: la jornada entera queda por delante.
   const actual = cronometro?.corriendo
     ? fases.findIndex(f => f.id === cronometro.fase)
     : -1

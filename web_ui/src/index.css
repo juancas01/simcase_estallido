@@ -513,30 +513,27 @@ a { color: var(--acento); }
 }
 .reloj-franja { font-size: 0.6rem; }
 
-.reloj-horas {
-  margin-top: 0.15rem;
-  font-family: var(--mono);
+/* Cuántas jornadas quedan: lo único del reloj que cambia lo que se decide. */
+.reloj-restantes {
+  margin-top: 0.2rem;
   font-size: 0.78rem;
   color: var(--texto-2);
 }
-.reloj-transcurrido {
-  margin-left: 0.6rem;
-  padding-left: 0.6rem;
-  border-left: 1px solid var(--borde);
-  color: var(--texto-3);
-}
 
-/* --- las nueve ventanas ---------------------------------------------------- */
+/* --- las cinco jornadas ----------------------------------------------------
+   UNA MARCA POR JORNADA, no dos. Había una de día y otra de noche —diez marcas
+   apiladas de dos en dos— para decir algo que se dice con cinco: en qué día va
+   la sala y cuántos le quedan. La franja en curso ya la dice la propia caja del
+   reloj, que además cambia de color.
+   --------------------------------------------------------------------------- */
 
-.jornadas { display: flex; gap: 0.4rem; }
+.jornadas { display: flex; gap: 0.45rem; }
 
 .jornada { flex: 1 1 0; min-width: 26px; max-width: 78px; }
 
-.jornada-barras { display: flex; flex-direction: column; gap: 3px; }
-
 .ventana {
   display: block;
-  height: 7px;
+  height: 9px;
   border-radius: 2px;
   background: var(--superficie-2);
   border: 1px solid var(--borde-suave);
@@ -547,8 +544,6 @@ a { color: var(--acento); }
   border-color: var(--acento);
   box-shadow: 0 0 0 2px var(--acento-suave);
 }
-/* La jornada 5 no tiene noche: el ejercicio termina con ella. */
-.ventana.vacia { visibility: hidden; }
 
 .jornada-fecha {
   margin-top: 0.3rem;
@@ -639,7 +634,7 @@ a { color: var(--acento); }
 
 .territorio {
   display: grid;
-  grid-template-columns: minmax(0, 520px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 700px) minmax(0, 1fr);
   gap: 1.5rem;
   align-items: start;
 }
@@ -664,8 +659,20 @@ a { color: var(--acento); }
   display: block;
   width: 100%;
   height: auto;
-  max-height: min(560px, 60vh);
+  max-height: min(640px, 66vh);
+  /* El lienzo es una lámina, no un recorte pegado sobre la tarjeta. El borde
+     casi invisible y la sombra hacia dentro son lo que separa el mar del fondo
+     de la pantalla sin trazar una línea que compita con el litoral. */
+  border-radius: 10px;
+  border: 1px solid rgba(120, 150, 180, 0.10);
+  box-shadow: inset 0 1px 24px rgba(0, 0, 0, 0.45);
 }
+
+/* Las regiones van DEBAJO de todo: son el fondo sobre el que se leen las líneas
+   y los puntos, no una capa que compita con ellos. */
+.mapa-svg path,
+.mapa-svg circle,
+.mapa-svg rect { transition: fill-opacity 0.25s ease, opacity 0.25s ease; }
 
 .mapa-formas {
   display: flex;
@@ -689,15 +696,110 @@ a { color: var(--acento); }
   vertical-align: 0.18em;
 }
 
-.punto-detalle {
+/* ---------------------------------------------------------------------------
+   LA FICHA DEL MAPA — las seis lecturas, en palabras
+
+   Un punto y una región dicen exactamente las mismas seis cosas, con el mismo
+   formato y en el mismo sitio: la sala aprende a leer UNA ficha, no dos. Y la
+   ficha ocupa un hueco fijo, aunque esté vacía, para que el mapa no dé un salto
+   cada vez que el ratón entra y sale de una región.
+   --------------------------------------------------------------------------- */
+
+.ficha,
+.ficha-vacia {
   margin-top: 0.75rem;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid var(--acento);
-  border-radius: 6px;
-  background: var(--acento-suave);
+  min-height: 9.2rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--borde-suave);
+  border-radius: 9px;
+  background: var(--superficie-2);
+  transition: border-color 0.25s ease, background 0.25s ease;
 }
-.punto-nombre { font-size: 0.88rem; font-weight: 650; }
-.punto-sub { margin-top: 0.2rem; font-size: 0.82rem; color: var(--texto-2); }
+.ficha-vacia {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0;
+  font-size: 0.82rem;
+  color: var(--texto-3);
+}
+/* Fijada con un clic: en una pantalla proyectada, quien mueve el ratón no es
+   quien habla, y lo que la mesa está discutiendo tiene que quedarse quieto. */
+.ficha.fijada { border-color: var(--acento); background: var(--acento-suave); }
+
+.ficha-cabeza { display: flex; align-items: baseline; gap: 0.55rem; }
+.ficha-nombre {
+  font-size: 0.96rem;
+  font-weight: 620;
+  color: var(--texto);
+  letter-spacing: -0.005em;
+}
+.ficha-sub {
+  margin-top: 0.22rem;
+  font-size: 0.775rem;
+  line-height: 1.45;
+  color: var(--texto-3);
+}
+.ficha-soltar { margin-left: auto; padding: 0.1rem 0.45rem; font-size: 0.7rem; }
+
+/* Qué se está haciendo en la región, contado. Va entre el subtítulo y las seis
+   lecturas: es la respuesta a «¿y aquí quién está haciendo algo?», que el
+   promedio de caudal no contesta. */
+.ficha-intervencion {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0.5rem 0 0.1rem;
+}
+
+/* El aro punteado de la leyenda: una mesa instalada que hoy no ha sesionado. */
+.mapa-formas .aro.punteado { border-style: dashed; }
+
+.ficha-lecturas {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 68px;
+  align-items: center;
+  gap: 0.28rem 0.8rem;
+  margin: 0.7rem 0 0;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--borde-suave);
+}
+.ficha-fila { display: contents; }
+.ficha-fila dt {
+  font-size: 0.735rem;
+  color: var(--texto-3);
+  white-space: nowrap;
+  letter-spacing: 0.005em;
+}
+.ficha-fila dd {
+  margin: 0;
+  font-size: 0.815rem;
+  font-weight: 560;
+  letter-spacing: -0.004em;
+}
+.ficha-nota { font-weight: 400; color: var(--texto-3); }
+/* Los peldaños, finos y redondeados: son una referencia de dónde cae el nivel,
+   no una barra de progreso que haya que leer. */
+.ficha-escala { display: flex; gap: 2.5px; }
+.ficha-escala .peldano {
+  height: 4px;
+  border-radius: 3px;
+  border-color: transparent;
+  background: rgba(140, 160, 190, 0.13);
+}
+
+@media (max-width: 520px) {
+  .ficha-lecturas { grid-template-columns: auto minmax(0, 1fr); }
+  .ficha-escala { display: none; }
+}
+
+/* El mando del nivel de país: volver, y la pista de que se puede entrar. */
+.mapa-volver {
+  padding: 0.12rem 0.5rem;
+  font-size: 0.7rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.mapa-pista { color: var(--texto-3); text-transform: none; letter-spacing: 0; }
 
 /* ---------------------------------------------------------------------------
    LA FRANJA DE SEVERIDAD DE UNA FILA
@@ -712,7 +814,13 @@ tr.aviso > td:first-child { box-shadow: inset 3px 0 0 var(--medio); }
 tr.grave > td:first-child,
 tr.aviso > td:first-child { padding-left: 0.65rem; }
 
-.mapa-titulo { display: block; margin-bottom: 0.4rem; }
+.mapa-titulo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
 
 /* ---------------------------------------------------------------------------
    LA BANDA DE MAGNITUDES
@@ -812,9 +920,14 @@ tr.aviso > td:first-child { padding-left: 0.65rem; }
   gap: 0.6rem;
 }
 
+/* TRES COLUMNAS Y NO CUATRO, y no es una cuestión de que quepan: con nueve
+   roles y el catálogo en orden de frente, cada fila de tres es exactamente un
+   frente —estrategia, seguridad, logística—. La rejilla dibuja la arquitectura
+   del ejercicio sin necesidad de rotularla. Con cuatro columnas salían 4+4+1 y
+   la última fila era un huérfano. */
 .rejilla-roles {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   grid-auto-rows: 1fr;
   gap: 0.6rem;
 }
@@ -1185,5 +1298,363 @@ tr.aviso > td:first-child { padding-left: 0.65rem; }
   margin: 0.55rem 0 0;
   font-size: 0.78rem;
   line-height: 1.45;
+  color: var(--texto-3);
+}
+
+
+/* ---------------------------------------------------------------------------
+   LA PANTALLA MIENTRAS NO HAY DATOS
+
+   No puede parecerse a una pantalla en blanco, porque es exactamente lo que ve
+   alguien cuyo dispositivo no alcanza al servidor — y en una sala con ocho
+   tabletas eso pasa. Antes era una línea gris claro sobre fondo oscuro:
+   indistinguible de una pantalla muerta a dos metros.
+   --------------------------------------------------------------------------- */
+
+.cargando { display: grid; place-items: center; }
+
+.cargando-caja {
+  max-width: 34rem;
+  padding: 1.5rem 1.75rem;
+  border: 1px solid var(--borde);
+  border-left: 3px solid var(--acento);
+  border-radius: 8px;
+  background: var(--superficie);
+  text-align: left;
+}
+.cargando-caja.con-error { border-left-color: var(--mal); }
+
+.cargando-titulo {
+  margin: 0.4rem 0 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+  color: var(--texto);
+}
+.cargando-detalle {
+  margin: 0.6rem 0 0;
+  font-size: 0.86rem;
+  color: var(--texto-2);
+}
+.cargando-ruta {
+  display: inline-block;
+  margin-top: 0.9rem;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--texto-3);
+}
+.cargando-caja button { margin-top: 1rem; }
+
+/* ---------------------------------------------------------------------------
+   EL MEDIDOR — cinco peldaños, ni un número
+
+   Un nivel se interpreta. Un número se optimiza. Con la cifra en la pared, la
+   conversación de la sala se vuelve aritmética y el ejercicio deja de ser sobre
+   conducción para ser sobre puntuación.
+   --------------------------------------------------------------------------- */
+
+.rejilla-metricas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.75rem 1.25rem;
+}
+
+.medidor { min-width: 0; }
+
+.medidor-fila {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
+}
+
+.medidor-nombre {
+  font-size: 0.82rem;
+  color: var(--texto-2);
+  min-width: 0;
+}
+
+.medidor-nivel {
+  font-size: 0.82rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.medidor-escala { display: flex; gap: 3px; }
+
+.peldano {
+  flex: 1 1 0;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--superficie-2);
+  border: 1px solid var(--borde-suave);
+  transition: background 0.4s ease;
+}
+.peldano.lleno { border-color: transparent; }
+
+/* La tendencia: la dirección, sin la cifra. `▼9` es tan numérico como `41`. */
+.tendencia {
+  margin-left: 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.tendencia-bien { color: var(--bien); }
+.tendencia-mal  { color: var(--mal); }
+
+/* ---------------------------------------------------------------------------
+   LAS CONSECUENCIAS — los dos minutos de noche
+
+   Sin esto, «mirar las consecuencias» significa recorrer cinco tarjetas
+   buscando cuál se movió, y en dos minutos no da tiempo.
+   --------------------------------------------------------------------------- */
+
+.consecuencias {
+  border-left: 3px solid var(--medio);
+  background: linear-gradient(110deg, #12141c, var(--superficie) 55%);
+}
+
+.consecuencias-lista p {
+  margin: 0.45rem 0;
+  font-size: 0.9rem;
+  color: var(--texto-2);
+}
+.consecuencias-vacio {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--texto-3);
+  font-style: italic;
+}
+.consecuencias-eventos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0.85rem 0 0;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--borde-suave);
+}
+
+/* ---------------------------------------------------------------------------
+   EL SEMÁFORO DEL REPERTORIO
+
+   Cada acción dice si se puede pedir HOY y, si no, qué falta. Antes era una
+   lista plana, y de sus cinco líneas dos podían llevar tres jornadas bloqueadas
+   sin que su titular tuviera forma de saberlo: lo descubría dictándola en voz
+   alta y recibiendo el rechazo delante de la mesa.
+   --------------------------------------------------------------------------- */
+
+.repertorio { list-style: none; margin: 0; padding: 0; }
+
+.accion {
+  display: grid;
+  grid-template-columns: minmax(150px, auto) minmax(0, 1fr);
+  gap: 0.35rem 0.9rem;
+  padding: 0.65rem 0;
+  border-top: 1px solid var(--borde-suave);
+}
+.accion:first-child { border-top: none; padding-top: 0.2rem; }
+
+.accion-cabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.3rem;
+}
+.chip-clase { opacity: 0.72; }
+
+.accion-claro { color: var(--texto); font-size: 0.92rem; }
+
+/* El nombre de la acción, en verbo y en un renglón. Es lo que el ojo recorre
+   cuando se busca una fila concreta en una tabla de cinco, así que va primero,
+   en el peso del texto y no en color: el color de esta tabla es del semáforo. */
+.accion-nombre {
+  font-weight: 620;
+  color: var(--texto);
+  line-height: 1.25;
+  margin-bottom: 0.2rem;
+}
+.guia .accion-claro { font-size: 0.84rem; color: var(--texto-2); line-height: 1.4; }
+.guia td:nth-child(3) { max-width: 21rem; }
+
+/* Lo que hoy no se puede pedir no compite por el ojo, pero tampoco desaparece. */
+.accion-bloqueada .accion-nombre,
+.accion-hecha .accion-nombre { color: var(--texto-2); }
+
+/* Lo que hoy no se puede pedir no compite por el ojo, pero tampoco desaparece:
+   saber qué está trabado es la mitad de la información. */
+.accion-bloqueada .accion-claro,
+.accion-hecha .accion-claro { color: var(--texto-2); }
+
+.accion-requisito {
+  margin-top: 0.3rem;
+  font-size: 0.82rem;
+  color: var(--medio);
+}
+.accion-bloqueada .accion-requisito { color: var(--mal); }
+.accion-hecha .accion-requisito { color: var(--texto-3); }
+
+/* Quien lee «lo habilita: Director General de la Policía» sabe a quién
+   pedírselo, y eso pasa en voz alta y no en un menú. */
+.accion-habilita {
+  margin-top: 0.15rem;
+  font-size: 0.78rem;
+  color: var(--texto-3);
+}
+
+/* ---------------------------------------------------------------------------
+   LA GUÍA DE ACCIONES, COMO TABLA
+
+   Cinco columnas que contestan cinco preguntas distintas: si hoy sale, de qué
+   tipo es, cómo se llama y qué hace, qué hace falta antes y cómo se dice. Antes
+   era una lista y las dos últimas no estaban en ninguna parte.
+
+   UN SOLO SEMÁFORO POR TABLA. El color lo lleva la primera columna, que es la
+   única que dice sí o no. El tipo va en gris —no hay tipos mejores que otros—,
+   y el nombre pesa por el grosor de la letra y no por el color: dos escalas de
+   color en una misma fila se leen como una sola mal calibrada.
+   --------------------------------------------------------------------------- */
+
+/* La tabla es ancha y la pantalla de una tableta no lo es. Se desplaza dentro
+   de su propia caja: el cuerpo de la página nunca se desplaza en horizontal. */
+.guia-envoltura { overflow-x: auto; }
+
+.guia { font-size: 0.84rem; }
+.guia th { white-space: nowrap; }
+.guia td { vertical-align: top; padding-top: 0.6rem; padding-bottom: 0.6rem; }
+.guia tr.accion-fila td:first-child { min-width: 8.5rem; }
+
+/* Lo que hoy no se puede pedir no compite por el ojo, pero tampoco desaparece:
+   saber qué está trabado es la mitad de la información. */
+.accion-bloqueada .accion-claro,
+.accion-hecha .accion-claro { color: var(--texto-2); }
+
+/* El requisito previo es un hecho sobre la acción y se lee en prosa corta. */
+.accion-previos {
+  color: var(--texto-2);
+  max-width: 22rem;
+  line-height: 1.35;
+}
+
+/* El ejemplo va en monoespaciada porque se copia y se dicta literalmente. */
+.accion-ejemplo {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--texto);
+  background: var(--acento-suave);
+  border: 1px solid var(--borde-suave);
+  border-radius: 5px;
+  padding: 0.25rem 0.45rem;
+  max-width: 17rem;
+}
+
+.accion-sin-canal {
+  font-size: 0.78rem;
+  color: var(--texto-3);
+  font-style: italic;
+}
+
+/* ---------------------------------------------------------------------------
+   LA PREGUNTA DEL COMIENZO DEL DÍA
+
+   Va arriba del todo porque es lo único de la vista que caduca: se contesta
+   hoy o se pierde la jornada. Se distingue de la alerta —que describe un
+   estado— por ser una pregunta con respuesta.
+   --------------------------------------------------------------------------- */
+
+.notificacion {
+  border: 1px solid #4a6a3f;
+  border-left: 4px solid #7fc4a8;
+  background: linear-gradient(180deg, rgba(127, 196, 168, 0.10), var(--superficie));
+  border-radius: 8px;
+  padding: 0.95rem 1.2rem;
+  margin-bottom: 1rem;
+}
+.notificacion-pregunta {
+  margin: 0.3rem 0 0.35rem;
+  font-size: 1.02rem;
+  font-weight: 650;
+  color: var(--texto);
+}
+.notificacion-porque {
+  margin: 0;
+  font-size: 0.83rem;
+  color: var(--texto-2);
+  line-height: 1.45;
+}
+.notificacion-mesas {
+  list-style: none;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.notificacion-mesas li {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+.notificacion-avance { color: var(--texto-3); font-size: 0.78rem; }
+
+.repertorio-noche {
+  margin: 0 0 0.75rem;
+  font-size: 0.82rem;
+  color: var(--medio);
+}
+
+@media (max-width: 700px) {
+  .guia { font-size: 0.8rem; }
+  .accion-previos, .accion-ejemplo { max-width: 13rem; }
+}
+
+/* ---------------------------------------------------------------------------
+   EL CANAL APAGADO — de noche no se ordena
+
+   La pantalla apagada explica; el 409 del servidor garantiza. Si solo estuviera
+   lo primero, bastaría una pestaña vieja abierta para meter una orden en mitad
+   de las consecuencias.
+   --------------------------------------------------------------------------- */
+
+.canal-cerrado {
+  border-color: var(--borde-suave);
+  background: var(--superficie-2);
+}
+.canal-cerrado textarea {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.canal-cerrado h2 { color: var(--texto-3); }
+
+.canal-aviso {
+  margin: 0 0 0.7rem;
+  padding: 0.55rem 0.7rem;
+  border-left: 3px solid var(--medio);
+  border-radius: 4px;
+  background: var(--medio-bg);
+  font-size: 0.86rem;
+  color: var(--texto-2);
+}
+
+/* El cronómetro cambia de aspecto con la franja y con la pausa: un cronómetro
+   parado que parece corriendo es peor que no tener cronómetro. */
+.cronometro.es-noche {
+  border-left: 3px solid var(--medio);
+  background: linear-gradient(110deg, #12141c, var(--superficie-2) 60%);
+}
+.cronometro.en-pausa { opacity: 0.72; border-style: dashed; }
+
+/* El identificador del punto, al lado de su nombre. En el mapa manda el nombre
+   —se señala en voz alta desde el fondo de la sala—; el código vive aquí,
+   porque es lo que hace auditable el eco de la consola. */
+.punto-id {
+  margin-left: 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 400;
   color: var(--texto-3);
 }

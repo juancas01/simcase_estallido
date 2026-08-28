@@ -14,6 +14,18 @@ Y desde la v2 hay una cuarta cosa que este módulo resuelve: **la segunda vía p
 la que la mezcla real de un punto tiene consecuencia.** Pactar donde hay
 estructura organizada produce un acuerdo que se incumple, porque quien firmó no
 controla el punto. Es la otra mitad del error doble.
+
+LA MESA HAY QUE INSTALARLA CADA JORNADA
+---------------------------------------
+La concertación tarda dos sesiones, no dos días. `turnos_en_negociacion` sube
+una vez por sesión y solo por sesión, de modo que **no instalar una mesa un día
+equivale a congelar las negociaciones**: no se pierde lo andado, pero tampoco se
+avanza, y el reloj del ejercicio corre igual.
+
+Eso ya era cierto y no lo sabía nadie. `instalar_mesa`, `cerrar_mesa` y
+`revisar_mesas` no cambian la aritmética: la hacen visible en el mapa, en las
+consecuencias de la noche y en la pregunta que reciben el Ministro del Interior
+y el Alcalde al abrir el día.
 """
 
 from __future__ import annotations
@@ -47,6 +59,60 @@ def abrir_por_fuerza(nodo: Nodo, rng: random.Random, turno: int) -> ResultadoApe
     )
 
 
+def instalar_mesa(nodo: Nodo, turno_decision: int) -> None:
+    """
+    Deja constancia de que hoy hubo sesión en este punto.
+
+    **Es lo que hace que la mesa cuente como instalada esta jornada.** Sin esta
+    marca, `revisar_mesas` no puede distinguir una mesa que trabajó de una que
+    se dejó de lado, y esa distinción es la regla entera: una mesa local hay que
+    instalarla cada jornada para que surta efecto.
+    """
+    nodo.mesa_abierta = True
+    nodo.mesa_sesion_turno = turno_decision
+    nodo.jornadas_mesa_congelada = 0
+
+
+def cerrar_mesa(nodo: Nodo) -> None:
+    """La mesa rindió: el punto se abrió por concertación y ya no hay qué negociar."""
+    nodo.mesa_abierta = False
+    nodo.jornadas_mesa_congelada = 0
+
+
+def revisar_mesas(estado: Estado) -> dict:
+    """
+    Al cerrar cada jornada de decisión: qué mesas quedaron sin sesionar.
+
+    **NO INSTALAR UNA MESA UN DÍA EQUIVALE A CONGELAR LAS NEGOCIACIONES**, y esa
+    frase es literal en el motor: `turnos_en_negociacion` sube una vez por
+    sesión y solo por sesión. Una mesa sin sesionar no pierde lo andado —no se
+    castiga el silencio— pero tampoco avanza, y el reloj del ejercicio sí corre.
+    Abrir una mesa en la jornada 4 y no volver a ella es no haberla abierto.
+
+    Lo único que hace esta función es **hacerlo visible**: contar las jornadas
+    congeladas y emitir el hecho, para que salga en el mapa, en las
+    consecuencias de la noche y en la pregunta del día siguiente. La mecánica ya
+    estaba; lo que no estaba era la forma de enterarse.
+
+    Solo se llama en las ventanas de DÍA. De noche no se instala nada y no hay
+    nada que reprochar.
+    """
+    congeladas = []
+    for nodo in estado.nodos.values():
+        if not nodo.mesa_abierta:
+            continue
+        if nodo.mesa_sesion_turno == estado.turno_decision:
+            continue
+        nodo.jornadas_mesa_congelada += 1
+        congeladas.append(nodo.nodo_id)
+        estado.eventos_turno.append({
+            "tipo": "mesa_congelada",
+            "nodo": nodo.nodo_id,
+            "jornadas": nodo.jornadas_mesa_congelada,
+        })
+    return {"congeladas": len(congeladas), "nodos": congeladas}
+
+
 def avanzar_concertacion(
     nodo: Nodo, turno: int, rng: random.Random
 ) -> ResultadoApertura | None:
@@ -72,6 +138,9 @@ def avanzar_concertacion(
     nodo.modo_apertura = "concertacion"
     nodo.turnos_desde_apertura = 0
     nodo.turnos_en_negociacion = 0
+    # La mesa rindió: deja de estar instalada, y el punto pasa a leerse por su
+    # modo de apertura —pactado— que es lo que ahora lo sostiene.
+    cerrar_mesa(nodo)
 
     organizada = nodo.composicion_real.normalizada().estructura_organizada
     fragil = rng.random() < organizada * P.FACTOR_INCUMPLIMIENTO_POR_ESTRUCTURA
@@ -132,8 +201,20 @@ def step(estado: Estado, rng: random.Random) -> dict:
     reaperturas: list[str] = []
     desgastes: list[str] = []
 
+    # UN DÍA POR JORNADA, NO UNO POR TRAMO. `step()` corre dos veces al día
+    # —día y noche— y este contador se incrementaba en las dos, de modo que un
+    # punto que empezaba con quince días de cierre marcaba veinticinco al
+    # terminar un ejercicio de cinco jornadas. El número sale en el mapa, con la
+    # palabra «días» al lado, y su banda —reciente, asentado, enquistado,
+    # crónico— saturaba en la primera jornada.
+    #
+    # Se cuenta AL CERRAR LA JORNADA, que es cuando el día terminó de verdad.
+    if estado.franja == "noche":
+        for nodo in estado.nodos.values():
+            if not nodo.abierto:
+                nodo.dias_sostenido += 1
+
     for nodo in estado.nodos.values():
-        nodo.dias_sostenido += 1 if not nodo.abierto else 0
 
         if nodo.abierto and nodo.modo_apertura == "fuerza":
             nodo.turnos_desde_apertura += 1
@@ -141,7 +222,8 @@ def step(estado: Estado, rng: random.Random) -> dict:
                 region = estado.regiones.get(nodo.region_id)
                 intensidad = region.intensidad_movilizacion if region else 60.0
                 p_reabre = min(0.95, (intensidad / 100.0) * (0.4 + nodo.apoyo_local))
-                if nodo.turnos_desde_apertura >= 1 and rng.random() < p_reabre:
+                if (nodo.turnos_desde_apertura >= P.PASOS_ANTES_DE_REABRIR
+                        and rng.random() < p_reabre):
                     nodo.caudal = 0.0
                     nodo.modo_apertura = "cerrado"
                     nodo.turnos_desde_apertura = 0

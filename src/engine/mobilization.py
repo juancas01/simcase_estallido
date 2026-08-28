@@ -1,5 +1,5 @@
 """
-mobilization.py — El adversario reflexivo (§4.1).
+mobilization.py — El adversario reflexivo (`docs/COMO_FUNCIONA.md` §4).
 
 Es el motor que define el caso. Si solo se implementa uno, es este.
 
@@ -20,6 +20,7 @@ from __future__ import annotations
 import random
 
 from src.engine import parameters as P
+from src.engine import territory
 from src.engine.state import Estado, Nodo
 
 
@@ -101,9 +102,17 @@ def step(estado: Estado, rng: random.Random) -> dict:
             # Los nodos cerrados se endurecen con la intensidad
             if not nodo.abierto:
                 nodo.dureza += exceso * P.DUREZA_POR_INTENSIDAD
-            # La masa presente sigue a la intensidad
-            base = 120 if estado.franja == "noche" else 200
-            nodo.masa_presente = int(base + exceso * P.MASA_POR_INTENSIDAD)
+            # LA MASA SIGUE A LA INTENSIDAD Y AL TAMAÑO DEL PUNTO.
+            #
+            # Lo segundo faltaba: la cifra salía de la intensidad de la región y
+            # de nada más, así que los seis puntos de Bellaflor tenían siempre la
+            # MISMA cifra exacta de personas. Un peaje de carretera y una glorieta
+            # del centro no reúnen la misma gente, y el término de masa del riesgo
+            # de incidente (`force.py`) llevaba todo este tiempo sin distinguirlos.
+            # No se veía porque nada mostraba la cifra; el mapa la muestra.
+            factor = P.MASA_FACTOR_NOCTURNO if estado.franja == "noche" else 1.0
+            crecida = 1.0 + exceso * P.MASA_POR_INTENSIDAD / P.MASA_BASE_REFERENCIA
+            nodo.masa_presente = int(nodo.masa_base * factor * crecida)
             nodo.clamp()
 
         # Nodos nuevos: solo si la intensidad es alta y hay dónde
@@ -162,22 +171,85 @@ def _nodos_de(estado: Estado, region_id: str) -> list[Nodo]:
 
 
 def _generar_nodo(estado: Estado, region_id: str, rng: random.Random) -> Nodo | None:
-    idx = len(estado.nodos) + 1
-    nodo_id = f"N{idx:03d}"
-    if nodo_id in estado.nodos:
-        return None
+    """
+    Un cierre espontáneo donde antes no había nada.
+
+    EL IDENTIFICADOR SE BUSCA LIBRE, no se deriva del tamaño. Los del escenario
+    no son correlativos —son los once que deciden un corredor, de entre más de
+    mil— y `len(nodos) + 1` caía encima de uno existente y devolvía `None`: el
+    bucle central del caso, el que hace que abrir un corredor por la fuerza
+    pueda cerrar dos, se quedaba sin su efecto más visible y en silencio.
+    """
     from src.engine.state import Composicion
+
+    nodo_id = next((f"N{i:03d}" for i in range(1, 1000)
+                    if f"N{i:03d}" not in estado.nodos), None)
+    if nodo_id is None:
+        return None
+
     return Nodo(
         nodo_id=nodo_id,
-        nombre=f"Cierre espontáneo {idx}",
+        # «Cierre espontáneo 006» son veintiún caracteres y en el mapa se parte
+        # en dos líneas que se montan sobre los vecinos. Que sea espontáneo no
+        # hace falta decirlo en el rótulo: apareció a mitad de partida, lleva
+        # cero días sostenido y no pertenece a ningún corredor. Las tres cosas
+        # están en su ficha.
+        nombre=f"Cierre {nodo_id[1:]}",
         region_id=region_id,
         corredor_id=None,
         dureza=rng.uniform(0.25, 0.5),
         caudal=0.0,
+        masa_base=150,
         masa_presente=150,
         apoyo_local=rng.uniform(0.5, 0.85),
         control_voceria=rng.uniform(0.1, 0.4),   # los nuevos no tienen vocería
         composicion_real=Composicion(
             rng.uniform(0.6, 0.9), rng.uniform(0.05, 0.25), rng.uniform(0.0, 0.15)
         ).normalizada(),
+        # Y CON SITIO EN EL MAPA. Sin posición aterrizaban todos en el (0,0),
+        # amontonados en una esquina del esquema y encima de la línea de otro
+        # corredor: un punto nuevo que no se ve no cuenta nada.
+        **_hueco_en(estado, region_id, rng),
     )
+
+
+def _hueco_en(estado: Estado, region_id: str, rng: random.Random) -> dict:
+    """
+    Un sitio libre DENTRO de la región, y no solo cerca de sus puntos.
+
+    Antes bastaba «cerca del centroide», porque el mapa era un esquema de líneas
+    sobre un lienzo vacío y las coordenadas no afirmaban nada. Ahora el mapa
+    dibuja el país: un cierre nuevo que aparece a catorce unidades del centroide
+    puede caer al otro lado de la frontera de su región —o en el mar— y la
+    pantalla lo pintaría en la región equivocada. `loader._verificar_geografia`
+    exige lo contrario para el escenario; esto es lo mismo para lo que el motor
+    genera solo.
+    """
+    poligono = (estado.geografia or {}).get("regiones", {}).get(region_id)
+    vecinos = _nodos_de(estado, region_id)
+
+    if poligono:
+        cx, cy = territory.centroide(poligono)
+    elif vecinos:
+        cx = sum(n.x for n in vecinos) / len(vecinos)
+        cy = sum(n.y for n in vecinos) / len(vecinos)
+    else:
+        return {"x": rng.uniform(20, 80), "y": rng.uniform(20, 80)}
+
+    # Nueve unidades de separación y no siete. Con el mapa dibujando el nombre de
+    # cada punto, dos cierres a siete unidades son dos rótulos superpuestos.
+    def libre(x, y):
+        return all((n.x - x) ** 2 + (n.y - y) ** 2 > 81 for n in estado.nodos.values())
+
+    for _ in range(60):
+        x = min(97.0, max(3.0, cx + rng.uniform(-14, 14)))
+        y = min(97.0, max(3.0, cy + rng.uniform(-14, 14)))
+        if not libre(x, y):
+            continue
+        if poligono and not territory.dentro(x, y, poligono):
+            continue
+        return {"x": round(x, 1), "y": round(y, 1)}
+
+    # Si en sesenta intentos no cupo, el centroide de la región: apretado contra
+    # otro punto, pero nunca fuera del territorio que dice ocupar.
+    return {"x": round(cx, 1), "y": round(cy, 1)}

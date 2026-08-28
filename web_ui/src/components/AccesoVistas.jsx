@@ -1,13 +1,13 @@
 // ---------------------------------------------------------------------------
 // EL ACCESO A LAS VISTAS PERSONALES — desde el tablero, sin estar en el tablero.
 //
-// EL PROBLEMA. Las ocho vistas privadas solo se alcanzaban desde la portada.
+// EL PROBLEMA. Las nueve vistas privadas solo se alcanzaban desde la portada.
 // Quien tenía el tablero delante y quería la suya debía retroceder, buscarla
-// entre ocho tarjetas y volver. Con dos horas de ejercicio, ese rodeo se paga
+// entre nueve tarjetas y volver. Con dos horas de ejercicio, ese rodeo se paga
 // en minutos de sala.
 //
 // POR QUÉ NO ES UNA FILA DE PESTAÑAS. **El tablero es la superficie
-// PROYECTADA.** Una fila de ocho pestañas encima de él añade tres cosas malas a
+// PROYECTADA.** Una fila de nueve pestañas encima de él añade tres cosas malas a
 // la vez: ocupa el sitio de los datos, invita a la sala a pedir que se proyecte
 // una vista personal —y ahí se acaba la asimetría de información que sostiene
 // el ejercicio— y convierte un cambio de pantalla en un clic de distancia.

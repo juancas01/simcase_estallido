@@ -3,7 +3,7 @@
 //
 // Las cuatro superficies vivían cada una en su ruta y sin salida: quien tenía
 // abierta su vista personal o la consola solo podía volver con el botón de atrás
-// del navegador o escribiendo la ruta. En un ejercicio de dos horas, con ocho
+// del navegador o escribiendo la ruta. En un ejercicio de dos horas, con nueve
 // personas que no montaron el sistema, eso es un callejón.
 //
 // SE DECLARAN LOS DESTINOS, no se ocultan los que sobran. Cada superficie dice a

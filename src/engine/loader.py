@@ -5,7 +5,7 @@ Regla de oro heredada de Macondo: si un dato aparece a la vez en un archivo y en
 el prompt de un modelo, se desincronizará. Siempre. Todo lo que define el caso
 vive en `data/`, y el catálogo que ve el modelo se GENERA desde aquí.
 
-AQUÍ NO ARRANCA EN CERO. El paro lleva quince días cuando los ocho entran a la
+AQUÍ NO ARRANCA EN CERO. El paro lleva quince días cuando los nueve entran a la
 sala: el PMU ya está convocado, la mesa ya se instaló y ya se rompió una vez, y
 la fuerza ya está desplegada y cansada. Lo que da inicio al ejercicio no es una
 acción: es un estado heredado más una exigencia con plazo.
@@ -17,9 +17,10 @@ import json
 from pathlib import Path
 
 from src.engine import parameters as P
+from src.engine import territory
 from src.engine.state import (
     Estado, Nodo, Corredor, Region, Unidad, Composicion, Reservas, Banderas,
-    Denuncia,
+    Denuncia, Infraestructura,
 )
 
 
@@ -37,6 +38,7 @@ def cargar_estado(ruta: str | Path | None = None) -> Estado:
 
     estado = Estado(turno=0, franja="dia")
     estado.region_epicentro = d.get("region_epicentro", "")
+    estado.geografia = d.get("mapa", {})
 
     for r in d["regiones"]:
         estado.regiones[r["region_id"]] = Region(
@@ -60,7 +62,10 @@ def cargar_estado(ruta: str | Path | None = None) -> Estado:
             dureza=n.get("dureza", 0.5),
             caudal=0.0,
             dias_sostenido=n.get("dias_sostenido", 0),
-            masa_presente=n.get("masa_presente", 200),
+            masa_base=n.get("masa_base", 200),
+            # En t=0 hay la gente que hay: la base. `mobilization.recalcular` la
+            # escala por la intensidad de la región en cuanto empieza el turno 1.
+            masa_presente=n.get("masa_base", 200),
             apoyo_local=n.get("apoyo_local", 0.7),
             control_voceria=n.get("control_voceria", 0.5),
             proximidad_infra_critica=n.get("proximidad_infra_critica", False),
@@ -77,6 +82,23 @@ def cargar_estado(ruta: str | Path | None = None) -> Estado:
             poblacion_aguas_abajo=c["poblacion_aguas_abajo"],
             costo_diario_mm_cop=c["costo_diario_mm_cop"],
             clases_prioridad=set(c.get("clases_prioridad", [])),
+        )
+
+    # LA INFRAESTRUCTURA RELEVANTE. Es una guia, no un adversario: no hay
+    # acciones en contra de ella. Lo que hace es que declarar critica una
+    # instalacion deje de ser una cadena de texto libre y pase a apuntar a algo
+    # que existe, con su region, su sitio y de que depende.
+    for x in d.get("infraestructura", []):
+        estado.infraestructura[x["infra_id"]] = Infraestructura(
+            infra_id=x["infra_id"],
+            nombre=x["nombre"],
+            tipo=x.get("tipo", "logistica"),
+            region_id=x["region_id"],
+            x=x.get("x", 0.0),
+            y=x.get("y", 0.0),
+            criticidad=x.get("criticidad", "alta"),
+            de_que_depende=x.get("de_que_depende", ""),
+            nodos_contiguos=list(x.get("nodos_contiguos", [])),
         )
 
     # El hecho H2 del paquete detonante: dos denuncias graves sin verificar, una
@@ -161,9 +183,21 @@ def _aplicar_hecho_h1(estado: Estado, h: dict | None) -> None:
     # La custodia inmoviliza fuerza: es la colisión entre lo que Minas necesita
     # proteger y lo que Defensa necesita disponible. Sale de la reserva, para que
     # se note en el contador del tablero desde el primer minuto.
+    # LA INSTALACIÓN VIENE POR IDENTIFICADOR, no por nombre. Queda marcada como
+    # custodiada desde el primer minuto —esa custodia la puso el hecho heredado,
+    # no una decisión de la mesa— y el debriefing no le imputa a la sala un
+    # riesgo que no asumió.
     instalacion = h.get("instalacion")
     if instalacion:
-        estado.instalaciones_criticas.append(instalacion)
+        infra = estado.infraestructura.get(instalacion)
+        if infra is None:
+            raise ValueError(
+                f"El hecho H1 custodia «{instalacion}», que no está en el "
+                f"registro de infraestructura del escenario."
+            )
+        estado.instalaciones_criticas.append(infra.nombre)
+        infra.protegida = True
+        infra.protegida_desde_turno = 0
     cuantas = h.get("custodia_inmovilizada", 0)
     for u in estado.unidades:
         if cuantas <= 0:
@@ -263,6 +297,68 @@ def _verificar_invariantes(estado: Estado) -> None:
 
     if estado.region_epicentro and estado.region_epicentro not in estado.regiones:
         raise ValueError(f"region_epicentro desconocida: {estado.region_epicentro}")
+
+    _verificar_geografia(estado)
+
+
+def _verificar_geografia(estado: Estado) -> None:
+    """
+    Cada punto tiene que caer DENTRO del polígono de su región.
+
+    Mientras el mapa fue un esquema de líneas, las coordenadas no afirmaban nada:
+    eran la disposición de un plano de metro y podían estar en cualquier sitio.
+    Desde que el mapa dibuja el país, un punto fuera de su polígono es la pantalla
+    **afirmando en una pared que ese bloqueo está en otra región** — y el reparto
+    territorial es justo lo que la sala está leyendo ahí.
+
+    No puede ser «lo revisó alguien al dibujarlo», porque el motor genera cierres
+    nuevos por su cuenta cuando la intensidad sube (`mobilization._generar_nodo`).
+
+        Una regla que el software garantiza vale más que una que el software
+        recomienda.
+
+    Sin bloque `mapa` en el escenario no hay nada que comprobar y no pasa nada:
+    un escenario sin geografía es válido, solo que su mapa no se dibuja.
+    """
+    poligonos = (estado.geografia or {}).get("regiones") or {}
+    if not poligonos:
+        return
+
+    faltan = [r for r in estado.regiones if r not in poligonos]
+    if faltan:
+        raise ValueError(
+            f"El mapa no tiene polígono para {faltan}. Sus puntos no se podrían "
+            f"dibujar en ninguna parte."
+        )
+
+    fuera = [
+        f"{n.nodo_id} ({n.nombre}) en ({n.x}, {n.y}) no cae dentro de {n.region_id}"
+        for n in estado.nodos.values()
+        if not territory.dentro(n.x, n.y, poligonos[n.region_id])
+    ]
+    if fuera:
+        raise ValueError("Puntos fuera de su región en el mapa: " + "; ".join(fuera))
+
+    # Y lo mismo para la infraestructura, por la misma razón: el mapa la dibuja
+    # con nombre, y una refinería pintada en la región equivocada es la pantalla
+    # afirmando en una pared algo que el motor no dice.
+    mal = [
+        f"{i.infra_id} ({i.nombre}) en ({i.x}, {i.y}) no cae dentro de {i.region_id}"
+        for i in estado.infraestructura.values()
+        if i.region_id in poligonos
+        and not territory.dentro(i.x, i.y, poligonos[i.region_id])
+    ]
+    if mal:
+        raise ValueError("Infraestructura fuera de su región: " + "; ".join(mal))
+
+    huerfanas = [
+        f"{i.infra_id} apunta a {n}"
+        for i in estado.infraestructura.values()
+        for n in i.nodos_contiguos if n not in estado.nodos
+    ]
+    if huerfanas:
+        raise ValueError(
+            "Infraestructura contigua a puntos inexistentes: " + "; ".join(huerfanas))
 
 
 def catalogo_para_agente(estado: Estado) -> dict:

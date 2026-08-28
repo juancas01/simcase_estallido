@@ -2,14 +2,14 @@
 // SUPERFICIE 1 · EL TABLERO GENERAL — proyectado para toda la sala.
 //
 // Responde QUÉ ESTÁ PASANDO, en grano grueso. El cuánto, el dónde exactamente y
-// el desde cuándo son las ocho vistas privadas.
+// el desde cuándo son las nueve vistas privadas.
 //
 //
 // CÓMO SEÑALA UN PROBLEMA SIN DECIR QUÉ HACER
 // ===========================================
 // Es la tensión que gobierna todo este archivo. Si el tablero dice «abra el
 // corredor hospitalario», el ejercicio se acabó: el tablero pensó por la sala.
-// Si el tablero es un muro de números iguales, nadie se entera de nada en seis
+// Si el tablero es un muro de números iguales, nadie se entera de nada en trece
 // minutos de deliberación.
 //
 // La salida no es un término medio, es un cambio de mecanismo:
@@ -18,70 +18,62 @@
 //
 // Cuatro palancas, y las cuatro enuncian hechos:
 //
-//   1 · EL CAMBIO, NO EL NIVEL.  `Legitimidad 41` no le dice nada a quien no
-//       memorizó el punto de partida. `41 ▼9` le dice que algo de anoche costó
-//       nueve puntos. Es la señal más barata del tablero y la que más apunta.
+//   1 · EL CAMBIO, NO EL NIVEL.  Una métrica que no se movió no lleva marca;
+//       una que se movió lleva su flecha. Es la señal más barata del tablero.
 //
-//   2 · EL PLAZO.  «Turno 3» es neutro. «Jornada 3 de 5» es una presión, y una
-//       concertación que tarda dos turnos en rendir no cabe en la jornada 5.
+//   2 · EL PLAZO.  «Jornada 3 de 5, quedan dos» es una presión, y una
+//       concertación que tarda dos jornadas en rendir no cabe en la quinta.
 //       El reloj dice cuánto queda; qué hacer con eso es de la sala.
 //
 //   3 · EL ORDEN.  Corredores y regiones van PEOR PRIMERO. El ojo aterriza
 //       arriba a la izquierda, y ahí está el problema sin que nadie lo señale.
-//       Con cuatro regiones y cinco corredores, la memoria espacial que se
-//       pierde la devuelve el mapa.
 //
-//   4 · LO QUE FALTA, CONTADO.  Tres puntos que nadie ha mirado, dos denuncias
-//       abiertas, una decisión sin responsable. **La distancia entre «3 puntos
-//       sin verificar» y «verifique P7» es la distancia entre un ejercicio y un
+//   4 · LO QUE FALTA, CONTADO.  Puntos que nadie ha mirado, denuncias abiertas,
+//       decisiones sin responsable. **La distancia entre «3 puntos sin
+//       verificar» y «verifique N003» es la distancia entre un ejercicio y un
 //       tutorial.**
 //
-// Ninguna de las cuatro nombra un remedio. Todas hacen que el problema sea lo
-// primero que se ve.
+//
+// LAS MÉTRICAS NO LLEVAN CIFRA
+// ============================
+// Aquí había cuatro barras con su número —«Legitimidad 52»— y esta sección se
+// llamaba «Reservas». Ahora son escalas de cinco pasos: muy bajo, bajo, medio,
+// alto, muy alto. Y no es una simplificación:
+//
+//     Un nivel se interpreta. Un número se optimiza.
+//
+// Con la cifra en la pared, la conversación de la sala se vuelve aritmética
+// —«subimos tres, podemos gastar cuatro»— y el ejercicio deja de ser sobre
+// conducción para ser sobre puntuación. Ninguna de estas magnitudes es medible
+// en la realidad con dos cifras significativas, y fingir que lo es enseña algo
+// falso sobre lo que un puesto de mando puede saber de sí mismo.
+//
+// Lo que SÍ conserva su cifra es lo que se cuenta de verdad: muertes evitables y
+// escuadrones sin comprometer. Son personas y son unidades, no índices.
 //
 //
 // LA JERARQUÍA DE LA PANTALLA
 // ---------------------------
 //   1 · el reloj y los cabos sueltos ....... el plazo y lo que sigue abierto
-//   2 · lo irreversible y las reservas ..... el marcador, con sus deltas
-//   3 · el territorio ...................... mapa PEQUEÑO + corredores
-//   4 · el abastecimiento y el pliego ...... la consecuencia y el registro
-//
-// El mapa dejó de ocupar el ancho entero. Era la pieza más grande de la pantalla
-// y no es la más importante: ahora vive junto a la tabla de corredores, que con
-// su tinta hace además de leyenda. Dos leyendas de lo mismo eran una de más.
+//   2 · la noche, cuando la hay ............ qué produjo lo que se ordenó
+//   3 · lo irreversible y las métricas ..... el marcador, sin marcador
+//   4 · el territorio ...................... mapa + corredores
+//   5 · el abastecimiento y el pliego ...... la consecuencia y el registro
 //
 // LA BARRA LATERAL DE LA ESFERA PÚBLICA
 // -------------------------------------
-// **La esfera pública ya no tiene ruta propia: vive aquí y solo aquí.**
-//
-// La tenía, para montajes de dos proyectores. Pero la doctrina siempre fue que
-// la distancia entre lo que el Estado tiene por cierto y lo que se dice solo se
-// percibe SIMULTÁNEA — y mientras la esfera tuvo pantalla aparte, esa doctrina
-// dependía de que quien monta la sala hiciera lo correcto. Bastaba proyectar una
-// de las dos sola para perder justamente lo que hay que enseñar.
-//
-// Al vivir dentro del tablero, el montaje incorrecto deja de ser posible. **Una
-// regla que el software garantiza vale más que una que el software recomienda.**
-//
-// Sigue siendo barra y no pestaña: una pestaña sustituye una cosa por la otra y
-// vuelve a eliminar lo que hay que enseñar.
-//
-// EL ACCESO A LAS OCHO VISTAS PERSONALES
-// --------------------------------------
-// Vive DENTRO del rótulo de la cabecera, y está escondido a propósito. Una fila
-// de pestañas sobre la pantalla proyectada ocuparía el sitio de los datos e
-// invitaría a la sala a pedir que se proyecte una vista personal — y ahí se
-// acaba la asimetría de información que sostiene el ejercicio. El porqué
-// completo, en `AccesoVistas.jsx`.
+// **La esfera pública no tiene ruta propia: vive aquí y solo aquí.** La
+// distancia entre lo que el Estado tiene por cierto y lo que se dice solo se
+// percibe SIMULTÁNEA, y mientras la esfera tuvo pantalla aparte esa doctrina
+// dependía de que quien monta la sala hiciera lo correcto. Una regla que el
+// software garantiza vale más que una que el software recomienda.
 //
 // LO QUE NUNCA MUESTRA: la mezcla real de un punto, ni si una denuncia es
-// cierta. Tampoco por la puerta de atrás de un delta. Si eso se filtrara, el
-// dilema central del caso desaparecería.
+// cierta. Tampoco por la puerta de atrás de una tendencia.
 // ---------------------------------------------------------------------------
 
 import { useEffect, useRef, useState } from 'react'
-import MapaEsquematico, { COLOR_CORREDOR } from './MapaEsquematico'
+import Mapa from './Mapa'
 import EsferaContenido, { ENCUADRE, sinVerificar } from './EsferaContenido'
 import Reloj from './Reloj'
 import Cronometro from './Cronometro'
@@ -89,10 +81,8 @@ import Navegacion from './Navegacion'
 import AccesoVistas from './AccesoVistas'
 import Ayuda, { Titulo } from './Ayuda'
 import { D } from '../definiciones.jsx'
-import { ESTADO_PUNTO, FASE, MODO_APERTURA, SEMAFORO, rotulo } from '../etiquetas.jsx'
-import {
-  Barra, Cargando, Delta, nivelPresion, nivelReserva, useDatos,
-} from '../comun.jsx'
+import { COLOR_CORREDOR, EVENTO, SEMAFORO, rotulo } from '../etiquetas.jsx'
+import { Cargando, Delta, Medidor, useDatos } from '../comun.jsx'
 
 const CLAVE_BARRA = 'simcase:esfera_abierta'
 
@@ -116,8 +106,8 @@ function usarPreferencia(clave, inicial) {
 const ORDEN_SEMAFORO = { rojo: 0, ambar: 1, verde: 2 }
 
 export default function Tablero() {
-  const { datos, error } = useDatos('/tablero', 4000)
-  const { datos: esfera } = useDatos('/esfera', 4000)
+  const { datos, error } = useDatos('/tablero')
+  const { datos: esfera } = useDatos('/esfera')
   const [sel, setSel] = useState(null)
   const [abierta, setAbierta] = usarPreferencia(CLAVE_BARRA, true)
 
@@ -129,11 +119,10 @@ export default function Tablero() {
     if (abierta) vistasHasta.current = totalPubs
   }, [abierta, totalPubs])
 
-  if (!datos) return <Cargando error={error} />
+  if (!datos) return <Cargando error={error} ruta="/tablero" />
 
   const r = datos.reservas
   const d = datos.deltas || {}
-  const punto = datos.puntos.find(p => p.nodo_id === sel)
   const abiertas = sinVerificar(esfera).length
   const nuevas = Math.max(0, totalPubs - vistasHasta.current)
   const enc = ENCUADRE[esfera?.encuadre_dominante] || null
@@ -147,12 +136,13 @@ export default function Tablero() {
     || (b.muertes_evitables - a.muertes_evitables))
 
   const muertes = datos.muertes_evitables
+  const esNoche = datos.fase === 'noche'
 
   return (
     <div className="pantalla">
       <header className="cabecera">
         <div>
-          {/* El acceso a las ocho vistas va en la línea de la versalita:
+          {/* El acceso a las nueve vistas va en la línea de la versalita:
               una línea que ya existía, encima del título y no dentro de él.
               Una fila de pestañas sobre la pantalla proyectada ocuparía el
               sitio de los datos e invitaría a proyectar una vista privada,
@@ -160,20 +150,16 @@ export default function Tablero() {
           <div className="cabecera-rotulo">
             <span className="eyebrow">Tablero de situación · para proyectar</span>
             <AccesoVistas />
-            {/* Quien conduce tiene que llegar a la consola en un clic. Va en la
-                misma línea que las vistas y con el mismo aspecto: la consola no
-                se proyecta, pero el enlace a ella no es un secreto. */}
             <Navegacion destinos={['consola']} />
           </div>
           <h1>Puesto de Mando Unificado</h1>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-          {/* El reloj de sala. La misma pieza que ven la consola y las ocho
-              vistas, contando sobre el mismo instante: si la pared y el móvil
-              de alguien discreparan, dejaría de haber un reloj común. */}
+          {/* El reloj de sala. La misma pieza que ven la consola y las nueve
+              vistas, contando sobre el mismo instante. */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
             <Cronometro cronometro={datos.cronometro} />
-            <Ayuda etiqueta="Cómo corre el reloj del turno">{D.cronometro}</Ayuda>
+            <Ayuda etiqueta="Cómo corre el reloj de la jornada">{D.cronometro}</Ayuda>
           </div>
           <button
             onClick={() => setAbierta(a => !a)}
@@ -205,7 +191,15 @@ export default function Tablero() {
           ]}
         />
 
-        {/* --- 2 · Lo irreversible, la presión y las reservas ------------- */}
+        {/* --- 2 · La noche: qué produjo lo que se ordenó ------------------
+            Los dos minutos de noche existen para esto, y una sala no puede
+            interpretar consecuencias que están repartidas por cinco tarjetas.
+            Aquí van juntas, y desaparecen solas al abrir la jornada. */}
+        {esNoche && datos.consecuencias && (
+          <Consecuencias datos={datos.consecuencias} />
+        )}
+
+        {/* --- 3 · Lo irreversible y las métricas ------------------------- */}
         <div className="banda">
           <div className="tarjeta">
             <Titulo ayuda={D.coste_humano}>Coste irreversible</Titulo>
@@ -214,34 +208,24 @@ export default function Tablero() {
               <Delta valor={d.muertes_evitables} sentido="arriba_peor" />
             </div>
             <p className="pie-cifra">Muertes evitables acumuladas</p>
-            <div style={{ marginTop: '0.9rem' }}>
-              <Barra nombre="Presión en la calle" valor={datos.presion_calle}
-                     nivel={nivelPresion(datos.presion_calle)}
-                     ayuda={D.presion_calle}
-                     delta={d.presion_calle} sentido="arriba_peor" />
-            </div>
           </div>
 
-          <div className="tarjeta">
-            {/* UNA marca, un globo. Dos marcas pegadas obligan a elegir cuál
-                abrir antes de saber qué hay en cada una: la notación ▲▼ va
-                dentro de este mismo globo. */}
-            <Titulo ayuda={D.reservas}>Reservas</Titulo>
-            <div className="rejilla" style={{
-              gridTemplateColumns: 'repeat(auto-fit, minmax(148px, 1fr))', gap: '0.75rem',
-            }}>
-              <Barra nombre="Legitimidad" valor={r.legitimidad}
-                     nivel={nivelReserva(r.legitimidad)} ayuda={D.legitimidad}
-                     delta={d.legitimidad} />
-              <Barra nombre="Credibilidad de la mesa" valor={r.credibilidad_mesa}
-                     nivel={nivelReserva(r.credibilidad_mesa)} ayuda={D.credibilidad_mesa}
-                     delta={d.credibilidad_mesa} />
-              <Barra nombre="Respaldo internacional" valor={r.respaldo_internacional}
-                     nivel={nivelReserva(r.respaldo_internacional)}
-                     ayuda={D.respaldo_internacional} delta={d.respaldo_internacional} />
-              <Barra nombre="Cohesión del PMU" valor={r.cohesion_mesa}
-                     nivel={nivelReserva(r.cohesion_mesa)} ayuda={D.cohesion_mesa}
-                     delta={d.cohesion_mesa} />
+          {/* UNA marca, un globo. Dos marcas pegadas obligan a elegir cuál
+              abrir antes de saber qué hay en cada una. */}
+          <div className="tarjeta tarjeta-metricas">
+            <Titulo ayuda={D.metricas}>Métricas</Titulo>
+            <div className="rejilla-metricas">
+              <Medidor nombre="Presión en la calle" valor={datos.presion_calle}
+                       sentido="arriba_peor" ayuda={D.presion_calle}
+                       delta={d.presion_calle} />
+              <Medidor nombre="Legitimidad" valor={r.legitimidad}
+                       ayuda={D.legitimidad} delta={d.legitimidad} />
+              <Medidor nombre="Credibilidad de la mesa" valor={r.credibilidad_mesa}
+                       ayuda={D.credibilidad_mesa} delta={d.credibilidad_mesa} />
+              <Medidor nombre="Respaldo internacional" valor={r.respaldo_internacional}
+                       ayuda={D.respaldo_internacional} delta={d.respaldo_internacional} />
+              <Medidor nombre="Cohesión del PMU" valor={r.cohesion_mesa}
+                       ayuda={D.cohesion_mesa} delta={d.cohesion_mesa} />
             </div>
           </div>
 
@@ -264,33 +248,12 @@ export default function Tablero() {
           </div>
         </div>
 
-        {/* --- 3 · El territorio: mapa pequeño + corredores --------------- */}
+        {/* --- 4 · El territorio: mapa + corredores ----------------------- */}
         <div className="tarjeta" style={{ marginTop: '1rem' }}>
-          <Titulo ayuda={D.corredores}>Corredores · peor primero</Titulo>
+          <Titulo ayuda={D.corredores}>Territorio</Titulo>
           <div className="territorio">
             <div>
-              <MapaEsquematico tablero={datos} seleccionado={sel} onSeleccionar={setSel} />
-              {punto && (
-                <div className="punto-detalle">
-                  <div className="punto-nombre">{punto.nombre} · {punto.nodo_id}</div>
-                  <div className="punto-sub">
-                    {datos.regiones.find(x => x.region_id === punto.region_id)?.nombre}
-                    {' · '}
-                    <span className={`chip chip-${punto.estado === 'abierto' ? 'bien'
-                      : punto.estado === 'parcial' ? 'medio'
-                      : punto.estado === 'sin_verificar' ? 'neutro' : 'mal'}`}>
-                      {rotulo(ESTADO_PUNTO, punto.estado)}
-                    </span>
-                    {punto.estado === 'sin_verificar' && (
-                      <Ayuda etiqueta="Qué significa sin verificar">
-                        {D.punto_sin_verificar}
-                      </Ayuda>
-                    )}
-                    {punto.modo_apertura !== 'cerrado'
-                      && ` · por ${rotulo(MODO_APERTURA, punto.modo_apertura).toLowerCase()}`}
-                  </div>
-                </div>
-              )}
+              <Mapa tablero={datos} seleccionado={sel} onSeleccionar={setSel} />
             </div>
 
             <table>
@@ -341,7 +304,7 @@ export default function Tablero() {
           </div>
         </div>
 
-        {/* --- 4 · La consecuencia y el registro -------------------------- */}
+        {/* --- 5 · La consecuencia y el registro -------------------------- */}
         <div className="rejilla" style={{ marginTop: '1rem' }}>
           <div className="tarjeta">
             <Titulo ayuda={D.semaforo}>Abastecimiento · peor primero</Titulo>
@@ -390,7 +353,7 @@ export default function Tablero() {
             {datos.registro?.length ? (
               <table>
                 <thead>
-                  <tr><th>T</th><th>Rol</th><th>Decisión</th><th>Responsable</th></tr>
+                  <tr><th>J</th><th>Rol</th><th>Decisión</th><th>Responsable</th></tr>
                 </thead>
                 <tbody>
                   {datos.registro.slice().reverse().map((x, i) => (
@@ -435,6 +398,56 @@ export default function Tablero() {
         </aside>
       )}
       </div>
+    </div>
+  )
+}
+
+/**
+ * QUÉ PRODUJO LO QUE SE ORDENÓ — solo durante los dos minutos de noche.
+ *
+ * Es el bloque que da contenido a esa mitad de la jornada. Sin él, «mirar las
+ * consecuencias» significa recorrer cinco tarjetas buscando cuál se movió, y en
+ * dos minutos no da tiempo. Aquí van juntas y en el orden en que ocurrieron.
+ *
+ * NO INTERPRETA. Enumera lo que el motor devolvió, con sus propias frases: la
+ * lectura de qué significa es de la sala, que es justamente lo que esos dos
+ * minutos existen para que ocurra.
+ */
+function Consecuencias({ datos }) {
+  const eventos = (datos.eventos || []).filter(e => e.tipo || e.evento)
+  return (
+    <div className="tarjeta consecuencias">
+      <Titulo ayuda={D.consecuencias}>
+        Consecuencias de la jornada {datos.jornada}
+      </Titulo>
+
+      {datos.resultados?.length ? (
+        <div className="consecuencias-lista">
+          {datos.resultados.map((x, i) => (
+            <p key={i}>
+              <span className={`chip chip-${x.ok ? 'bien' : 'mal'}`}>
+                {x.ok ? 'Ejecutada' : 'No viable'}
+              </span>{' '}
+              {x.mensaje}
+            </p>
+          ))}
+        </div>
+      ) : (
+        <p className="consecuencias-vacio">
+          No se ordenó nada en esta jornada. El reloj corrió igual.
+        </p>
+      )}
+
+      {eventos.length > 0 && (
+        <p className="consecuencias-eventos">
+          {eventos.slice(0, 12).map((e, i) => (
+            <span key={i} className="chip chip-neutro">
+              {rotulo(EVENTO, e.tipo || e.evento)}
+              {e.nodo ? ` · ${e.nodo}` : ''}
+            </span>
+          ))}
+        </p>
+      )}
     </div>
   )
 }

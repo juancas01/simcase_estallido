@@ -15,7 +15,7 @@ lo que pasó; ellos lo narran desde su sesgo.
 PRESUPUESTO DE LATENCIA
 -----------------------
 Seis agentes, cinco turnos y cuatro interludios dan entre 40 y 50 invocaciones.
-La fase de consecuencias dura sesenta segundos con ocho personas mirando la
+La fase de consecuencias dura sesenta segundos con nueve personas mirando la
 pantalla. Por eso:
 
     * una sola llamada por turno, no seis
@@ -230,6 +230,15 @@ def _hechos_del_turno(estado: Estado, eventos: list[dict]) -> list[dict]:
             hechos.append({"que": "una caravana escoltada fue atacada en ruta"})
         elif tipo == "escolta_lograda":
             hechos.append({"que": "una caravana llegó a su destino con escolta"})
+        elif tipo == "comite_suspende":
+            hechos.append({"que": "el Comité del Paro suspendió su participación "
+                                  "en la mesa nacional"})
+        elif tipo == "comite_vuelve":
+            hechos.append({"que": "el Comité del Paro volvió a sentarse en la mesa "
+                                  "nacional"})
+        elif tipo == "comite_se_retira_definitivo":
+            hechos.append({"que": "el Comité del Paro se retiró en definitiva de la "
+                                  "mesa nacional"})
         elif tipo == "duda_permanencia":
             hechos.append({"que": "la Defensoría puso en duda públicamente su "
                                   "permanencia en la mesa"})

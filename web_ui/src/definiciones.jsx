@@ -41,15 +41,24 @@ const NOTA_DELTA = (
 
 export const D = {
 
-  reservas: (
+  metricas: (
     <>
       <p>
-        <strong>Las cuatro se leen igual: arriba es mejor.</strong> Cada una lleva
-        su propia definición en su marca de ayuda.
+        <strong>Cinco magnitudes del episodio, en escala y no en cifra:</strong>
+        muy bajo, bajo, medio, alto, muy alto. Cuatro se leen igual —arriba es
+        mejor— y la presión en la calle al revés.
+      </p>
+      <p>
+        <strong>Por qué sin número.</strong> Un nivel se interpreta; un número
+        se optimiza. Con la cifra proyectada, la deliberación se vuelve
+        aritmética —«subimos tres, podemos gastar cuatro»— y el ejercicio pasa
+        de tratar sobre conducción a tratar sobre puntuación. Ninguna de estas
+        magnitudes es medible en la realidad con dos cifras significativas.
       </p>
       <p>
         Se agotan y se recomponen con las decisiones de la mesa, no con el paso
-        del tiempo. Ninguna se recupera sola.
+        del tiempo. Ninguna se recupera sola, y cada una lleva su propia
+        definición en su marca de ayuda.
       </p>
       {NOTA_DELTA}
     </>
@@ -61,22 +70,26 @@ export const D = {
   reloj: (
     <>
       <p>
-        <strong>Cinco jornadas, del 11 al 15 de mayo</strong>, en turnos de doce
-        horas que alternan día y noche. Nueve ventanas en total: cinco de
-        deliberación y cuatro interludios nocturnos.
+        <strong>Cinco jornadas, del 11 al 15 de mayo.</strong> Cada una son
+        quince minutos de sala partidos en dos tramos con reglas opuestas.
       </p>
       <dl>
-        <dt>Día</dt>
-        <dd>06:00 – 18:00 · se delibera, se ordena, la mesa está disponible</dd>
-        <dt>Noche</dt>
+        <dt>Día · 13 min</dt>
         <dd>
-          18:00 – 06:00 · no se delibera. Lo abierto por la fuerza vuelve a
-          cerrarse y el riesgo de incidente se multiplica por 1,6
+          se leen los tableros, se delibera y se ordena. La consola acepta
+          órdenes en cualquier momento del tramo
+        </dd>
+        <dt>Noche · 2 min</dt>
+        <dd>
+          el motor resuelve lo que quedó en cola y se miran las consecuencias.
+          No se reciben órdenes; lo abierto por la fuerza vuelve a cerrarse
         </dd>
       </dl>
       <p>
-        El plazo pesa tanto como el dato: una concertación tarda dos turnos en
-        rendir, de modo que iniciarla en la jornada 5 equivale a no iniciarla.
+        La fecha es un indicador de la jornada, no un calendario. Lo que sí
+        cambia una decisión es cuántas jornadas quedan: una concertación tarda
+        dos en rendir, de modo que iniciarla en la quinta equivale a no
+        iniciarla.
       </p>
     </>
   ),
@@ -84,15 +97,17 @@ export const D = {
   linea_jornadas: (
     <>
       <p>
-        <strong>Las nueve ventanas del ejercicio.</strong> La barra superior de
-        cada columna es el día; la inferior, la noche que le sigue.
+        <strong>Las cinco jornadas del ejercicio</strong>, una marca cada una.
       </p>
       <dl>
-        <dt>Llena</dt><dd>ventana ya resuelta</dd>
-        <dt>Azul</dt><dd>la ventana en curso</dd>
+        <dt>Llena</dt><dd>jornada ya resuelta</dd>
+        <dt>Azul</dt><dd>la jornada en curso</dd>
         <dt>Vacía</dt><dd>pendiente</dd>
       </dl>
-      <p>La quinta jornada no tiene noche: el ejercicio cierra con ella.</p>
+      <p>
+        Si es de día o de noche lo dice la propia caja del reloj, que cambia de
+        color.
+      </p>
     </>
   ),
 
@@ -228,12 +243,37 @@ export const D = {
   mapa: (
     <>
       <p>
-        <strong>Esquema topológico.</strong> Representa el orden de los puntos de
-        cierre dentro de cada corredor y nada más.
+        <strong>Mapa en dos niveles.</strong> El de país dibuja las cuatro
+        regiones teñidas de su <em>estado de bloqueo</em> — cuántos de sus puntos
+        no dejan pasar nada. Un clic acerca una región y muestra sus puntos y sus
+        corredores.
       </p>
       <p>
-        No representa distancias, escala geográfica ni tiempos de desplazamiento.
-        Ninguna medida tomada sobre este esquema tiene significado.
+        Al posarse sobre una región o sobre un punto, la ficha de abajo entrega
+        las mismas seis lecturas: paso, dureza, gente en la calle, días de cierre,
+        apoyo del barrio y control de la vocería. Las de la región son el promedio
+        simple de sus puntos modelados.
+      </p>
+      <p>
+        <strong>Las lecturas van en banda y no en cifra.</strong> Un nivel se
+        interpreta; un número se optimiza. Las dos excepciones son las dos cosas
+        que se cuentan de verdad: personas y días.
+      </p>
+      <p>
+        <strong>La silueta y la red vial son reales</strong>, tomadas de datos
+        abiertos; el país, sus nombres y sus cuatro regiones son inventados. Las
+        carreteras van casi transparentes a propósito: son el suelo sobre el que
+        se leen los corredores y los bloqueos, no la información.
+      </p>
+      <p>
+        Cada corredor se dibuja <strong>por el camino que existe</strong>, no en
+        línea recta entre sus puntos: dos bloqueos que parecen vecinos pueden
+        estar a media vuelta por carretera.
+      </p>
+      <p>
+        El territorio es <strong>ficticio</strong>. Sitúa, no mide: no hay
+        distancias, ni escala, ni tiempos de desplazamiento, y ninguna medida
+        tomada sobre este mapa significa nada.
       </p>
     </>
   ),
@@ -241,15 +281,47 @@ export const D = {
   formas_mapa: (
     <>
       <p>
-        La forma del punto indica <strong>por qué vía se abrió</strong>, y de
-        esa vía depende cuánto dura la apertura.
+        La forma del punto indica <strong>qué se está haciendo con él</strong>,
+        que no es lo mismo que cómo se abrió: de un punto cerrado, el modo de
+        apertura no dice nada, y un punto operado que no cedió no es un punto
+        que nadie ha tocado.
       </p>
       <dl>
-        <dt>◆</dt><dd>Fuerza — se revierte en el interludio nocturno</dd>
-        <dt>■</dt><dd>Pactado — se sostiene mientras el acuerdo se cumpla</dd>
-        <dt>●</dt><dd>Cerrado, o abierto por desgaste</dd>
+        <dt>◆</dt>
+        <dd>Intervenido a la fuerza — cediera o no cediera</dd>
+        <dt>■</dt>
+        <dd>En negociación — hay mesa instalada, o está abierto porque se pactó</dd>
+        <dt>●</dt><dd>No se está haciendo nada en absoluto</dd>
         <dt>?</dt><dd>Sin verificar — su estado real se desconoce</dd>
       </dl>
+      <p>
+        El anillo verde señala una <strong>mesa que ha sesionado hoy</strong>; el
+        ámbar a trazos, una instalada que hoy nadie ha convocado. Una mesa local
+        hay que instalarla cada jornada para que surta efecto: no instalarla un
+        día equivale a congelar la negociación, y lo andado no se pierde pero
+        tampoco avanza.
+      </p>
+    </>
+  ),
+
+  infraestructura_mapa: (
+    <>
+      <p>
+        <strong>Las instalaciones que el país necesita en pie</strong>, con su
+        criticidad en palabra — vital, alta, media — y no en índice. Aparecen al
+        acercar una región.
+      </p>
+      <dl>
+        <dt>Contorno continuo</dt><dd>bajo custodia</dd>
+        <dt>Contorno a trazos</dt><dd>sin proteger</dd>
+      </dl>
+      <p>
+        <strong>No hay acciones en contra de esta infraestructura</strong>, y es
+        deliberado: el ejercicio no simula un ataque a la refinería, simula la
+        decisión de inmovilizar fuerza para custodiarla — que es la que enfrenta
+        a Minas con Defensa. Lo que queda registrado es el riesgo asumido al
+        dejarla sola, y de eso se responde en el cierre.
+      </p>
     </>
   ),
 
@@ -446,27 +518,120 @@ export const D = {
     </>
   ),
 
+  requisitos_previos: (
+    <>
+      <p>
+        <strong>Qué tiene que existir antes</strong> para que esta acción pueda
+        pedirse. Es un hecho sobre la acción: no cambia de una jornada a otra.
+      </p>
+      <p>
+        <strong>Va en cualitativo y nunca en cifra.</strong> «Escuadrones sin
+        comprometer», no «dos escuadrones». Con el número delante, la
+        deliberación se vuelve aritmética; con el requisito enunciado, hay que
+        preguntarle a quien lo tiene — y esa pregunta ocurre en voz alta, que es
+        donde el ejercicio la quiere.
+      </p>
+      <p>
+        Cuánto falta <em>hoy</em> lo dice la primera columna, que sí mira el
+        estado real.
+      </p>
+    </>
+  ),
+
+  ejemplo_consola: (
+    <>
+      <p>
+        <strong>Una frase que funciona tal cual.</strong> No es una paráfrasis:
+        escrita así en la consola, produce esta acción.
+      </p>
+      <p>
+        Se puede decir de otras maneras y con otros datos — el punto, la unidad,
+        quién firma, si acompaña una dupla. El ejemplo es el esqueleto mínimo,
+        no la única forma admitida.
+      </p>
+      <p>
+        Algunas acciones existen en el motor y <strong>todavía no se
+        transcriben</strong> por la consola: se acuerdan en la mesa y quedan en
+        el pliego, pero el canal de órdenes aún no las reconoce.
+      </p>
+    </>
+  ),
+
+  mesas_diarias: (
+    <>
+      <p>
+        <strong>Una mesa local hay que instalarla cada jornada para que surta
+        efecto.</strong> La concertación avanza por sesiones, no por días
+        transcurridos.
+      </p>
+      <p>
+        No instalarla un día <strong>no pierde lo andado</strong>, pero congela
+        la negociación: no avanza, y el reloj del ejercicio corre igual. Abrir
+        una mesa en la cuarta jornada y no volver a ella es no haberla abierto.
+      </p>
+      <p>
+        La pregunta llega solo a quien puede convocarla — el Ministro del
+        Interior en todo el país, el Alcalde en su jurisdicción — y es una
+        pregunta: dice qué hay y qué lleva parado, no qué conviene hacer.
+      </p>
+    </>
+  ),
+
   repertorio: (
     <>
       <p>
-        <strong>Acciones que esta cartera puede solicitar.</strong> Se enuncian
-        ante la mesa y se transcriben en la consola.
+        <strong>Acciones que esta cartera puede solicitar</strong>, con lo que
+        hace falta antes y cómo se piden.
+      </p>
+      <dl>
+        <dt>Se puede pedir</dt><dd>viable en esta jornada</dd>
+        <dt>Con reparos</dt>
+        <dd>viable, y con una condición que conviene conocer antes de pedirla</dd>
+        <dt>Aún no</dt>
+        <dd>falta un requisito; se indica cuál y, si corresponde, qué cartera lo habilita</dd>
+        <dt>Ya vigente</dt><dd>en vigor; volver a adoptarla no altera nada</dd>
+      </dl>
+      <p>
+        El requisito se enuncia en general y nunca como instrucción: informa de
+        qué falta, no de qué conviene hacer.
       </p>
       <p>
-        Esta vista es de solo lectura: desde ella no se ordena nada. Para que
-        una acción se ejecute hay que pedirla en voz alta ante la mesa y
-        transcribirla en la consola.
+        La columna <em>Requisitos previos</em> enuncia de qué depende cada
+        acción, siempre en cualitativo; la columna <em>Hoy</em> dice si eso se
+        cumple en esta jornada.
       </p>
+      <p>
+        Esta vista es de solo lectura. Para que una acción se ejecute hay que
+        pedirla ante la mesa y transcribirla en la consola.
+      </p>
+    </>
+  ),
+
+  consecuencias: (
+    <>
+      <p>
+        <strong>Lo que produjo la jornada</strong>, reunido en un solo sitio
+        durante los dos minutos de noche: el resultado de cada orden y los
+        hechos que el motor generó a continuación.
+      </p>
+      <p>
+        Enumera; no interpreta. Qué significa cada cosa y qué se hace con ella
+        corresponde a la mesa, y es para eso que existe este tramo.
+      </p>
+      <p>Desaparece al abrir la jornada siguiente.</p>
     </>
   ),
 
   clases_accion: (
     <dl>
-      <dt>Constituye</dt>
-      <dd>establece una figura o una regla que rige los turnos siguientes</dd>
-      <dt>Toca el mundo</dt>
+      <dt>Protocolo</dt>
+      <dd>
+        establece una figura o una regla que rige los turnos siguientes: quién
+        habla, quién firma, con qué estándar se emplea la fuerza
+      </dd>
+      <dt>Operación</dt>
       <dd>modifica el estado del territorio, de la fuerza o del abastecimiento</dd>
-      <dt>Informa</dt>
+      <dt>Información</dt>
       <dd>obtiene o difunde información sin alterar el estado del mundo</dd>
     </dl>
   ),
@@ -490,19 +655,19 @@ export const D = {
   cronometro: (
     <>
       <p>
-        <strong>Reloj de sala.</strong> Arranca desde la consola, y a partir de
-        ese momento corre solo: la fase que rige se calcula a partir del tiempo
-        transcurrido, no la elige nadie.
+        <strong>Reloj de sala.</strong> Arranca desde la consola y a partir de
+        ese momento corre solo: la jornada se cierra sola al minuto trece y la
+        siguiente se abre sola dos minutos después.
       </p>
       <p>
-        Las siete fases del turno suman 13 minutos. Durante el parte privado, la
-        apertura y la deliberación ninguna superficie se actualiza —los valores
-        mostrados son los del último cierre— y así se indica.
+        Arriba queda lo que resta del tramo en curso; abajo, lo que lleva la
+        sesión entera. Es el mismo número en las diez pantallas: lo calcula el
+        servidor y cada superficie corrige el desfase de su propio reloj.
       </p>
       <p>
-        Agotado el ciclo, la última fase se mantiene y el exceso se cuenta como
-        prórroga: pasar al turno siguiente es una decisión de la sala. Arriba
-        queda lo que resta de la fase; abajo, lo que lleva la sesión entera.
+        Detenido desde la consola, el número se congela en todas a la vez y la
+        caja lo indica. El tiempo del ejercicio no corre mientras la sala no
+        está en el ejercicio.
       </p>
     </>
   ),
@@ -510,17 +675,18 @@ export const D = {
   fases: (
     <>
       <p>
-        <strong>Secuencia de fases del turno y su duración prevista.</strong>
-        Las siete suman 13 minutos.
+        <strong>Los dos tramos de la jornada y su duración.</strong> Trece
+        minutos de día en los que se ordena y dos de noche en los que no.
       </p>
       <p>
-        El reloj lo lleva el sistema: arranca aquí una sola vez y después la
-        fase avanza sola. Los mandos son excepciones —adelantar una fase que la
-        sala terminó antes, abrir el turno siguiente, poner el reloj a cero.
+        El ritmo lo lleva el sistema: se arranca aquí una sola vez y después las
+        jornadas se encadenan solas. Los mandos son para lo imprevisto —pausar
+        ante una interrupción real, cerrar el día antes de tiempo, abrir la
+        jornada siguiente, poner el reloj a cero.
       </p>
       <p>
         No hay moderador como figura aparte: quien opera esta consola puede ser
-        cualquiera de los ocho, y se limita a transcribir.
+        cualquiera de los nueve, y se limita a transcribir.
       </p>
     </>
   ),

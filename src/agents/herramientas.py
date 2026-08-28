@@ -37,7 +37,7 @@ def _sin_tildes(t: str) -> str:
 # ---------------------------------------------------------------------------
 # El repertorio expuesto al modelo
 #
-# No son las 34 acciones: son las que la sala puede pedir en lenguaje natural.
+# No son las 39 acciones: son las que la sala puede pedir en lenguaje natural.
 # Las constitutivas se piden por su nombre y no llevan entidades; las operativas
 # llevan el punto o el corredor sobre el que actúan.
 # ---------------------------------------------------------------------------
@@ -270,10 +270,15 @@ HERRAMIENTAS: dict[str, dict] = {
         "rol": "Ministro de Minas",
         "descripcion": "Declaratoria de infraestructura crítica",
         "entidades": {},
+        "para_el_modelo": ("Pone bajo custodia una instalacion del registro de "
+                           "infraestructura relevante. Los nombres viajan TAL "
+                           "CUAL los dijo la persona: los resuelve el motor."),
         "construir": lambda a: A.DeclararInfraestructuraCritica(
             instalaciones=list(a.get("instalaciones") or ["refineria"])),
         "por_defecto": {"instalaciones": ["refineria"]},
-        "esquema": {"instalaciones": ("array", "las instalaciones a proteger")},
+        "esquema": {"instalaciones": ("array",
+                                      "las instalaciones a proteger, TAL CUAL "
+                                      "las dijo la persona")},
         "requeridos": [],
     },
     "fijar_prioridad_combustible": {
@@ -294,6 +299,62 @@ HERRAMIENTAS: dict[str, dict] = {
         "construir": lambda a: A.EntregarCalendarioAgotamiento(),
         "esquema": {},
         "requeridos": [],
+    },
+    "mesa_tecnica_agropecuaria": {
+        "rol": "Ministro de Agricultura",
+        "descripcion": "Mesa técnica agropecuaria de tránsito de carga en un punto rural",
+        "para_el_modelo": ("La mesa del MINISTRO DE AGRICULTURA, que no es la "
+                           "del Interior ni la del Alcalde: solo vale FUERA del "
+                           "epicentro, su mandato es el paso de alimentos y no "
+                           "el pliego, y no pasa por el Comité del Paro. Si el "
+                           "texto habla de campesinos, indígenas, minga, "
+                           "productores o carga agropecuaria, es esta."),
+        "entidades": {"nodo_id": "punto"},
+        "construir": lambda a: A.InstalarMesaTecnicaAgropecuaria(
+            nodo_id=a.get("nodo_id", "")),
+        "esquema": {
+            "nodo_id": ("string", "El punto rural, TAL CUAL lo dijo la persona"),
+        },
+        "requeridos": ["nodo_id"],
+    },
+    "activar_instrumentos_sectoriales": {
+        "rol": "Ministro de Agricultura",
+        "descripcion": "Crédito, alivios y autorización sanitaria excepcional",
+        "para_el_modelo": ("Alivios financieros a productores con pérdida y "
+                           "permiso para mover animales y alimento balanceado "
+                           "por rutas alternas. Va sobre una REGIÓN, no sobre "
+                           "un punto."),
+        "entidades": {"region_id": "region"},
+        "construir": lambda a: A.ActivarInstrumentosSectoriales(
+            region_id=a.get("region_id", "")),
+        "esquema": {
+            "region_id": ("string", "La región, TAL CUAL la dijo la persona; "
+                                    "vacío para la más apretada de comida"),
+        },
+        "requeridos": [],
+    },
+    "publicar_balance_perdida": {
+        "rol": "Ministro de Agricultura",
+        "descripcion": "Balance público de la pérdida pecuaria y de los precios",
+        "entidades": {},
+        "construir": lambda a: A.PublicarBalancePerdida(),
+        "esquema": {},
+        "requeridos": [],
+    },
+    "acordar_acopio": {
+        "rol": "Ministro de Agricultura",
+        "descripcion": "Acopio, cupos y despacho concentrado por una ventana escoltada",
+        "para_el_modelo": ("Concentra la carga agroalimentaria para que rinda "
+                           "la escolta que YA existe. No pide escolta —eso es "
+                           "escoltar— y no arma una caravana de carga general "
+                           "—eso es organizar_caravana."),
+        "entidades": {"corredor_id": "corredor"},
+        "construir": lambda a: A.AcordarAcopioYVentanas(
+            corredor_id=a.get("corredor_id", "")),
+        "esquema": {
+            "corredor_id": ("string", "El corredor, TAL CUAL lo dijo la persona"),
+        },
+        "requeridos": ["corredor_id"],
     },
     # --- Constitutivas de la mesa ---
     "fijar_registro_escrito": {
@@ -343,6 +404,17 @@ HERRAMIENTAS: dict[str, dict] = {
         "descripcion": "Concertación previa del empleo de la fuerza en su jurisdicción",
         "entidades": {},
         "construir": lambda a: A.CondicionarEmpleoFuerza(),
+        "esquema": {},
+        "requeridos": [],
+    },
+    "fijar_clase_alimentaria": {
+        "rol": "Ministro de Agricultura",
+        "descripcion": "Clase de prioridad agroalimentaria en el reparto de corredores",
+        "para_el_modelo": ("Da turno propio a alimentos e insumos pecuarios en "
+                           "la priorización de corredores. NO es la prioridad "
+                           "del combustible entre usos, que es de Minas."),
+        "entidades": {},
+        "construir": lambda a: A.FijarClasePrioridadAlimentaria(),
         "esquema": {},
         "requeridos": [],
     },
@@ -461,7 +533,7 @@ MARCAS_ALCALDIA = ("con la alcaldia", "con el alcalde", "con la alcaldesa",
 # razonable: se dice o no se dice.
 #
 # El sistema ya se lo pide al modelo, y aun así lo hace: medido, «concertar en
-# la Glorieta La Ceiba» volvía con `con_alcaldia: true` sin que nadie hubiera
+# un punto del epicentro» volvía con `con_alcaldia: true` sin que nadie hubiera
 # nombrado a la Alcaldía. Es la misma lección que ENUMS, escrita en el mismo
 # archivo: **restringir el espacio de salida no impide que el modelo se salga.**
 # Por eso la comprobación vive aquí, en una capa determinista y auditable, y no
@@ -607,13 +679,24 @@ def catalogo_compacto(estado: Estado) -> dict:
 DISPARADORES: list[tuple[str, list[str], list[str]]] = [
     ("operar_punto", ["oper", "desbloque", "despej", "intervenir", "esmad en"], []),
     ("escoltar", ["escolt", "carrotanque", "mision medica", "misión medica"], []),
-    ("disponer_esmad", ["concentr", "replegar", "repliegue", "disponer del esmad"], []),
+    # `concentr` está dentro de «despacho concentrado», que es el acopio
+    # agroalimentario. Sin la exclusión, «acordar el despacho concentrado por el
+    # Corredor del Sur» salía con DOS acciones: el acopio que se pidió y una
+    # concentración de ESMAD que nadie pidió. Es el mismo modo de falla que ya
+    # obligó a separar la mesa del Alcalde de la del Interior.
+    ("disponer_esmad", ["concentr", "replegar", "repliegue", "disponer del esmad"],
+     ["despacho concentrado"]),
     ("relevar_unidades", ["relev", "rotar", "rotacion"], []),
     ("convocar_mesa_nacional", ["mesa nacional", "comite del paro", "comité del paro",
                                 "convocar la mesa"], []),
     ("abrir_mesa_local", ["concert", "mesa local", "pactar", "pacto",
                           "negociar el punto"],
-     ["mesa nacional", "mesa con voceros", "concertacion previa", "condiciona"]),
+     ["mesa nacional", "mesa con voceros", "concertacion previa", "condiciona",
+      # La mesa rural es de Agricultura y tiene disparador propio. Sin esta
+      # exclusión, «concertar en la mesa técnica del Cruce de San Isidro» salía
+      # como mesa del Interior y cambiaba de dueño sin que nadie lo viera —el
+      # mismo fallo que ya obligó a separar la del Alcalde.
+      "mesa tecnica", "agropecuaria"]),
     # La mesa del ALCALDE, que no es la del Interior: la suya solo vale en el
     # epicentro y no le pide permiso a nadie. Sin disparador propio, «instalar
     # mesa con voceros en X» caía en `abrir_mesa_local` —la del Ministro del
@@ -653,6 +736,24 @@ DISPARADORES: list[tuple[str, list[str], list[str]]] = [
     ("clasificar_parte", ["clasificar el parte", "parte clasificado",
                           "confirmado estimado"], []),
     ("condicionar_empleo_fuerza", ["condiciona", "concertacion previa"], []),
+    # --- Agricultura ---
+    #
+    # `acopio` A SECAS NO DISPARA NADA, a propósito: el escenario tiene un
+    # corredor llamado «Refinería – Acopios» y un «Centro de acopio norte», de
+    # modo que «escoltar carrotanques por Refinería - Acopios» habría salido
+    # como un despacho agroalimentario. Las raíces son frases, no palabras.
+    ("acordar_acopio", ["esquema de acopio", "acopio y ventanas",
+                        "despacho concentrado", "cupos"], []),
+    ("mesa_tecnica_agropecuaria", ["mesa tecnica", "mesa agropecuaria",
+                                   "organizaciones campesinas", "mesa rural"], []),
+    ("activar_instrumentos_sectoriales", ["instrumentos sectoriales", "alivios",
+                                          "credito a los productores",
+                                          "excepcion sanitaria", "rutas alternas"], []),
+    ("publicar_balance_perdida", ["balance de perdida", "eslabon pecuario",
+                                  "perdida pecuaria", "animales sacrificados"], []),
+    ("fijar_clase_alimentaria", ["clase de prioridad agroalimentaria",
+                                 "prioridad agroalimentaria", "clase alimentaria",
+                                 "prioridad de los alimentos"], []),
 ]
 
 

@@ -4,7 +4,7 @@ information.py — La verdad, las estimaciones y la versión.
 Tres capas distintas, y el ejercicio vive en la distancia entre ellas:
 
     CAPA 1 · verdad         solo el motor la conoce; NUNCA sale al ejercicio
-    CAPA 2 · estimaciones   el tablero (grano grueso) + ocho vistas (grano fino)
+    CAPA 2 · estimaciones   el tablero (grano grueso) + nueve vistas (grano fino)
     CAPA 3 · versión        lo que cada actor afirma públicamente
 
 EL ERROR DOBLE
@@ -116,6 +116,7 @@ def _rol_de(fuente: str) -> str:
         "inteligencia_defensa": "defensa",
         "parte_municipal": "alcalde_cali",
         "dupla_defensoria": "defensoria",
+        "interlocucion_rural": "agricultura",
     }.get(fuente, "interior")
 
 
@@ -302,13 +303,23 @@ def paso_denuncias(estado: Estado, rng: random.Random) -> dict:
 
 
 def _generar_paquete(estado: Estado, rng: random.Random) -> None:
-    """Siempre dos, con veracidad distinta y sin ninguna señal que las distinga."""
-    cerrados = [n for n in estado.nodos.values() if not n.abierto]
-    if len(cerrados) < 2:
+    """
+    Siempre al menos dos, con veracidad distinta y sin ninguna señal que las
+    distinga.
+
+    EL TAMAÑO SALE DE `parameters.py` Y NO DE AQUÍ. Estaba escrito a mano en
+    tres sitios de esta función mientras `DENUNCIAS_POR_PAQUETE` existía sin que
+    nadie la leyera: un parámetro documentado, calibrable y desconectado.
+    """
+    n = max(2, P.DENUNCIAS_POR_PAQUETE)
+    cerrados = [x for x in estado.nodos.values() if not x.abierto]
+    if len(cerrados) < n:
         return
-    elegidos = rng.sample(cerrados, 2)
+    elegidos = rng.sample(cerrados, n)
     base = len(estado.denuncias)
-    veracidades = [True, False]
+    # La mitad ciertas y la mitad falsas, barajadas: lo que hace indistinguible
+    # un paquete no es que sean dos, es que no se sepa cuál es cuál.
+    veracidades = [i % 2 == 0 for i in range(n)]
     rng.shuffle(veracidades)
     for i, (nodo, veraz) in enumerate(zip(elegidos, veracidades)):
         estado.denuncias.append(Denuncia(

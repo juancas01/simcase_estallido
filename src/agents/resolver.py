@@ -47,11 +47,11 @@ UMBRAL_ACEPTAR = 0.90
 UMBRAL_PREGUNTAR = 0.75
 
 # Por debajo de esto no se sugiere nada: tres nombres al azar porque son los
-# menos malos de veinticuatro no son una ayuda, son ruido con forma de ayuda.
+# menos malos del catalogo no son una ayuda, son ruido con forma de ayuda.
 UMBRAL_SUGERIR = 0.40
 
 # Si el catálogo del tipo es corto, se enumera entero en vez de sugerir. Con
-# cuatro regiones o cinco corredores, la lista completa resuelve la duda de una.
+# cuatro regiones o cuatro corredores, la lista completa resuelve la duda de una.
 CATALOGO_CORTO = 6
 
 # Prefijos que la gente escribe y que no distinguen nada
@@ -212,7 +212,7 @@ def _no_encontrado(estado, crudo, n, completo, puntuados, tipo, mejor):
     no existe, dos comprobaciones que ahorran una repregunta a ciegas.
     """
     # 1 · ¿Existe, pero es de otra clase? «operen el Anillo hospitalario» decía
-    #     «no corresponde a ningún punto, corredor ni región» — y es un corredor.
+    #     «no corresponde a ningun punto, corredor ni region» — y es un corredor.
     #     El filtro por tipo tapaba la única respuesta útil.
     if tipo is not None:
         otros = [x for x in completo if x["tipo"] != tipo

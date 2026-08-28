@@ -1,15 +1,22 @@
 // ---------------------------------------------------------------------------
 // EL CRONÓMETRO DE SALA — el mismo número en las diez pantallas.
 //
-// El tiempo dejó de cambiarse a mano. Arranca UNA VEZ, desde la consola, y a
-// partir de ahí corre solo: la fase que toca se calcula, no se elige.
+// La jornada son quince minutos partidos en dos, y el cronómetro dice en cuál
+// de los dos va y cuánto le queda:
+//
+//     DÍA    13 min   se lee, se discute y SE ORDENA
+//     NOCHE   2 min   se resuelve y se mira. NO SE RECIBEN ÓRDENES
+//
+// El tiempo no se cambia a mano. Arranca UNA VEZ, desde la consola, y a partir
+// de ahí corre solo: la jornada se cierra sola al minuto trece y la siguiente se
+// abre sola dos minutos después.
 //
 // POR QUÉ NO CUENTA EL NAVEGADOR
 // ------------------------------
-// Porque hay diez pantallas mirando —el tablero, la consola y las ocho vistas—
+// Porque hay once pantallas mirando —el tablero, la consola y las nueve vistas—
 // y un cronómetro por pantalla es un cronómetro DISTINTO por pantalla en cuanto
-// una se recarga a mitad de turno. El servidor guarda dos instantes; aquí solo
-// se dibuja lo que se deriva de ellos.
+// una se recarga a mitad de jornada. El servidor guarda tres instantes; aquí
+// solo se dibuja lo que se deriva de ellos.
 //
 // EL DESFASE, QUE ES LA PIEZA QUE LO SOSTIENE
 // -------------------------------------------
@@ -19,14 +26,13 @@
 // no sobre el suyo.
 //
 // Eso resuelve las dos cosas a la vez: **entre respuesta y respuesta el número
-// avanza** —un cronómetro que salta de cuatro en cuatro segundos no es un
+// avanza** —un cronómetro que salta de dos en dos segundos no es un
 // cronómetro— y **el portátil que va tres minutos adelantado enseña la misma
 // hora que los demás**, porque su hora no se usa para nada salvo para medir su
 // propio desfase.
 //
-// AGOTADO EL CICLO NO SE ENCADENA NADA. Se queda en la última fase y cuenta la
-// prórroga. Que el ejercicio pase de turno es una decisión de la sala, y el
-// reloj no la toma por ella.
+// LA PAUSA SE VE. Con el reloj detenido el número se congela y la caja lo dice:
+// un cronómetro parado que parece corriendo es peor que no tener cronómetro.
 // ---------------------------------------------------------------------------
 
 import { useEffect, useRef, useState } from 'react'
@@ -42,12 +48,12 @@ function reloj(segundos) {
 }
 
 /**
- * En qué fase cae `t` segundos de ciclo, y cuánto le queda.
+ * En qué tramo cae `t` segundos de jornada, y cuánto le queda.
  *
  * La tabla llega del servidor en cada respuesta. Tenerla aquí escrita otra vez
  * sería un dato en dos sitios, y un dato en dos sitios se desincroniza.
  */
-function faseEn(fases, t) {
+function tramoEn(fases, t) {
   let acumulado = 0
   for (const f of fases) {
     const dura = f.minutos * 60
@@ -76,12 +82,13 @@ function useCronometro(c) {
 
   // Medio segundo: un cronómetro de segundos refrescado cada segundo se salta
   // uno de cada tantos por redondeo, y se nota.
+  const corriendoDeVerdad = Boolean(c?.corriendo && !c?.pausado)
   useEffect(() => {
-    if (!c?.corriendo) return undefined
+    if (!corriendoDeVerdad) return undefined
     const t = setInterval(
       () => setAhoraLocal(Date.now() / 1000 + desfase.current), 500)
     return () => clearInterval(t)
-  }, [c?.corriendo])
+  }, [corriendoDeVerdad])
 
   if (!c) return null
   if (!c.corriendo) return { corriendo: false }
@@ -90,12 +97,21 @@ function useCronometro(c) {
   // del primer latido manda el `ahora` del servidor —exacto en el instante de
   // la respuesta—, y tras un reinicio manda también él, porque el latido que
   // quedó guardado es de antes. El tiempo solo avanza.
-  const ahora = Math.max(ahoraLocal ?? 0, c.ahora)
-  const enTurno = Math.max(0, ahora - c.turno_desde)
+  //
+  // EN PAUSA MANDA `pausa_desde`, que es el instante en que el reloj se detuvo:
+  // así el número se queda exactamente donde estaba en las diez pantallas.
+  const ahora = c.pausado
+    ? c.pausa_desde
+    : Math.max(ahoraLocal ?? 0, c.ahora)
+  const enJornada = Math.max(0, ahora - c.jornada_desde)
+  const total = Math.max(0, ahora - (c.sesion_desde ?? c.jornada_desde))
+
   return {
     corriendo: true,
-    total: Math.max(0, ahora - (c.sesion_desde ?? c.turno_desde)),
-    ...faseEn(c.fases, enTurno),
+    pausado: Boolean(c.pausado),
+    cerrado: Boolean(c.cerrado),
+    total,
+    ...tramoEn(c.fases, enJornada),
   }
 }
 
@@ -115,14 +131,18 @@ export default function Cronometro({ cronometro }) {
     )
   }
 
-  const { fase, dura, transcurrido, restante, prorroga, total } = r
+  const { fase, dura, transcurrido, restante, prorroga, total, pausado, cerrado } = r
   const hayProrroga = prorroga > 0
   const avance = Math.min(100, (transcurrido / dura) * 100)
+  const esNoche = fase.id === 'noche'
 
   return (
-    <div className={`cronometro${hayProrroga ? ' en-prorroga' : ''}`}>
+    <div className={`cronometro${esNoche ? ' es-noche' : ''}`
+      + `${pausado ? ' en-pausa' : hayProrroga ? ' en-prorroga' : ''}`}>
       <div className="cronometro-cabeza">
-        <span className="cronometro-fase">{fase.nombre}</span>
+        <span className="cronometro-fase">
+          {cerrado ? 'Ejercicio cerrado' : fase.nombre}
+        </span>
         <span className="cronometro-resta num">
           {hayProrroga ? `+${reloj(prorroga)}` : reloj(restante)}
         </span>
@@ -134,8 +154,10 @@ export default function Cronometro({ cronometro }) {
 
       <div className="cronometro-pie">
         <span>
-          {hayProrroga ? 'Prórroga'
-            : fase.congela ? 'Pantallas congeladas' : 'En curso'}
+          {pausado ? 'En pausa'
+            : cerrado ? 'No se reciben más órdenes'
+              : fase.admite_ordenes ? 'Se pueden dictar órdenes'
+                : 'Consecuencias · sin órdenes'}
         </span>
         <span className="num">{reloj(total)} en total</span>
       </div>

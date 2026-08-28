@@ -27,3 +27,8 @@ sim_history/
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Los intermedios del proceso de construccion del mapa: descargas de decenas de
+# megas y rejillas de un millon de celdas. Lo que se versiona es el resultado,
+# que esta en data/escenario/estado_inicial.json.
+scripts/mapa/trabajo/

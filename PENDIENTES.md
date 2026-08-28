@@ -1,6 +1,6 @@
 # Pendientes
 
-Lo que falta para correr esto con ocho personas en una sala. **Este es el único
+Lo que falta para correr esto con nueve personas en una sala. **Este es el único
 sitio donde se lleva la cuenta**: si algo está pendiente y no está aquí, es que
 se me pasó.
 
@@ -25,24 +25,28 @@ lunes por la mañana:
 | | Pendiente | ¿Necesita gente? | Estado |
 |---|---|---|---|
 | **B1** | el archivo de la corrida — persistencia y telemetría | no | **no existe** · bloquea B7 |
-| **B2** | la identidad de los ocho roles, en datos | no | `data/roles/` vacío · hoy duplicada en el frontend |
+| **B2** | la identidad de los nueve roles, en datos | no | `data/roles/` vacío · hoy duplicada en el frontend · **ahora son nueve** |
 | **B7** | el debriefing, la superficie que falta | no | **no existe** · depende de B1 |
 | **B5** | presupuesto de latencia medido | el reloj de la fase, en P2 | **medido** · el timeout ya es duro y las dos capas caben dentro |
 | **B6** | el guion de la sesión | no | fuera del código |
 | **P1** | correr el motor solo y leer la traza | **no** — una persona, 20 min | listo para correr |
 | **P2** | las pantallas | **sí** — dos personas, 30 min | listo |
 | **P3** | en seco, tres roles | **sí** — tres personas, 45 min | listo |
-| **P4** | la corrida completa | **sí** — ocho personas, 2 h | listo |
+| **P4** | la corrida completa | **sí** — nueve personas, 2 h | listo |
 | **B3** | decisiones alineadas con información privada | no | derivado del motor · sale en B1, se lee en B7 |
-| **C1–C4** | cuatro calibraciones | **sí** | esperando P3/P4 · **C4 es nueva** |
+| **C1–C5** | cinco calibraciones | **sí** | esperando P3/P4 · **C5 es nueva y bloquea la tabla** |
 | **A1** | cuántos dispositivos, o papel | — | esperando |
 | **A2** | quién opera la consola | — | esperando |
 | **A3** | ¿con llave o sin llave la primera vez? | — | esperando |
-| **A4** | el contenido exacto de las ocho vistas | se decide probando | esperando |
+| **A4** | el contenido exacto de las nueve vistas | se decide probando | esperando |
 | **A5** | cerrar el territorio ficticio | — | nombres provisionales puestos |
 | **A6** | ¿el mapa muestra dónde está la fuerza? | se decide tras P3 | esperando |
 | **B8** | órdenes condicionales en el canal | no | el motor sabe; el canal no lee «si…» · hoy se avisa |
 | **A7** | ¿la consola puede decir qué punto bloquea un corredor? | — | esperando · es el dato exclusivo de Transporte |
+| **B9** | **ninguna prueba mira lo que la interfaz dibuja** | no | **no existe** · un fallo de una línea vació las nueve vistas y la suite pasó entera |
+| **B10** | ocho acciones no se pueden pedir por la consola | no | existen en el motor · el canal no tiene herramienta para ellas |
+| **B11** | la lista agroalimentaria no se comprueba después | no | se concede la clase y nadie mira si se cumplió |
+| **B12** | tres constantes y tres campos que nadie lee | no | declarados y con prueba que impide que crezcan |
 
 Lo que **sí** funciona está en el README, sección «Estado actual»; el
 ejercicio explicado del juego al motor, en
@@ -59,8 +63,7 @@ grep -rn "PENDIENTE" src/
 
 Cada marca lleva el identificador de esta lista (`PENDIENTE(B1)`), así que se
 puede ir en las dos direcciones: del código a la explicación y de la explicación
-al código. Lo custodia
-`test_cada_marca_del_codigo_apunta_a_un_pendiente_que_existe`.
+al código. Una marca sin entrada es un error y se detecta sola.
 
 ---
 ---
@@ -157,12 +160,12 @@ caída durante la corrida es exactamente cuando más falta hace el registro.
 la semilla y las órdenes, reproducirla es exacto.
 
 
-### B2 · La identidad de los ocho roles, en datos
+### B2 · La identidad de los nueve roles, en datos
 
 **Dónde:** [`data/roles/`](data/roles/) (vacío) ·
 [`web_ui/src/comun.jsx`](web_ui/src/comun.jsx) tiene hoy la lista duplicada
 
-**Esta entrada era más grande de lo que debía.** Decía «las ocho fichas de rol,
+**Esta entrada era más grande de lo que debía.** Decía «las nueve fichas de rol,
 en datos», y eso no hace falta: las fichas del *Manual de Roles con RADs* son un
 entregable del GovLab, se entregan **impresas** por decisión de diseño
 (`propuesta.md` §6, regla 4: *papel para lo que no cambia*), y **nadie calcula
@@ -221,7 +224,7 @@ en cada cargo a las reservas, un libro de cargos— para poder afirmar *«esta
 operación costó 9 por incidente con víctima»*. **Se descartó por decisión del
 equipo docente, y con razón:** el porqué de una decisión es material de
 conversación, no de instrumentación. Lo interesante en la sala no es que la
-pantalla diga qué causó qué, sino que ocho personas lo discutan mirando el
+pantalla diga qué causó qué, sino que nueve personas lo discutan mirando el
 pliego. Aparejar el motor para eso habría sido complicarlo para sustituir la
 parte que no conviene sustituir.
 
@@ -248,7 +251,7 @@ primero de su vista privada. Dos problemas:
 | | |
 |---|---|
 | **Convierte la conversación en un marcador** | anotar quién compartió invita a compartir para que quede anotado, que no es lo que se quiere medir |
-| **Necesita un observador dedicado** | y con ocho participantes ya hay alguien en la consola |
+| **Necesita un observador dedicado** | y con nueve participantes ya hay alguien en la consola |
 
 **Compartir información no se anota: se evidencia en lo que la sala decide.** Si
 la asimetría funciona, se nota en que el Puesto de Mando prioriza donde solo un
@@ -317,7 +320,7 @@ Acierta 6 de 9 casos difíciles donde `low` acierta 9.
 
 **Lo que sigue en P2** es lo que no se puede medir sin sala: el reloj de la fase
 de consecuencias **entera** —modelo, red del local y pintado de las pantallas—,
-que es lo que dura de verdad para las ocho personas que están mirando.
+que es lo que dura de verdad para las nueve personas que están mirando.
 
 
 ### B6 · El guion de la sesión
@@ -338,7 +341,7 @@ ejercicio—, cómo se abre el debriefing, y qué se hace si la sala se queda si
 # PARTE 2 · Con personas en una sala
 
 **Esto es lo que ninguna prueba de código sustituye.** El motor puede estar
-perfecto y el ejercicio no funcionar: lo que se mide aquí es si ocho personas
+perfecto y el ejercicio no funcionar: lo que se mide aquí es si nueve personas
 discuten, no si el código calcula.
 
 Van en orden. Cada una responde una pregunta distinta y ninguna necesita la
@@ -452,9 +455,9 @@ sin turno 0 ni debriefing. Y una sola cosa que mirar:
 - ¿Aparece un desacuerdo entre dos personas que están las dos diciendo la verdad?
 
 > Si las tres respuestas son «no», la asimetría es decoración y hay que revisar
-> el contenido de las vistas (**A4**) antes de convocar a ocho.
+> el contenido de las vistas (**A4**) antes de convocar a nueve.
 
-### P4 · La corrida completa — 2 horas, ocho personas
+### P4 · La corrida completa — 2 horas, nueve personas
 
 **¿El ejercicio enseña lo que pretende enseñar?**
 
@@ -480,32 +483,17 @@ que ninguna estrategia pura gane. El criterio es **por comportamiento, no por
 realismo**: no hay respuesta empírica a cuánta legitimidad cuesta un muerto, y no
 la va a haber.
 
-Medición actual con `--comparar`:
+**La medición vive en un solo sitio:**
+[`COMO_FUNCIONA.md` §12](docs/COMO_FUNCIONA.md#12-los-siete-arreglos-medidos),
+que es donde está la tabla de `--comparar` con su lectura. Se reproduce con
+`uv run python scripts/correr_ejercicio.py --comparar`.
 
-```
-  estrategia      netas  reap  muert  legit  cohes  credib   resp
-  ---------------------------------------------------------------------
-  solo_fuerza         1     2     64     11      0      21     20
-  solo_mesa           9     0     64     65     56      49     49
-  constituida         1     4     48     42     74      21     53
-  humanitaria         3     0     14     41     28      35     54
-  logistica           3     1     24     41     40      26     39
-  pasiva              1     0     64     23     28      45     43
-```
+**Los dos problemas que estaban medidos ya no lo están** —la cohesión saturada en
+0 y las muertes idénticas en cuatro de cinco estrategias— y no eran de
+coeficientes: eran piezas que faltaban. Ver
+[`historial/resueltos.md` §2](docs/historial/resueltos.md#2--del-diagnóstico-del-motor-anterior).
 
-**Ninguna domina, y el reparto es el que debe ser.** `solo_mesa` abre nueve
-caminos y conserva las reservas — **y deja morir exactamente a la misma gente que
-`pasiva`**. `humanitaria` salva 50 de las 64 muertes y abre un tercio de los
-caminos. `constituida` tiene la mejor mesa y salva 16 muertes sin dejar de operar, y lo
-paga en credibilidad. `solo_fuerza` se queda sin nada.
-
-El dilema central del caso está en esa primera línea: **abrir el país y dejar
-morir a la gente, o salvarla y entregar el país cerrado.**
-
-**Los dos problemas que estaban medidos ya no lo están** — y no eran de
-coeficientes, eran piezas que faltaban. Ver «Lo que ya NO está pendiente».
-
-Quedan **tres cosas que solo se ven con personas dentro**:
+Quedan **cuatro cosas que solo se ven con personas dentro**:
 
 ### C4 · `solo_mesa` termina a un punto del acantilado
 
@@ -545,10 +533,83 @@ Dos salidas, y la decisión es del equipo:
 La 2 es más interesante pedagógicamente y toca calibración, así que se decide
 midiendo con gente dentro.
 
-### C1 · ¿24 puntos son demasiados para 5 decisiones?
+### C5 · La tabla hay que rehacerla: el tablero cambió debajo
 
-Si la sala toca menos de diez, bajar a 16. El mapa esquemático puede cambiar esto
-en las dos direcciones: hace los 24 más manejables, o hace evidente que sobran.
+**La medición vigente es de un escenario que ya no es el que corre**, y hasta
+que se rehaga no sirve para detectar regresiones. Cambiaron tres cosas a la vez:
+
+| Qué cambió | De | A |
+|---|---|---|
+| puntos de cierre | 11 (seis en la ciudad) | **10 (cinco en la ciudad)** |
+| geografía | esquema sobre una silueta | **red vial real, corredores ruteados** |
+| `masa_base` | dos puntos la tenían medida | **ocho la estrenan** |
+
+Y el resultado se mueve en la dirección que más importa:
+
+```
+  estrategia         netas  reap  muert  legit  cohes  credib   resp
+  ---------------------------------------------------------------------
+  solo_fuerza            4     3     64      3      0      21     14
+  solo_mesa              9     0     15     65     56      49     49  ← domina
+  constituida            0     3     48     49     74      21     59
+  humanitaria            2     0     13     35     28      45     48
+  logistica              2     0     13     52     40      36     45
+  agroalimentaria        5     0     33     72     23      45     49
+  pasiva                 1     0     64     23     28      45     43
+```
+
+> **La estrategia agroalimentaria es nueva y NO domina**, que es lo que había
+> que comprobar al añadir el noveno rol: abre cinco caminos, deja treinta y tres
+> muertes —el doble que la mesa— y paga su legitimidad en cohesión, porque
+> reordena el criterio de Transporte y abre un canal paralelo al del Interior.
+> Lo que no arregla es lo de abajo.
+
+**`solo_mesa` se acerca a dominar.** Abre nueve caminos, deja quince muertes
+—casi lo mismo que las dos estrategias logísticas, que antes le sacaban el
+doble— y termina primera o segunda en las cuatro reservas. El criterio de
+calibración del caso es explícito y es este:
+
+> Ajustar hasta que **ninguna estrategia pura gane**.
+
+Si una sala puede sentarse a hablar cinco jornadas y ganar en todo, el dilema
+del caso —abrir el país o salvar a la gente— se deshace.
+
+> **El noveno rol no empeora esto y tampoco lo arregla.** `agroalimentaria` no
+> domina —abre cinco caminos, deja treinta y tres muertes y paga su legitimidad
+> en cohesión—, pero se mide por primera vez y no hay serie histórica contra la
+> que compararla. Cuando se rehaga la tabla, hay que rehacer las siete filas.
+
+**Dónde mirar primero**, por orden de sospecha:
+
+1. **`masa_base` de los ocho puntos nuevos.** El término de masa entra en el
+   riesgo de incidente, así que unas cifras generosas abaratan la fuerza y unas
+   cortas la encarecen; pero lo que se movió a favor de la mesa fue el
+   *resultado humanitario*, y ahí manda el abastecimiento.
+2. **Qué punto se retiró.** Salió `N002`, la Glorieta La Ceiba: dureza media y
+   **vocería 0,68**, el punto pactable de la arteria. Quitarlo debería haber
+   hecho la mesa *más* difícil, no menos — conviene entender por qué no.
+3. **La longitud de los corredores.** Ahora son caminos reales y `C-HOS` da un
+   rodeo de 1,77 sobre la línea recta. La reposición no depende de la distancia
+   —el motor no tiene tiempos de desplazamiento— así que **esto no debería
+   influir**, y si influye es que algo lee la geometría que no debería.
+
+Es una medición, no un ejercicio, y se hace con
+`uv run python scripts/correr_ejercicio.py --comparar`.
+
+### C1 · ¿Diez puntos son los que caben en cinco decisiones?
+
+**Eran veinticuatro y se bajó a once**, sin haberlo medido con gente: veinticuatro
+producían un tablero que ninguna sala recorría entera, y quince de ellos eran
+decorado con nombre propio. Once es la apuesta contraria y también es una
+apuesta. Lo que hay que mirar en la primera corrida:
+
+- si la sala toca **ocho o más**, el número está bien
+- si toca **cuatro o cinco**, sobran igual y hay que bajar a ocho
+- si se queja de que no hay dónde elegir, subir a catorce
+
+Cinco de los diez están en la ciudad epicentro y cinco fuera. Esa proporción es
+la que hace que el Alcalde tenga cartera sin que las otras tres regiones sean
+decorado, y es lo segundo que conviene mirar.
 
 ### C2 · ¿Da tiempo a que la mesa se rompa?
 
@@ -556,10 +617,141 @@ Si la cohesión termina por encima de 55 casi siempre, subir la sensibilidad —
 aceptar que un ejercicio de dos horas **mide la constitución de la mesa y no su
 desgaste**, que también es un objeto legítimo.
 
-### C3 · ¿Se cumplen los 13 minutos por turno?
+### C3 · ¿Se cumplen los 13 minutos de día?
 
-Con el minuto 0 de parte privado añadido, el turno es más apretado. Si no
-cuadra, el problema es de conducción y se corrige con guion, no con diseño.
+La jornada son quince minutos: trece de día y dos de noche. Las siete fases se
+retiraron —eran una coreografía de sala ideal— y el día es ahora un solo tramo
+continuo en el que se puede ordenar en cualquier momento.
+
+Lo que hay que medir: **si los dos minutos de noche alcanzan** para leer las
+consecuencias. Si la sala se queda con la boca abierta y el reloj ya abrió la
+jornada siguiente, el reparto correcto es 12/3 y no 13/2. Se cambia en
+`parameters.py` (`MIN_DIA`, `MIN_NOCHE`) y en ningún otro sitio.
+
+### B12 · Lo que quedó escrito y nadie lee
+
+De la [revisión general del motor](docs/historial/resueltos.md#9--revisión-general-del-motor).
+Cuatro defectos se corrigieron ahí; esto es lo que se decidió **no** tocar,
+porque tocarlo sería cambiar el diseño y no arreglar un error.
+
+**Tres constantes de `parameters.py`:**
+
+| | Qué pasa | Qué habría que decidir |
+|---|---|---|
+| `MIN_INSTALACION` · `MIN_DEBRIEFING` | 12 y 20 minutos del cuadro de tiempos de la sesión. El reloj del ejercicio solo conduce las cinco jornadas | O el reloj cubre la sesión entera —instalación, jornadas, debriefing— o estos dos se van a la guía del facilitador. Hoy están en el sitio donde nadie los va a mirar |
+| `CUSTODIA_MILITARES_POR_INSTALACION = 3` | Su gemela policial (`= 2`) sí se usa. El redespliegue militar inmoviliza **por unidad**, no por instalación, así que esta nunca entra | Que la custodia militar cueste por instalación como la policial, o quitar la constante. Lo primero **cambia la aritmética** que enfrenta a Minas con Defensa, y esa es la decisión |
+
+**Tres campos del estado que se escriben y nadie lee:**
+
+| Campo | Se escribe en | Nadie lo lee |
+|---|---|---|
+| `Banderas.nodo_unico` | `FijarRegistroEscrito` | no está en `CONSTITUTIVAS`, no tiene rótulo, y **el bloque `banderas` que el tablero sirve no lo pinta ninguna superficie** |
+| `Acuerdo.turno_firmado` | `ConvocarMesaNacional` | el vencimiento se calcula con `turno_limite` |
+| `Decision.resultado` | `_registrar()` | el pliego del Presidente muestra rol, acción y responsable |
+
+Ninguno es un error: son campos que se dejaron puestos para algo que todavía no
+existe. **Lo que sí conviene decidir es el primero**, porque el nodo único de
+coordinación es una de las diez decisiones que la mesa puede tomar y hoy no
+aparece en el cuadro del Presidente ni en ningún otro sitio: se adopta, se cobra
+en el registro escrito, y **el ejercicio no lo enseña nunca**.
+
+> Hay una prueba —`test_ninguna_constante_de_parameters_queda_sin_leer`— que
+> lleva la lista de las tres constantes. No prohíbe las huérfanas: obliga a que
+> aparecer en ella sea una decisión escrita y no un descuido.
+
+### B11 · Se concede la clase agroalimentaria y nadie comprueba si se cumplió
+
+La ficha del Ministro de Agricultura declara un efecto que **el motor no modela**:
+
+> *«Si la lista se aprueba y no se cumple, queda documentado públicamente un
+> incumplimiento del Gobierno que los gremios usarán en su contra.»*
+
+Hoy `FijarClasePrioridadAlimentaria` reetiqueta un corredor y ahí termina. Si ese
+corredor sigue bloqueado las cinco jornadas, **no pasa nada**: la mesa concedió
+una prioridad que no entregó y el ejercicio no se lo cobra.
+
+Es el mismo modo de falla que el anuncio de aperturas de Transporte
+(`anunciado_abierto` / `anunciado_verificado`), y **ya existe la maquinaria para
+resolverlo**: una revisión nocturna que mire si el corredor con clase
+agroalimentaria dejó pasar algo, y cobre credibilidad si no. Media hora.
+
+Se deja anotado y no hecho por una razón de método: es el **tercer** cobro
+nocturno que se añadiría —mesas congeladas, riesgo de infraestructura, y este— y
+conviene ver una corrida con personas antes de seguir apilando consecuencias que
+la sala no ve venir. Va con **P4**.
+
+### B10 · Ocho de las treinta y nueve acciones no se pueden pedir por la consola
+
+**Se hizo visible al montar la guía de acciones**, que da a cada acción una
+columna con la frase que la pide. Ocho se quedaron con esa columna vacía:
+
+| Rol | Como la ve el participante | En el código |
+|---|---|---|
+| Presidente | Reunir a los alcaldes | `ConvocarAlcaldes` |
+| Presidente | Ir al epicentro en persona | `DesplazarseAlEpicentro` |
+| Alcalde | Publicar el conteo de la ciudad | `PublicarParteMunicipal` |
+| Defensa | Poner reglas a sus unidades | `FijarReglasEmpleoSector` |
+| Defensa | Mostrar quién financia los cierres | `PresentarEvidenciaInteligencia` |
+| Defensoría | Acordar una sola forma de verificar | `AdoptarProtocoloVerificacion` |
+| Transporte | Publicar el mapa de cierres | `PublicarMapaCierres` |
+| Minas | Acordar ventanas de paso | `AcordarPasosSeguros` |
+
+Existen en el motor, están probadas y el corredor sin interfaz las ejecuta. Lo
+que no existe es su **herramienta** en `herramientas.py`, y la consola es la
+única puerta al motor durante una sesión — de modo que hoy, con gente dentro,
+esas ocho no se pueden ejecutar.
+
+> No es un descubrimiento nuevo: `LAS_ACCIONES.md` ya las marcaba con un «no» en
+> su columna **LN**. Lo nuevo es que ahora **el participante lo ve en su propia
+> pantalla**, que es donde tenía que verse. La guía lo dice en vez de callarlo:
+> «todavía no se transcribe: se acuerda en la mesa».
+
+Dos de ellas son las que más molestan, y conviene decir por qué:
+
+- **`FijarReglasEmpleoSector`** enciende dos mitigadores. Su equivalente de la
+  Defensoría —`ExigirEstandaresEmpleo`, que enciende tres— sí se pide, así que
+  el Ministro de Defensa no puede adoptar por su cuenta el estándar de su propio
+  sector.
+- **`AcordarPasosSeguros`** es la única vía de Minas para hacer pasar suministro
+  sin abrir el punto ni gastar escolta.
+
+**El arreglo es mecánico**: una entrada en `HERRAMIENTAS` y un disparador en
+`DISPARADORES` por acción, más su fila en `GUIA`. Media hora y ocho pruebas —la
+que ya existe (`test_cada_ejemplo_de_la_guia_produce_su_accion`) las cubriría
+sola en cuanto tengan ejemplo. Se deja anotado y no hecho porque **añade ocho
+caminos nuevos al canal justo antes de una recalibración** (C5), y conviene
+medir una cosa cada vez.
+
+### B9 · Ninguna prueba mira lo que la interfaz dibuja
+
+**El fallo que lo hizo necesario.** `rotulo()` traduce el identificador del motor
+al rótulo de pantalla, y admite un solo argumento: `rotulo('Puente Amarillo')`
+tenía que capitalizar y devolver el texto. Devolvía **un guion**, porque la
+primera guarda miraba `valor` —que con un solo argumento es `undefined`— antes de
+darse cuenta de que el argumento único era el valor.
+
+Así se formatea **cada celda de texto de las nueve vistas privadas**. El resultado:
+el nombre de cada punto, cada corredor, cada región y cada estado salía como
+«—» en la pantalla de su titular. Nueve tablas llenas de guiones, que desde el
+otro lado de la sala se ve exactamente como una pantalla en blanco.
+
+> **Y la verificación automática pasaba entera.** El motor entregaba bien los
+> nombres; era la última capa la que los borraba. No hubo excepción, ni traza, ni
+> error de consola: la interfaz hizo su trabajo con diligencia sobre un dato
+> equivocado.
+
+**Lo que falta.** Un verificador que renderice las cuatro superficies con un
+estado de referencia y falle si algo no cuadra. No hace falta un navegador:
+`react-dom/server` las pinta en memoria en milisegundos. Tres comprobaciones
+bastarían para haber cazado esto:
+
+- ninguna celda de una tabla es un guion cuando el motor entregó un texto
+- las cuatro superficies renderizan sin lanzar, con estado de t=0 y de t=5
+- el mapa dibuja un rótulo por punto, y las zonas de región no se solapan
+
+**Coste**: `esbuild` ya está en `web_ui` como dependencia de Vite, y el corredor
+cabe en un `npm run verificar`. **Sin esto, la única prueba de la interfaz es
+mirarla** — y mirarla es justo lo que no ocurre entre una corrida y la siguiente.
 
 ---
 
@@ -578,14 +770,14 @@ diseño, así que van con lo que se gana y lo que se pierde.
 
 | Montaje | Qué hace falta |
 |---|---|
-| Portátil o tableta por persona | ocho equipos en la red del servidor |
-| **Papel por turno** | alguien imprime ocho hojas desde `/api/vistas` |
+| Portátil o tableta por persona | nueve equipos en la red del servidor |
+| **Papel por turno** | alguien imprime nueve hojas desde `/api/vistas` |
 
 > **Recomendación:** portátil o tableta. Y si el equipo no está seguro de poder
 > sostener las cinco reglas —vista sin scroll, pantallas congeladas en la
 > deliberación, nadie ordena desde su pantalla, ficha en papel, el tablero no
-> repite lo privado—, **papel**: el ejercicio funciona igual y el riesgo de ocho
-> personas mirando ocho pantallas desaparece.
+> repite lo privado—, **papel**: el ejercicio funciona igual y el riesgo de nueve
+> personas mirando nueve pantallas desaparece.
 
 ### A2 · ¿Quién opera la consola?
 
@@ -594,7 +786,7 @@ diseño, así que van con lo que se gana y lo que se pierde.
 **No es un moderador**: no conduce, no reparte información y no sabe nada que los
 demás no sepan.
 
-> **Recomendación:** un externo si lo hay —deja a los ocho libres para
+> **Recomendación:** un externo si lo hay —deja a los nueve libres para
 > deliberar—; el Presidente si no, porque el registro escrito de decisiones ya es
 > competencia suya.
 
@@ -611,11 +803,11 @@ degradan y el ejercicio corre igual.
 > motor esté calibrado, se enciende y se mide qué añade, que es una medición
 > distinta y también interesante.
 
-### A4 · ¿Cuál es el contenido exacto de las ocho vistas?
+### A4 · ¿Cuál es el contenido exacto de las nueve vistas?
 
 **Bloquea:** la versión definitiva. No bloquea probar.
 
-Las ocho están construidas con un contenido que **es una propuesta, no una
+Las nueve están construidas con un contenido que **es una propuesta, no una
 decisión**. Verlas de un vistazo:
 
 ```bash
@@ -641,8 +833,8 @@ porque el motor identifica por código y no por nombre.
 
 > **Recomendación:** dejarlos para las primeras corridas y decidirlos después,
 > cuando se vea si el caso muerde con nombres inventados. El criterio: que **no
-> sean alias transparentes**. Hay una prueba automática
-> (`test_el_territorio_es_ficticio`) que falla si vuelve a aparecer un nombre real.
+> sean alias transparentes**. El repositorio falla solo si vuelve a aparecer un
+> nombre real.
 
 ---
 
@@ -666,7 +858,7 @@ solo en la vista de la Dirección General de la Policía.
 | **La Policía** | pierde su razón de estar | es la única que convierte «hay 6 escuadrones libres» en «hay 2 que llegan a tiempo» |
 | **El ejercicio** | más fácil de seguir | siete roles siguen necesitando al octavo |
 
-> **Está puesto del lado que preserva los ocho roles**, que es el que sostiene el
+> **Está puesto del lado que preserva los nueve roles**, que es el que sostiene el
 > diseño. Cambiarlo es media hora: `vista_publica()` ya tiene el dato y solo
 > habría que dejarlo salir.
 
@@ -687,9 +879,8 @@ La escolta puede salir, pero la carga no pasará.
 ```
 
 **Qué punto bloquea cada corredor es el dato exclusivo del Ministro de
-Transporte**, custodiado por `test_solo_transporte_ve_que_punto_bloquea_cada_corredor`.
-Y el plan se lee en voz alta: cualquiera que pida una escolta se lo destapa a
-toda la sala.
+Transporte**, y esa exclusividad está garantizada por construcción. Y el plan se
+lee en voz alta: cualquiera que pida una escolta se lo destapa a toda la sala.
 
 | | A favor de dejarlo | A favor de quitarlo |
 |---|---|---|
@@ -719,188 +910,31 @@ una escolta.
   decide si esta vez salió mal, y la probabilidad se muestra antes.»*
 
 ---
----
+## Lo que ya no está pendiente
 
-## Lo que ya NO está pendiente
+**Se movió entero a [`docs/historial/resueltos.md`](docs/historial/resueltos.md).**
+Un documento que lleva la cuenta de lo que falta no puede tener dentro
+doscientas líneas de lo que ya no falta.
 
-Anotado aquí para que nadie lo vuelva a levantar.
+Lo que hay allí, por si hace falta ir a buscarlo:
 
-### De la propuesta original
+| | Qué se cerró |
+|---|---|
+| **1** | Las decisiones de la propuesta original — marcador, retiro de la Defensoría, azar |
+| **2** | Los siete problemas del diagnóstico del motor anterior (D1–D7) |
+| **3** | Las dos capas de lenguaje natural, con su degradación sin llave |
+| **4–5** | Las dos revisiones del canal de órdenes — dieciocho fallos, nueve de ellos silenciosos |
+| **6** | El Comité del Paro, que no volvía nunca |
+| **7** | El paquete detonante (H1–H4) |
+| **8** | Las superficies — mapa, reloj, deltas, semáforo del repertorio |
 
-> **Ojo con los identificadores de esta tabla:** son los de la propuesta
-> original, no los de la lista de arriba. El `A6` de aquí («¿se acepta el
-> azar?») no tiene nada que ver con el `A6` vigente («¿el mapa muestra dónde
-> está la fuerza?»). Los dos numeraron cosas distintas en momentos distintos.
-
-| | Era | Cómo quedó |
-|---|---|---|
-| **T1** | `intensidad_movilizacion` satura en 100 y deja de discriminar | Rendimientos decrecientes (×0,6 por repetición) y decaimiento proporcional (×0,96) |
-| **T2** | `control_voceria` no está en la capa de estimación | Entró con sesgo por fuente: Interior lo sobreestima +0,20; el Alcalde lo ve bien en su jurisdicción |
-| **T3** | `dureza` la escriben dos mecanismos sin precedencia | Tres, con orden fijo en `paso()`. Determinista y reproducible |
-| **—** | Toda región sin corredor humanitario acumula muertes inevitables | Invariante con fallo ruidoso en `loader.py` y prueba automática |
-| **—** | `P(incidente)` alcanzaba 1,0 y volvía la tirada irrelevante | Techo en 0,98 |
-| **A2** | ¿Se puntúa? ¿Las agendas suman? | **No hay marcador.** Las agendas se revelan, no se puntúan |
-| **A3** | ¿La Defensoría puede retirarse? | **No se retira.** Su palanca es manifestar públicamente que su permanencia está en cuestión — se puede usar varias veces, es graduada, y nunca saca sus mitigadores del juego |
-| **A4** | `capital_politico` no es implementable | Eliminado. Con ocho personas en una sala, el capital político lo administra la sala sola |
-| **A6** | ¿Se acepta el azar? | Sí, con semilla fija. **La semilla no es un elemento visible de la interfaz** |
-
-### La revisión del canal de órdenes
-
-La capa 4 no tenía **ni una sola prueba**: 63 verificadores custodiaban el motor
-—que nadie toca durante el ejercicio— y cero el canal por el que entran las
-órdenes de ocho personas en dos horas. Al sondearlo con órdenes reales
-aparecieron nueve fallos. Cuatro eran silenciosos, que es la peor clase.
-
-| | Era | Cómo quedó |
-|---|---|---|
-| **N1** | «Operen el puente **y** concertar el Alto del Mirador» producía DOS acciones sobre el Alto del Mirador: el intérprete buscaba nombres en todo el texto | Cada disparador solo mira **su cláusula**. La ambigüedad de «el puente» sobrevive y se repregunta |
-| **N2** | «Operen todos los puntos» ejecutaba **uno**: el expansor se quedaba con `ids[0]` | Un criterio produce **una acción por punto**, con tope y con aviso |
-| **N3** | La lectura en voz alta decía «operación de desbloqueo sobre un punto de cierre» — **sin decir sobre cuál** | Dice sobre qué punto, con qué unidad y con qué mitigadores |
-| **N4** | «Operen X **con militares**» salía como ESMAD, porque el intérprete de reserva no leía la unidad | La lee, tras una marca («con», «usando»), para que «responsable el Director de Policía» no cuente |
-| **N5** | Cuatro criterios documentados —«el más duro», «el más crítico», «el que bloquea», «el más…»— eran **inalcanzables**: `normalizar()` quita el artículo y la tabla los guardaba con él | Las claves se normalizan al cargar. Prueba que recorre la tabla entera |
-| **N6** | «Operen el Anillo hospitalario» respondía «no corresponde a ningún punto, corredor ni región» — y es un corredor | Dice qué es, y enumera sus puntos. Nunca cuál lo bloquea: eso es de Transporte |
-| **N7** | Vacío, galimatías, saludo, pregunta y «declaren el estado de sitio» daban **el mismo párrafo** | Cuatro diagnósticos distintos, porque son cuatro correcciones distintas |
-| **N8** | `consultar` se le ofrecía al modelo pero **no existía** en el repertorio: al llamarla, «Herramienta desconocida» | Herramienta de solo lectura, con su hoja de datos en el plan y sin llegar al motor |
-| **N9** | `/ejecutar` encolaba acciones en `falta_dato`, y un `except: continue` tiraba las que fallaban **sin decirlo** | Solo se ejecuta lo que está `lista`; lo que no, sale en `omitidas` con su motivo |
-
-Y dos del motor, que sostenían por debajo dos de esos fallos:
-`RedesplegarMilitares` no validaba su `modo` —un valor desconocido caía por el
-`else` y hacía **proyección aérea**— y `AsignarDuplas` daba por buena una
-asignación sin ningún punto ni denuncia.
-
-**47 pruebas nuevas**, en [`tests/test_canal_ordenes.py`](tests/test_canal_ordenes.py).
-Ninguna llama a un modelo.
-
-### La segunda revisión del canal de órdenes
-
-La primera tanda dejó **47 pruebas** y cerró nueve fallos. Al volver a sondear el
-canal —esta vez con el modelo puesto y no solo la rama determinista— aparecieron
-otros nueve. **Cinco eran silenciosos**, y dos de ellos llevaban puesta la
-etiqueta contraria: el código decía en su propia cabecera que hacía lo que no
-hacía.
-
-| | Era | Cómo quedó |
-|---|---|---|
-| **M1** | El constructor de `abrir_mesa_local` ponía `con_alcaldia=True` **cuando nadie lo había dicho**. En el epicentro esa es la única puerta que obliga al Interior a traer al Alcalde a la mesa, y por el canal **no se cerró nunca** | Por defecto **no** está la Alcaldía. La orden sale `no_viable` y dice quién la habilita. «Con la Alcaldía» dicho sí cuenta |
-| **M2** | Dos de las veintiséis herramientas —`redesplegar_militares` y `mesa_con_voceros`— **no tenían disparador**: sin llave, el canal respondía «ninguna acción del repertorio corresponde a eso» sobre acciones que sí tiene | Las dos tienen el suyo, y una prueba recorre el repertorio entero. El canal ya no niega tener lo que tiene |
-| **M3** | Los valores por defecto vivían dentro de `construir`: la acción se ejecutaba con ESMAD, con seis escuadrones o con un margen de 0,5, y como el argumento no estaba en `argumentos`, **la lectura en voz alta no lo decía** | `por_defecto` declarado por herramienta. Viaja en el plan, se dice, y se puede corregir con un botón |
-| **M4** | El intérprete de reserva no leía **ninguna cifra**: «concentrar 8 escuadrones» concentraba seis | Las lee, en dígitos y en letras. También el margen de las líneas rojas |
-| **M5** | Tampoco leía **quién firma**. Con el registro escrito adoptado, `responsable_nominado` es lo que hace atribuible un incidente: esa mecánica entera moría al correr sin llave | Se extrae tras «responsable», y se dice en la lectura |
-| **M6** | «Operen X **concertado con la Alcaldía**» abría una mesa que nadie pidió —la raíz `concert`— y se llevaba el resto de la frase: la operación perdía el mitigador **y** el responsable que venían detrás | Hay frases que son parámetro de la orden anterior y no empiezan otra. La operación se queda con lo suyo |
-| **M7** | `condicionar` es un infinitivo, no una raíz: «el Alcalde **condiciona** el empleo de la fuerza» no disparaba nada | La raíz aguanta la conjugación, que es lo que el propio comentario del archivo decía y esa entrada no cumplía |
-| **M8** | La lectura en voz alta **no decía de qué rol era cada acción**. Con el modelo, «instalar mesa con voceros» —del Alcalde— salía como la mesa del Interior, y la sala no tenía cómo oírlo | Cada línea empieza por su rol. En un ejercicio cuyo objeto es quién tiene qué palanca, eso es el dato |
-| **M9** | Preguntar **gastaba un turno**: un plan de solo consultas llegaba a `/ejecutar` y corría `motor.paso()` igual. La sala preguntaba cuánto oxígeno quedaba y se le iba una de las cinco ventanas | La hoja de datos ya venía en el plan; ahora además el reloj no se mueve, y la respuesta lo dice |
-
-Y cuatro más que aparecieron al probar **con el modelo puesto**, no con la rama
-determinista. Los tres primeros son la misma lección escrita tres veces:
-*restringir el espacio de salida no impide que el modelo se salga.*
-
-| | Era | Cómo quedó |
-|---|---|---|
-| **M10** | El modelo **se concedía a sí mismo** lo que M1 le quitó al constructor: «concertar en la Glorieta La Ceiba» volvía con `con_alcaldia: true` sin que nadie hubiera nombrado a la Alcaldía. Y lo mismo con la dupla y con la firma delimitada | `NO_SE_INFIERE`: cuatro booleanos que **conceden** un requisito o rebajan un riesgo se contrastan contra el texto que escribió la sala. Solo **bajan** concesiones —añadir también sería el canal decidiendo— y lo que se quita **se dice** |
-| **M11** | `bool("false")` es `True`. El `valor` de una elección tipada viaja siempre como cadena, así que un «no» pulsado en la pantalla habría entrado como sí | Cada campo se lleva al tipo que declara su esquema, antes de tocar el motor. Lo que no se puede convertir se avisa y no se inventa |
-| **M12** | Dos parejas de herramientas se confundían: «redesplegar cuatro unidades militares» salía unas veces como el **relevo del Director de Policía**, y la caravana como la escolta | Una nota `para_el_modelo` por herramienta confundible, que **no** se lee en voz alta: la sala oye la descripción corta, el modelo recibe además qué la distingue de su vecina. Medido: 17 de 18 |
-| **—** | Un quinto diagnóstico del silencio: «operen eso de allí» respondía «esa acción no existe» — y la acción se había entendido perfectamente | Si se reconoce el verbo pero no el sitio, se dice así, que es otra corrección |
-
-Y tres del cauce, que no son del canal pero lo sostienen:
-
-| | Era | Cómo quedó |
-|---|---|---|
-| **—** | **Las pruebas salían a la red.** La cabecera de `test_canal_ordenes.py` decía que ninguna llamaba a un modelo, y era verdad a medias: el accesorio silenciaba `nlu`, pero las cinco pruebas que pasan por `/ejecutar` disparan después la **capa 3** con el cliente real. **176 s por corrida y llamadas facturadas**, en la suite que corre en cada cambio | `tests/conftest.py`, con `autouse`, silencia **las dos**. La suite baja a **1,3 s** y hay una prueba que comprueba que las dos están mudas. Un accesorio por archivo es justo lo que dejó media puerta abierta |
-| **—** | Con el modelo, un lugar ambiguo hacía que **no llamara a nada**: «operen el puente» respondía «esa acción no existe», y la repregunta con candidatos —para la que existe `resolver.py` entero— no llegaba a dispararse nunca | Una regla explícita en el sistema: un sitio ambiguo se copia tal cual y se llama igual. Lo único que justifica no llamar es que la **acción** no exista |
-| **—** | La pantalla adivinaba a qué campo pertenecía cada entidad buscando el valor crudo entre los argumentos. Para los de **lista** no aparecía nunca, así que corregir uno de los tres puntos de `asignar_duplas` moría en un 400 — y la asignación plana habría borrado los otros dos | Cada entidad viaja con su campo, y una elección sobre un campo de lista **completa** en vez de sustituir |
-
-**Lo que sigue sin poder hacer la rama sin llave:** un nombre que no está en el
-catálogo y que tampoco se parece a nada **no se ve**. «Duplas al Puente Amarillo,
-al Puente de Brooklyn y al Alto del Mirador» asigna dos y no puede nombrar el que
-perdió, porque nunca lo reconoció como nombre. Por eso la lectura ahora **cuenta**
-—«Sobre 2: …»—: si la sala dijo tres y oye dos, la resta la hace ella. Con el
-modelo puesto no pasa: el nombre viaja crudo y sale por su nombre en el motivo.
-
-**Queda un residuo, y es del modelo, no del cauce.** «Concertar en el Alto del
-Mirador» sale una de cada tres veces como la mesa del Alcalde. El punto está
-fuera de su jurisdicción, así que el motor la rechaza diciendo que la habilita el
-Ministro del Interior, y la lectura en voz alta ya empieza por el rol — la sala
-lo oye. Es el diseño funcionando: **el modelo se equivoca y el cauce lo atrapa.**
-
-**39 pruebas nuevas**, 150 en total, 2,3 s. Ninguna llama a un modelo — y ahora
-hay una que lo comprueba.
-
-### El paquete detonante, completo
-
-**B4** era el último de los cuatro hechos que abren el turno 1. Ya está.
-
-| | Qué | Dónde |
-|---|---|---|
-| **H1** | el incidente nocturno junto a la refinería, con un herido grave de la fuerza pública | `hecho_h1` en [`estado_inicial.json`](data/escenario/estado_inicial.json), aplicado por `_aplicar_hecho_h1()` |
-| **H2** | dos denuncias graves sin verificar, una cierta y una falsa | `denuncias_iniciales` |
-| **H3** | el ultimátum gremial de 48 horas | `ultimatum_gremios_turno` |
-| **H4** | la región que cruza los dos días de oxígeno | autonomías del escenario |
-
-**H1 cae en `N013`, la Portería de la refinería**, y no es una elección
-arbitraria: el punto ya traía la trampa en los datos.
-
-| Dato | Valor | Qué produce |
-|---|---|---|
-| `dureza` | **0,77** → 0,83 tras el incidente | el más duro de los tres junto a infraestructura |
-| `control_voceria` | **0,28** | casi no hay con quién concertar |
-| `composicion_real` | **51 % protesta legítima** | apenas sobre el umbral de 0,50 → **operar cuesta el doble** |
-| región y corredor | epicentro · `C-REF` | el corredor que Minas necesita |
-
-Responder con fuerza es la jugada evidente —hay un herido de la fuerza
-pública— y es la más cara, donde menos se puede negociar, sobre el corredor que
-otra cartera necesita intacto. Y la mesa aún no se ha constituido: los
-mitigadores están al mínimo.
-
-> **H1 no mata a nadie ni abre el punto.** Es una condición inicial, no un
-> resultado: el turno 1 empieza con más decisiones sobre la mesa, no con menos.
-> Lo custodian `test_h1_llega_aplicado_y_no_resuelve_nada` y
-> `test_h1_cae_donde_la_via_pactada_casi_no_existe`.
-
-Al implementarlo se descubrió **C4**, que sigue abierto.
-
-### Del diagnóstico del motor anterior
-
-Los siete problemas de [`docs/historial/mapa_de_palancas.md`](docs/historial/mapa_de_palancas.md):
-
-| | Era | Cómo quedó |
-|---|---|---|
-| **D1** | La mezcla real de los puntos no cambiaba **nada** | Conectada por dos vías. `test_la_mezcla_real_cambia_el_resultado_de_la_corrida` falla si se desconecta |
-| **D2** | El polo de negociación no podía negociar | Interior tiene 4 acciones, incluida la mesa nacional. Los dos mayores movimientos hacia abajo de la movilización ya se disparan |
-| **D3** | El dueño del ESMAD no podía asignarlo | `DisponerESMAD` y `Escoltar` |
-| **D4** | El frente logístico no podía mover carga | Escolta, caravana, gremios, y la prioridad de combustible como criterio permanente |
-| **D5** | La cohesión era una rampa determinista | Solo se cobra de día, y ahora se puede reponer. Va de 0 a 74 según lo que la sala haga |
-| **D6** | El paquete detonante no existía | **Los cuatro hechos**, más la jornada nacional en el calendario |
-| **D7** | El eje de Vocería no tenía mecánica | Parcial: el anuncio verificado y el parte clasificado sí; el encuadre sigue pendiente |
-
-### Las dos capas de lenguaje natural
-
-Eran **B1** y **B2** de la lista anterior. **Están construidas y probadas con el
-modelo puesto.**
-
-| | Era | Cómo quedó |
-|---|---|---|
-| **capa 4** | el canal de órdenes era un stub que ignoraba el texto | [`src/agents/nlu.py`](src/agents/nlu.py) · los nueve pasos, y **solo el primero usa el modelo**. Resolutor determinista de cuatro estados, validación sin `break`, tope de expansión, elección tipada para las ambigüedades y lectura de vuelta determinista |
-| **capa 3** | la esfera pública emitía dos frases fijas | [`src/agents/entorno.py`](src/agents/entorno.py) · seis agentes con su sesgo y su cadencia, una llamada por turno con presupuesto duro |
-| **—** | las tres cifras salían cableadas | Salen de las vistas por rol, con los sesgos calibrados |
-| **—** | no había dónde poner la llave | `.env` en la raíz, a partir de `.env.example`. `/api/config` dice si está |
-
-**Las dos degradan solas si falta la llave o si el proveedor tarda**, y lo dicen
-en el campo `generado_por`. Esa degradación es la prueba operativa de que ninguna
-decisión de la simulación se delegó al modelo.
-
-### Las superficies
-
-| | Era | Cómo quedó |
-|---|---|---|
-| **—** | tres superficies contra la API antigua | Tres: `/tablero` —con la esfera dentro—, `/vista/{rol}` ×8 y `/consola` |
-| **—** | el mapa no existía | [`MapaEsquematico.jsx`](web_ui/src/components/MapaEsquematico.jsx) · esquema de líneas, con la forma del nodo diciendo cómo se abrió, un `?` en lo que nadie ha mirado y **un anillo sobre lo que cambió en la última ventana** |
-| **—** | el tablero no decía qué hora era | `Estado.reloj()` · cinco jornadas del 11 al 15 de mayo, nueve ventanas, y la noche se ve distinta |
-| **—** | un número solo no decía si iba a mejor | `MotorCrisis.deltas()` · ▲▼ contra la ventana anterior, no contra el arranque |
-| **—** | cada cifra llevaba su glosa impresa debajo | Marca **(?)** y 38 definiciones formales en [`definiciones.jsx`](web_ui/src/definiciones.jsx) |
-| **—** | el reloj de fases lo llevaba el moderador | Lo lleva el sistema, fase por fase |
+**Y una cosa de ahí sigue abierta**, porque es de equilibrio y no de corrección:
+el costo de −12 por operar exige que el Comité esté sentado, así que **en cuanto
+el Comité se va, operar deja de costarlo**. Con la vuelta ya implementada eso
+pasa a ser un estado que la sala puede administrar, y cambiarlo mueve la tabla de
+calibración. Se decide con gente dentro.
 
 ---
 
-*Última revisión: 2026-08-26 · 150 pruebas en verde en 2,3 s · capas de lenguaje
-natural activas con `gpt-5-nano`, con su latencia medida (B5).*
+*Última revisión: 2026-08-27 · semilla `20210511` · capas de lenguaje natural
+activas con `gpt-5-nano`, con su latencia medida (B5).*

@@ -1,19 +1,26 @@
 """
-actions.py — Las acciones de los ocho roles.
+actions.py — Las acciones de los nueve roles.
 
-Treinta y cuatro acciones, entre cuatro y cinco por rol. El Presidente tiene
+Treinta y nueve acciones, entre cuatro y cinco por rol. El Presidente tiene
 cinco porque decide más; la Defensoría también, porque cruza dos ejes sin mandar
-sobre nadie.
+sobre nadie; y el Ministro de Agricultura, porque ninguna de las suyas se
+ejecuta sin la concurrencia de otro y necesita margen para elegir por dónde.
 
-    Constituye     cambia cómo funciona la mesa. Activa una bandera persistente.
+    constitutiva   cambia cómo funciona la mesa. Activa una bandera persistente.
                    Casi no cuesta y modifica TODO lo posterior.
-    Toca el mundo  cambia el territorio, la fuerza o el abastecimiento.
+    operativa      cambia el territorio, la fuerza o el abastecimiento.
                    Efecto inmediato; se agota en su turno.
-    Informa        cambia lo que el país tiene por cierto.
+    informativa    cambia lo que el país tiene por cierto.
                    Hablar es gratis; hacerlo oficial tiene consecuencia.
 
 **Cada rol tiene al menos una de cada clase**, y eso es lo que garantiza que
 ningún participante pase el ejercicio sin nada que hacer.
+
+DELANTE DE LA SALA SE LLAMAN **PROTOCOLO**, **OPERACIÓN** E **INFORMACIÓN**.
+Los tres de arriba son vocabulario de diseño y se quedan en el motor, donde
+nombran una distinción que importa —un acto que constituye no es un acto que
+ejecuta—; los tres de abajo son los que lee alguien que llegó esta mañana. La
+traducción vive en un solo sitio, `web_ui/src/etiquetas.jsx`, y no se reparte.
 
 EL PATRÓN
 ---------
@@ -52,6 +59,34 @@ class Resultado:
 
 
 @dataclass
+class Disponibilidad:
+    """
+    Si una acción **se puede pedir ahora**, y qué falta si no.
+
+    Es la respuesta a la pregunta que cada titular se hace mirando su repertorio,
+    y que hasta ahora solo podía contestar pidiéndola y recibiendo un rechazo
+    delante de la mesa. Cuatro estados, y ninguno nombra el remedio concreto:
+
+        disponible    se puede pedir hoy
+        condicionada  se puede pedir, y hay un reparo que conviene saber antes
+        bloqueada     hoy no. Falta algo que otro tiene que hacer primero
+        hecha         ya está vigente; volver a pedirla no cambia nada
+
+    EL REQUISITO SE ENUNCIA EN GENERAL. «Requiere que el Presidente firme la
+    asistencia militar» es un hecho sobre el mundo; «firme la asistencia militar
+    y opere el Puente Amarillo» sería el tablero decidiendo por la sala. La
+    distancia entre las dos es la distancia entre un ejercicio y un tutorial.
+    """
+    estado: str = "disponible"
+    requisito: str = ""
+    habilitada_por: list[str] = field(default_factory=list)
+
+    def a_dict(self) -> dict:
+        return {"estado": self.estado, "requisito": self.requisito,
+                "habilitada_por": list(self.habilitada_por)}
+
+
+@dataclass
 class Validacion:
     ok: bool
     motivo: str | None = None
@@ -80,11 +115,94 @@ class Accion:
     descripcion: str = ""
     en_claro: str = ""
 
+    # LOS TRES CAMPOS DE LA GUÍA DE ACCIONES, que se rellenan en `GUIA` al final
+    # del módulo y no aquí: puestos uno por clase, treinta y nueve enunciados
+    # de requisito repartidos por dos mil líneas no se pueden comparar entre sí,
+    # y lo que hace legible una guía es justamente que sus filas estén escritas
+    # con el mismo rasero.
+    #
+    #   `nombre`              cómo se llama en la sala, en cuatro palabras y en
+    #                         verbo: «Autorizar al Ejército». Es el rótulo de la
+    #                         fila. No sustituye a `descripcion` ni a `en_claro`
+    #                         —son tres lectores— sino que los ordena: el nombre
+    #                         se busca, el en claro se lee, el nombre formal se
+    #                         cita. Antes la fila empezaba por dos frases de
+    #                         prosa, y una tabla que empieza por prosa no se
+    #                         recorre con el ojo: hay que leerla entera.
+    #
+    #   `requisitos_previos`  qué hace falta ANTES, EN CUALITATIVO Y NUNCA EN
+    #                         CIFRA. «Escuadrones sin comprometer» y no «dos
+    #                         escuadrones»: la cifra invita a contar hasta el
+    #                         umbral y pedirla justo ahí, y lo que la guía tiene
+    #                         que enseñar es de qué depende la acción, no cuánto
+    #                         cuesta exactamente. El semáforo, que sí mira el
+    #                         estado de hoy, es otra columna.
+    #
+    #   `ejemplo_consola`     una frase que de verdad funciona. Vacía en las que
+    #                         todavía no tienen herramienta en el canal.
+    nombre: str = ""
+    requisitos_previos: str = ""
+    ejemplo_consola: str = ""
+
+    # La bandera que esta acción deja puesta y que hace que pedirla otra vez no
+    # cambie nada. Solo la llevan las que son idempotentes de verdad: fijar la
+    # prioridad del combustible, por ejemplo, se puede rehacer con otro orden y
+    # por eso no la lleva.
+    bandera_que_activa: str = ""
+
     def validar(self, estado: Estado) -> Validacion:
         return Validacion(ok=True)
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         raise NotImplementedError
+
+    # ------------------------------------------------------------------
+    # EL SEMÁFORO DEL REPERTORIO
+    #
+    # No es una segunda copia de las reglas: `disponibilidad()` LLAMA a
+    # `validar()`. Lo único que cada clase aporta es una SONDA — un ejemplar
+    # representativo con el objetivo más favorable que hoy exista— para poder
+    # preguntar sin haber elegido todavía sobre qué punto.
+    #
+    # Que la sonda busque el objetivo MÁS FAVORABLE es deliberado: la pregunta
+    # que contesta el semáforo es «¿esto se puede pedir hoy?», no «¿esto
+    # funcionaría sobre este punto?». Bloqueada significa entonces que no hay
+    # ningún objetivo para el que funcione, que es la única forma de bloqueo que
+    # le sirve a quien está leyendo su repertorio.
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def sonda(cls, estado: Estado) -> "Accion | None":
+        """El ejemplar con el que se le pregunta a `validar()`. `None` = basta
+        con uno por defecto, porque esta acción no necesita objetivo."""
+        return None
+
+    @classmethod
+    def disponibilidad(cls, estado: Estado) -> Disponibilidad:
+        if cls.bandera_que_activa and getattr(
+                estado.banderas, cls.bandera_que_activa, False):
+            return Disponibilidad("hecha", "Ya está vigente en la mesa.")
+        try:
+            ejemplar = cls.sonda(estado) or cls()
+            v = ejemplar.validar(estado)
+        except Exception:
+            # Un semáforo roto no puede quitarle a nadie su repertorio: ante la
+            # duda se muestra disponible y que el canal de órdenes decida.
+            return Disponibilidad()
+
+        if not v.ok:
+            # `validar()` a veces resume con «Faltan requisitos.» y guarda la
+            # lista aparte. Un semáforo que dijera solo eso no explicaría nada:
+            # lo que le sirve a quien lee su repertorio es el nombre de lo que
+            # falta, y ese está en `requisitos_faltantes`.
+            motivo = v.motivo or "Hoy no se puede pedir."
+            if v.requisitos_faltantes:
+                motivo = f"Falta {', '.join(v.requisitos_faltantes)}."
+            return Disponibilidad("bloqueada", motivo, v.habilitada_por)
+        if v.parcial:
+            return Disponibilidad(
+                "condicionada", v.motivo or "", v.habilitada_por)
+        return Disponibilidad()
 
 
 # ===========================================================================
@@ -102,6 +220,8 @@ class FijarRegistroEscrito(Accion):
         "Deja por escrito cada decisión y quién responde por ella. Sin "
         "registro, al cierre nadie puede decir quién ordenó qué.")
 
+    bandera_que_activa = "registro_escrito"
+
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         nuevo = estado.banderas.activar("registro_escrito", estado.turno)
         estado.banderas.activar("nodo_unico", estado.turno)
@@ -109,7 +229,7 @@ class FijarRegistroEscrito(Accion):
             return Resultado(True, "El registro escrito ya estaba vigente.")
         return Resultado(True, (
             "Registro escrito vigente. A partir de ahora cada incidente es "
-            "ATRIBUIBLE a quien firmó, en vez de repartirse sobre los ocho."
+            "ATRIBUIBLE a quien firmó, en vez de repartirse sobre los nueve."
         ), {"bandera": "registro_escrito"})
 
 
@@ -124,6 +244,8 @@ class FijarLineasRojas(Accion):
         "Anuncia qué está y qué no está sobre la mesa. Fija el terreno de lo "
         "negociable antes de que lo fije otro.")
     margen: float = 0.5     # 0 = sin margen, 1 = todo negociable
+
+    bandera_que_activa = "lineas_rojas_fijadas"
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         estado.banderas.activar("lineas_rojas_fijadas", estado.turno)
@@ -152,6 +274,8 @@ class FirmarAsistenciaMilitar(Accion):
         "disponible, y militares frente a multitudes suben la tensión en la "
         "calle.")
     delimitada: bool = False    # territorio + plazo + reglas + criterio de terminación
+
+    bandera_que_activa = "asistencia_militar_firmada"
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         from src.engine import mobilization
@@ -276,6 +400,8 @@ class ExigirProtocoloVoceria(Accion):
         "Establece que una sola persona habla por el Gobierno. Evita que dos "
         "carteras digan cosas distintas el mismo día.")
 
+    bandera_que_activa = "protocolo_voceria"
+
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         estado.banderas.activar("protocolo_voceria", estado.turno)
         estado.banderas.activar("plazo_suspensivo", estado.turno)
@@ -368,6 +494,17 @@ class AbrirMesaLocal(Accion):
     no. Hasta la v2 esta acción vivía en la ficha del Alcalde y no comprobaba
     jurisdicción: un alcalde municipal acababa pactando cierres en dos regiones
     ajenas.
+
+    LA FRONTERA CON LA MESA TÉCNICA RURAL ES EL MANDATO, NO EL TERRITORIO.
+    Esta negocia **el pliego y las garantías**, en cualquier punto del país;
+    la de Agricultura negocia **el tránsito de carga** y solo fuera del
+    epicentro. Se sientan con las mismas organizaciones y no hacen lo mismo,
+    y por eso la de Agricultura cuesta cohesión cuando esta tiene un protocolo
+    de vocería puesto o un acuerdo vivo que proteger.
+
+    Y hay una diferencia dura: **esta se cae cuando el Comité del Paro
+    suspende** en los puntos de mejor vocería —los que responden a él— y la
+    rural no, porque su contraparte no es el Comité.
     """
     codigo = "A2"
     rol = "Interior"
@@ -379,6 +516,17 @@ class AbrirMesaLocal(Accion):
         "cumpla lo pactado.")
     nodo_id: str = ""
     con_alcaldia: bool = False
+
+
+    @classmethod
+    def sonda(cls, estado: Estado) -> "Accion | None":
+        """El punto cerrado con mejor vocería, y con la Alcaldía de su lado: es
+        la versión de esta acción que más lejos llega hoy."""
+        cerrados = [n for n in estado.nodos.values() if not n.abierto]
+        if not cerrados:
+            return None
+        mejor = max(cerrados, key=lambda n: n.control_voceria)
+        return cls(nodo_id=mejor.nodo_id, con_alcaldia=True)
 
     def validar(self, estado: Estado) -> Validacion:
         nodo = estado.nodos.get(self.nodo_id)
@@ -403,12 +551,17 @@ class AbrirMesaLocal(Accion):
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         from src.engine import mobilization
         nodo = estado.nodos[self.nodo_id]
+        # Queda constancia de que HOY hubo sesión aquí. Sin esta marca, la
+        # jornada siguiente no puede distinguir una mesa que trabajó de una que
+        # se dejó de lado — y esa distinción es la regla entera.
+        aperture.instalar_mesa(nodo, estado.turno_decision)
         r = aperture.avanzar_concertacion(nodo, estado.turno, rng)
         if r is None:
             return Resultado(True, (
-                f"Mesa instalada en {nodo.nombre}. La concertación necesita otro "
-                f"turno para producir apertura."
-            ), {"en_curso": True})
+                f"Mesa instalada en {nodo.nombre}. La concertación necesita otra "
+                f"sesión para producir apertura, y hay que volver a instalarla "
+                f"mañana: una mesa que no sesiona no avanza."
+            ), {"en_curso": True, "mesa_instalada": True})
 
         estado.eventos_turno.append(
             {"tipo": "apertura", "nodo": nodo.nodo_id, "via": "concertacion"}
@@ -485,6 +638,8 @@ class CondicionarEmpleoFuerza(Accion):
         "Alcaldía. Baja el riesgo de que salga mal, y le quita velocidad a "
         "Defensa.")
 
+    bandera_que_activa = "concertacion_previa_cali"
+
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         estado.banderas.activar("concertacion_previa_cali", estado.turno)
         return Resultado(True, (
@@ -506,6 +661,16 @@ class InstalarMesaConVoceros(Accion):
         "pactada, hecha desde el municipio.")
     nodo_id: str = ""
 
+
+    @classmethod
+    def sonda(cls, estado: Estado) -> "Accion | None":
+        """Solo su jurisdicción: fuera de ella la acción no existe."""
+        mios = [n for n in estado.nodos_de_region(estado.region_epicentro)
+                if not n.abierto]
+        if not mios:
+            return None
+        return cls(nodo_id=max(mios, key=lambda n: n.control_voceria).nodo_id)
+
     def validar(self, estado: Estado) -> Validacion:
         nodo = estado.nodos.get(self.nodo_id)
         if nodo is None:
@@ -523,12 +688,14 @@ class InstalarMesaConVoceros(Accion):
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         from src.engine import mobilization
         nodo = estado.nodos[self.nodo_id]
+        aperture.instalar_mesa(nodo, estado.turno_decision)
         r = aperture.avanzar_concertacion(nodo, estado.turno, rng)
         if r is None:
             return Resultado(True, (
                 f"Mesa local instalada en {nodo.nombre}. La concertación necesita "
-                f"otro turno para producir apertura."
-            ), {"en_curso": True})
+                f"otra sesión para producir apertura, y hay que volver a "
+                f"instalarla mañana: una mesa que no sesiona no avanza."
+            ), {"en_curso": True, "mesa_instalada": True})
 
         estado.eventos_turno.append(
             {"tipo": "apertura", "nodo": nodo.nodo_id, "via": "concertacion"}
@@ -637,6 +804,8 @@ class FijarReglasEmpleoSector(Accion):
         "grabando. Baja mucho la probabilidad de que una operación termine "
         "mal.")
 
+    bandera_que_activa = "reglas_escritas"
+
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         estado.banderas.activar("reglas_escritas", estado.turno)
         estado.banderas.activar("registro_av", estado.turno)
@@ -671,6 +840,17 @@ class OperarNodo(Accion):
     concertado_con_alcaldia: bool = False
     responsable_nominado: str | None = None
     de_noche: bool = False
+
+
+    @classmethod
+    def sonda(cls, estado: Estado) -> "Accion | None":
+        """El punto cerrado más blando, con ESMAD. Si ni siquiera ese se puede
+        operar, es que no hay capacidad — y eso es lo que hay que decir."""
+        cerrados = [n for n in estado.nodos.values() if not n.abierto]
+        if not cerrados:
+            return None
+        blando = min(cerrados, key=lambda n: n.dureza)
+        return cls(nodo_id=blando.nodo_id, tipo_unidad="esmad")
 
     def validar(self, estado: Estado) -> Validacion:
         nodo = estado.nodos.get(self.nodo_id)
@@ -738,7 +918,7 @@ class OperarNodo(Accion):
         #
         # Lo que NO se registra aquí es dónde está la fuerza AHORA. Eso es de la
         # Dirección General de la Policía, y si se filtrara al tablero uno de los
-        # ocho roles dejaría de hacer falta.
+        # nueve roles dejaría de hacer falta.
         estado.eventos_turno.append({
             "tipo": "operacion",
             "nodo": nodo.nodo_id,
@@ -746,6 +926,12 @@ class OperarNodo(Accion):
             "dupla": dupla_real,
             "incidente": res.hubo_incidente,
         })
+
+        # LA MARCA QUE EL MAPA NECESITA. `modo_apertura` solo se escribe si el
+        # punto cede, así que una operación fallida no dejaba ninguna huella
+        # visible: el punto seguía pintado igual que uno que nadie ha tocado.
+        # Esto se emplea fuerza, cediera o no.
+        nodo.intervencion_fuerza_turno = estado.turno_decision
 
         # ¿Se operó sobre un punto pactado? El acuerdo se rompe.
         acuerdo = estado.acuerdo_vigente_sobre(self.nodo_id)
@@ -938,6 +1124,8 @@ class ClasificarParteOperacional(Accion):
         "verificación. Evita que una estimación se lea en la mesa como un "
         "hecho.")
 
+    bandera_que_activa = "protocolo_verificacion"
+
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         estado.banderas.activar("protocolo_verificacion", estado.turno)
         return Resultado(True, (
@@ -963,6 +1151,18 @@ class DisponerESMAD(Accion):
         "Concentra escuadrones en los puntos que decida. Gana fuerza donde la "
         "lleva y deja descubierto lo que abandona.")
     n_escuadrones: int = 6
+
+
+    @classmethod
+    def disponibilidad(cls, estado: Estado) -> Disponibilidad:
+        """Concentrar es TRAER escuadrones de la contención estática. Si no
+        queda ninguno ahí, no hay de dónde traerlos."""
+        if not [u for u in estado.unidades
+                if u.tipo == "esmad" and u.asignacion == "contencion"]:
+            return Disponibilidad("bloqueada", (
+                "No queda ESMAD en contención estática que traer: la fuerza ya "
+                "está toda comprometida."), ["Director de Policía (relevar)"])
+        return Disponibilidad()
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         r = force.concentrar_esmad(estado, self.n_escuadrones)
@@ -997,6 +1197,16 @@ class Escoltar(Accion):
         "turno.")
     corredor_id: str = ""
     clase_carga: str = "humanitario"
+
+
+    @classmethod
+    def sonda(cls, estado: Estado) -> "Accion | None":
+        """El corredor con mejor flujo: la escolta que más probablemente pasa."""
+        if not estado.corredores:
+            return None
+        mejor = max(estado.corredores.values(),
+                    key=lambda c: c.caudal_efectivo(estado.nodos))
+        return cls(corredor_id=mejor.corredor_id)
 
     def validar(self, estado: Estado) -> Validacion:
         c = estado.corredores.get(self.corredor_id)
@@ -1064,6 +1274,17 @@ class SolicitarRelevo(Accion):
         "principal factor de que una operación salga mal.")
     n_unidades: int = 6
 
+
+    @classmethod
+    def disponibilidad(cls, estado: Estado) -> Disponibilidad:
+        """Relevar unidades frescas no releva nada."""
+        cansadas = [u for u in estado.unidades
+                    if u.asignacion != "reserva" and u.fatiga > 0.0]
+        if not cansadas:
+            return Disponibilidad("condicionada",
+                                  "No hay unidades desplegadas con fatiga que relevar.")
+        return Disponibilidad()
+
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         n = force.solicitar_relevo(estado, self.n_unidades)
         return Resultado(True, (
@@ -1095,6 +1316,8 @@ class ExigirEstandaresEmpleo(Accion):
         "verdad.")
     exigencias: int = 3     # >3 simultáneas y la mesa lo aísla
 
+    bandera_que_activa = "identificacion_agentes"
+
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         if self.exigencias > 3:
             estado.eventos_turno.append({"tipo": "defensoria_aislada"})
@@ -1122,6 +1345,8 @@ class AdoptarProtocoloVerificacion(Accion):
     en_claro = (
         "Establece una sola manera de verificar cifras y denuncias, igual "
         "para todos. Evita que cada cartera traiga su propio número.")
+
+    bandera_que_activa = "protocolo_verificacion"
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         estado.banderas.activar("protocolo_verificacion", estado.turno)
@@ -1155,6 +1380,18 @@ class AsignarDuplas(Accion):
         "acompañar operaciones.")
     nodos: list[str] = field(default_factory=list)
     denuncias: list[str] = field(default_factory=list)
+
+
+    @classmethod
+    def sonda(cls, estado: Estado) -> "Accion | None":
+        """Un punto sin mirar, o cualquiera: lo que se comprueba aquí es si
+        queda alguna dupla, no a dónde se manda."""
+        sin_mirar = [n for n in estado.nodos.values()
+                     if n.ultima_verificacion_turno is None]
+        objetivo = (sin_mirar or list(estado.nodos.values()))
+        if not objetivo:
+            return None
+        return cls(nodos=[objetivo[0].nodo_id])
 
     def validar(self, estado: Estado) -> Validacion:
         if not estado.banderas.defensoria_presente:
@@ -1270,6 +1507,17 @@ class ManifestarDudaPermanencia(Accion):
         "mesa. Es su palanca más fuerte y se gasta: la segunda vez pesa menos "
         "que la primera.")
 
+
+    @classmethod
+    def disponibilidad(cls, estado: Estado) -> Disponibilidad:
+        """Su credibilidad es un activo que se consume: la primera vez pesa, la
+        tercera es ruido. No se bloquea nunca — se avisa."""
+        if estado.dudas_permanencia >= 1:
+            return Disponibilidad("condicionada", (
+                f"Ya se ha manifestado {estado.dudas_permanencia} vez(ces). "
+                f"Cada nueva pesa menos que la anterior."))
+        return Disponibilidad()
+
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         n = estado.dudas_permanencia
         estado.dudas_permanencia += 1
@@ -1303,10 +1551,23 @@ class ManifestarDudaPermanencia(Accion):
 @dataclass
 class AdoptarCriterioPriorizacion(Accion):
     """
-    El criterio único de asignación: población, días de autonomía y costo diario.
+    El criterio único de asignación: **población y costo diario**.
 
     Convierte la disputa política de asignación en una secuencia defendible — y
     expone a un ministro concreto como el que decidió qué ciudad se aplaza.
+
+    EL CRITERIO ALIMENTARIO NO ES SUYO Y ESO ES DELIBERADO. Mientras no hubo
+    Ministro de Agricultura en la mesa, esta cartera había absorbido la
+    priorización de perecederos y centrales de abasto; con el noveno rol
+    sentado, la define él (`FijarClasePrioridadAlimentaria`) y Transporte la
+    integra como lo que es: **la demanda de un tercero que también tiene
+    asiento.** Su vista privada la muestra para que pueda defender su orden o
+    cederlo a sabiendas, y la clase agroalimentaria le reordena el suyo con un
+    costo de cohesión que se cobra a quien la pide, no a él.
+
+    (El docstring anterior decía «población, días de autonomía y costo diario».
+    Los días de autonomía nunca entraron en el `sorted`: era el criterio
+    alimentario colándose en la prosa de una cartera que no lo tiene.)
     """
     codigo = "A1"
     rol = "Transporte"
@@ -1315,6 +1576,8 @@ class AdoptarCriterioPriorizacion(Accion):
     en_claro = (
         "Fija en qué orden se atienden los corredores y por qué. Sin "
         "criterio, cada turno se discute lo mismo desde cero.")
+
+    bandera_que_activa = "criterio_priorizacion"
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         estado.banderas.activar("criterio_priorizacion", estado.turno)
@@ -1344,6 +1607,15 @@ class OrganizarCaravana(Accion):
         "Junta la carga en una caravana por un corredor prioritario. Necesita "
         "escolta para poder pasar.")
     corredor_id: str = ""
+
+
+    @classmethod
+    def sonda(cls, estado: Estado) -> "Accion | None":
+        if not estado.corredores:
+            return None
+        mejor = max(estado.corredores.values(),
+                    key=lambda c: c.caudal_efectivo(estado.nodos))
+        return cls(corredor_id=mejor.corredor_id)
 
     def validar(self, estado: Estado) -> Validacion:
         c = estado.corredores.get(self.corredor_id)
@@ -1399,6 +1671,17 @@ class NegociarConGremios(Accion):
         "Habla con los camioneros antes de que decidan sumarse al paro. Si se "
         "suman, se cierra lo que hoy todavía circula.")
     ofrece_compensacion: bool = True
+
+
+    @classmethod
+    def disponibilidad(cls, estado: Estado) -> Disponibilidad:
+        """Sumados ya, la negociación llega tarde: es el hecho que la mesa tiene
+        que saber ANTES de gastar un turno en ella."""
+        if estado.posicion_gremios == "sumados":
+            return Disponibilidad("bloqueada", (
+                "Los gremios ya se sumaron al paro. Esto dejó de ser orden "
+                "público y es cierre logístico nacional."))
+        return Disponibilidad()
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         if estado.posicion_gremios == "sumados":
@@ -1534,43 +1817,138 @@ class DeclararInfraestructuraCritica(Accion):
 
     **Es la aritmética que enfrenta a Minas con Defensa**: la protección
     permanente resta exactamente de la capacidad de desbloqueo.
+
+    APUNTA AL REGISTRO, NO A UNA CADENA DE TEXTO. Hasta ahora recibía una lista
+    de nombres libres —«refineria»— que nadie comprobaba contra nada: se podía
+    declarar crítica una instalación que no existe, la orden salía ejecutada con
+    éxito, e inmovilizaba fuerza igual. Ahora se resuelve contra
+    `estado.infraestructura`, que es la base de infraestructura relevante del
+    escenario, y lo que no está ahí se rechaza diciendo qué sí está.
     """
     codigo = "A1"
     rol = "Minas"
     clase: Clase = "operativa"
     descripcion = "Declaratoria de infraestructura crítica"
     en_claro = (
-        "Declara una instalación como crítica para que la custodien. Queda "
-        "protegida, e inmoviliza fuerza que hace falta en otra parte.")
+        "Pone bajo custodia una instalación del registro de infraestructura "
+        "relevante. Queda protegida, e inmoviliza fuerza que hace falta en "
+        "otra parte.")
     instalaciones: list[str] = field(default_factory=list)
 
+
+    @classmethod
+    def sonda(cls, estado: Estado) -> "Accion | None":
+        """Una sola instalación de las que aún no están protegidas: lo que se
+        comprueba es si queda fuerza libre para custodiarla."""
+        libres = [i for i in estado.infraestructura.values() if not i.protegida]
+        if not libres:
+            return cls(instalaciones=[])
+        return cls(instalaciones=[libres[0].infra_id])
+
+    # ------------------------------------------------------------------
+    # LA RESOLUCIÓN, que es determinista y vive en el motor
+    #
+    # Por identificador, por nombre exacto, y por nombre contenido. NO hay
+    # coincidencia difusa: acertar mal en silencio aquí pone la custodia en la
+    # instalación equivocada y deja sin proteger la que se quiso proteger, que
+    # es el mismo modo de falla que el resolutor de entidades evita en el canal.
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _normalizar(t: str) -> str:
+        import unicodedata
+        return "".join(c for c in unicodedata.normalize("NFD", t.lower())
+                       if unicodedata.category(c) != "Mn").strip()
+
+    def resolver(self, estado: Estado) -> tuple[list, list[str]]:
+        """Devuelve `(instalaciones, lo_que_no_se_reconocio)`."""
+        halladas, perdidas = [], []
+        for crudo in self.instalaciones:
+            n = self._normalizar(str(crudo))
+            exacta = [i for i in estado.infraestructura.values()
+                      if i.infra_id.lower() == n or self._normalizar(i.nombre) == n]
+            if len(exacta) == 1:
+                halladas.append(exacta[0])
+                continue
+            parciales = [i for i in estado.infraestructura.values()
+                         if n and n in self._normalizar(i.nombre)]
+            if len(parciales) == 1:
+                halladas.append(parciales[0])
+            else:
+                perdidas.append(str(crudo))
+        return halladas, perdidas
+
     def validar(self, estado: Estado) -> Validacion:
+        if not self.instalaciones:
+            return Validacion(False, (
+                "No se dijo qué instalación proteger. El registro de "
+                "infraestructura relevante las tiene todas, con su región."
+            ))
+        halladas, perdidas = self.resolver(estado)
+        if perdidas:
+            nombres = ", ".join(sorted(
+                i.nombre for i in estado.infraestructura.values() if not i.protegida))
+            return Validacion(False, (
+                f"No está en el registro de infraestructura: "
+                f"{', '.join(perdidas)}. Sin custodiar quedan: {nombres}."
+            ))
+        nuevas = [i for i in halladas if not i.protegida]
+        if not nuevas:
+            return Validacion(False, (
+                "Esa instalación ya está bajo custodia. Volver a declararla no "
+                "añade protección y sí inmovilizaría más fuerza."
+            ))
         cupo = len(estado.esmad_disponible())
-        necesita = len(self.instalaciones) * P.CUSTODIA_POLICIAS_POR_INSTALACION
+        necesita = len(nuevas) * P.CUSTODIA_POLICIAS_POR_INSTALACION
         if necesita > cupo:
             return Validacion(True, parcial=True, motivo=(
-                f"Inmovilizaría {necesita} unidades y la capacidad libre no "
-                f"alcanza. Se protegerá lo que se pueda."
+                "La capacidad libre no alcanza para custodiarlas todas. Se "
+                "protegerá lo que se pueda."
             ), habilitada_por=["Ministro de Defensa (redesplegar militares)"])
         return Validacion(True)
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
-        estado.instalaciones_criticas.extend(self.instalaciones)
-        for u in estado.esmad_disponible()[: len(self.instalaciones)]:
+        halladas, _ = self.resolver(estado)
+        nuevas = [i for i in halladas if not i.protegida]
+
+        for i in nuevas:
+            i.protegida = True
+            i.protegida_desde_turno = estado.turno_decision
+            estado.instalaciones_criticas.append(i.nombre)
+
+        for u in estado.esmad_disponible()[: len(nuevas)]:
             u.asignacion = "custodia"
             u.ubicacion = "infraestructura"
         inmovilizadas = force.capacidad_inmovilizada_por_custodia(estado)
 
-        # Los puntos contiguos a infraestructura crítica dejan de poder producir
-        # el hecho irreversible: es exactamente lo que se está comprando.
-        protegidos = [n.nodo_id for n in estado.nodos.values()
-                      if n.proximidad_infra_critica]
+        # Los puntos contiguos a lo que se acaba de proteger. Es exactamente lo
+        # que se está comprando, y ahora se puede nombrar: el registro dice qué
+        # bloqueo tiene al lado cada instalación.
+        protegidos = sorted({n for i in nuevas for n in i.nodos_contiguos})
+        for nid in protegidos:
+            nodo = estado.nodos.get(nid)
+            if nodo:
+                nodo.proximidad_infra_critica = True
+
+        sin_proteger = [i for i in estado.infraestructura.values() if not i.protegida]
+        vitales = [i for i in sin_proteger if i.criticidad == "vital"]
+        aviso = ""
+        if vitales:
+            aviso = (f" Quedan sin custodia {len(vitales)} instalación(es) de "
+                     f"criticidad vital: {', '.join(i.nombre for i in vitales)}.")
+
+        estado.eventos_turno.append({
+            "tipo": "infraestructura_protegida",
+            "instalaciones": [i.infra_id for i in nuevas],
+        })
         return Resultado(True, (
-            f"{len(self.instalaciones)} instalación(es) bajo protección "
-            f"permanente. Inmoviliza {inmovilizadas} unidades que Seguridad "
-            f"necesitaba para desbloquear: la mesa tendrá que aplazar corredores, "
-            f"y el aplazamiento tiene nombre de ciudad."
-        ), {"inmovilizadas": inmovilizadas, "puntos_protegidos": protegidos})
+            f"{', '.join(i.nombre for i in nuevas)} bajo protección permanente. "
+            f"Inmoviliza {inmovilizadas} unidades que Seguridad necesitaba para "
+            f"desbloquear: la mesa tendrá que aplazar corredores, y el "
+            f"aplazamiento tiene nombre de ciudad." + aviso
+        ), {"inmovilizadas": inmovilizadas, "puntos_protegidos": protegidos,
+            "protegidas": [i.infra_id for i in nuevas],
+            "sin_proteger": [i.infra_id for i in sin_proteger]})
 
 
 @dataclass
@@ -1590,6 +1968,16 @@ class AcordarPasosSeguros(Accion):
         "Acuerda ventanas horarias para que pasen carrotanques por un punto. "
         "Pasa el suministro sin abrir el bloqueo.")
     nodo_id: str = ""
+
+
+    @classmethod
+    def sonda(cls, estado: Estado) -> "Accion | None":
+        """El punto donde más se controla la vocería: si ahí no hay con quién
+        acordar, no lo hay en ninguno."""
+        if not estado.nodos:
+            return None
+        mejor = max(estado.nodos.values(), key=lambda n: n.control_voceria)
+        return cls(nodo_id=mejor.nodo_id)
 
     def validar(self, estado: Estado) -> Validacion:
         nodo = estado.nodos.get(self.nodo_id)
@@ -1650,6 +2038,441 @@ class EntregarCalendarioAgotamiento(Accion):
 
 
 # ===========================================================================
+# 09 · MINISTRO DE AGRICULTURA Y DESARROLLO RURAL
+#
+# EL ROL QUE MEJOR MIDE EL EFECTO DEL BLOQUEO SOBRE LA POBLACIÓN Y EL QUE MENOS
+# PUEDE HACER PARA LEVANTARLO. No manda fuerza, no tiene corredores y ninguna de
+# sus cinco acciones se ejecuta sin que la Policía escolte, Transporte priorice
+# o Minas asigne. Lo que sí tiene es lo que a esta mesa le falta:
+#
+#   · el único reloj que ya está corriendo — en su frente el día de bloqueo no
+#     es un costo diferido, es una pérdida que ya ocurrió: hay granjas
+#     sacrificando animales mientras la mesa delibera;
+#   · una interlocución rural que NO depende del Comité del Paro, y que por eso
+#     sigue en pie exactamente cuando el canal del Interior se cae.
+#
+# Y una posición doblemente incómoda que es la razón de que el rol exista: sus
+# representados son a la vez víctimas del cierre y parte de quien lo sostiene.
+# No puede decir que el campo está a favor ni que está en contra, porque las dos
+# cosas son parcialmente ciertas al mismo tiempo.
+# ===========================================================================
+
+
+@dataclass
+class FijarClasePrioridadAlimentaria(Accion):
+    """
+    La clase de prioridad agroalimentaria, con ventana medida en horas.
+
+    **No añade capacidad: reordena la que hay.** Un corredor que sirve a la
+    región más apretada de comida pasa a contar como corredor de alimentos, y
+    eso se le quita a otro criterio que ya estaba defendido en esta sala.
+    """
+    codigo = "A1"
+    rol = "Agricultura"
+    clase: Clase = "constitutiva"
+    descripcion = "Clase de prioridad agroalimentaria con ventana crítica en horas"
+    en_claro = (
+        "Consigue que los alimentos y el alimento de las granjas tengan turno "
+        "propio en el reparto de corredores. Lo que va detrás de todo llega "
+        "tarde, y lo que llega tarde ya no sirve.")
+
+    bandera_que_activa = "clase_alimentaria"
+
+    def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
+        estado.banderas.activar("clase_alimentaria", estado.turno)
+
+        # El corredor que se reetiqueta es el que sirve a la región con menos
+        # días de comida y todavía no cuenta como alimentario. Se elige aquí y
+        # no se pide en la orden: quién está peor lo sabe el motor, y hacer que
+        # la sala lo adivine sería un acertijo, no una decisión.
+        peor = min(estado.regiones.values(),
+                   key=lambda r: r.dias_autonomia_alimentos, default=None)
+        elegido = None
+        if peor is not None:
+            candidatos = [
+                c for c in estado.corredores.values()
+                if "alimentario" not in c.clases_prioridad
+                and any(estado.nodos[n].region_id == peor.region_id
+                        for n in c.nodos if n in estado.nodos)
+            ]
+            if candidatos:
+                elegido = max(candidatos, key=lambda c: c.poblacion_aguas_abajo)
+                elegido.clases_prioridad.add("alimentario")
+
+        # Llegar después de que Transporte fijó su criterio cuesta más: no es lo
+        # mismo entrar en un orden que todavía no existe que deshacer delante de
+        # nueve personas el que un ministro ya defendió.
+        sobre_criterio = estado.banderas.criterio_priorizacion
+        estado.reservas.aplicar(P.COSTO_RESERVAS[
+            "clase_alimentaria_sobre_criterio" if sobre_criterio
+            else "clase_alimentaria"])
+        estado.eventos_turno.append({
+            "tipo": "clase_alimentaria",
+            "corredor": elegido.corredor_id if elegido else None,
+        })
+
+        if elegido is None:
+            return Resultado(True, (
+                "Clase de prioridad agroalimentaria fijada. Todos los corredores "
+                "que sirven a la región más apretada ya contaban como "
+                "alimentarios: lo que queda es que alguien los abra."
+            ), {"corredor": None})
+
+        aviso = (" Reordena el criterio único que Transporte ya había adoptado, y "
+                 "esa discusión vuelve a la mesa." if sobre_criterio else "")
+        return Resultado(True, (
+            f"Clase de prioridad agroalimentaria fijada. {elegido.nombre} pasa a "
+            f"contar como corredor de alimentos hacia {peor.nombre}, que es la "
+            f"región con menos días de comida.{aviso}"
+        ), {"corredor": elegido.corredor_id, "region": peor.region_id})
+
+
+@dataclass
+class InstalarMesaTecnicaAgropecuaria(Accion):
+    """
+    Mesa técnica con organizaciones campesinas, indígenas y de productores.
+
+    **Su mandato es el tránsito de carga y nada más.** No negocia pliego: eso es
+    del Ministro del Interior, y desbordar esa frontera rompe la línea roja del
+    Presidente desde dentro de su propio gabinete.
+
+    LO QUE LA HACE ÚNICA, Y ES LA RAZÓN DE QUE EL ROL VALGA UN ASIENTO: **no
+    pasa por el Comité del Paro.** Su contraparte son organizaciones rurales, de
+    modo que cuando el Comité suspende —y con él las mesas locales del Interior
+    en los puntos de mejor vocería— esta sigue en pie. Es el único canal que
+    sobrevive al peor día del frente de estrategia.
+
+    Y su riesgo es el que nadie en la sala puede evaluar antes: si en ese punto
+    la contraparte no es social sino armada, la mesa le entrega legitimidad a un
+    actor que el frente de seguridad está documentando como financiador del
+    cierre. La mezcla real es capa 1 y no se ve desde ninguna vista.
+    """
+    codigo = "A2"
+    rol = "Agricultura"
+    clase: Clase = "operativa"
+    descripcion = "Mesa técnica agropecuaria de tránsito de carga, corredor por corredor"
+    en_claro = (
+        "Se sienta con las organizaciones campesinas de un punto rural para "
+        "acordar el paso de alimentos e insumos. Avanza igual que una mesa "
+        "local, y sigue en pie aunque el Comité del Paro se levante.")
+    nodo_id: str = ""
+
+    @classmethod
+    def sonda(cls, estado: Estado) -> "Accion | None":
+        """El punto rural cerrado con mejor vocería: si ahí no hay con quién
+        acordar, no lo hay en ninguno."""
+        fuera = [n for n in estado.nodos.values()
+                 if not n.abierto and n.region_id != estado.region_epicentro]
+        if not fuera:
+            return None
+        return cls(nodo_id=max(fuera, key=lambda n: n.control_voceria).nodo_id)
+
+    def validar(self, estado: Estado) -> Validacion:
+        nodo = estado.nodos.get(self.nodo_id)
+        if nodo is None:
+            return Validacion(False, f"No existe el punto {self.nodo_id}.")
+        if nodo.abierto:
+            return Validacion(False, f"{nodo.nombre} ya está abierto.")
+        if nodo.region_id == estado.region_epicentro:
+            return Validacion(
+                False,
+                (f"{nodo.nombre} está en la jurisdicción del epicentro: ahí la "
+                 f"mesa la instala la Alcaldía o el Ministro del Interior con "
+                 f"ella. El mandato de esta cartera es rural."),
+                requisitos_faltantes=["un punto fuera del epicentro"],
+                habilitada_por=["Alcalde de la ciudad epicentro",
+                                "Ministro del Interior (concertar)"],
+            )
+        if nodo.control_voceria < 0.25:
+            return Validacion(False, (
+                f"En {nodo.nombre} no hay organización rural con quien acordar: "
+                f"la vocería reconocida no controla el punto."
+            ))
+        return Validacion(True)
+
+    def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
+        from src.engine import mobilization
+        nodo = estado.nodos[self.nodo_id]
+
+        aperture.instalar_mesa(nodo, estado.turno_decision)
+        if nodo.nodo_id not in estado.mesas_tecnicas_agro:
+            estado.mesas_tecnicas_agro.append(nodo.nodo_id)
+
+        # EL SEGUNDO CANAL SE COBRA CUANDO HAY UN PRIMERO QUE PROTEGER. Con
+        # vocería única fijada o un acuerdo nacional vivo, sentarse aparte es
+        # exactamente lo que el Ministro del Interior leerá como canal paralelo.
+        acuerdo_vivo = any(not a.roto and not a.cumplido for a in estado.acuerdos)
+        paralelo = estado.banderas.protocolo_voceria or acuerdo_vivo
+        if paralelo:
+            estado.reservas.aplicar(P.COSTO_RESERVAS["canal_rural_paralelo"])
+
+        r = aperture.avanzar_concertacion(nodo, estado.turno, rng)
+        nota_paralelo = (" Se abre por fuera del protocolo de vocería: el "
+                         "Ministro del Interior lo leerá como canal paralelo."
+                         if paralelo else "")
+
+        if r is None:
+            return Resultado(True, (
+                f"Mesa técnica instalada en {nodo.nombre}, con mandato limitado "
+                f"al tránsito de carga. Necesita otra sesión para producir "
+                f"apertura, y hay que volver a instalarla mañana: una mesa que "
+                f"no sesiona no avanza.{nota_paralelo}"
+            ), {"en_curso": True, "mesa_instalada": True})
+
+        estado.eventos_turno.append(
+            {"tipo": "apertura", "nodo": nodo.nodo_id, "via": "concertacion"}
+        )
+        estado.reservas.aplicar(P.COSTO_RESERVAS["apertura_concertada"])
+        mobilization.registrar_evento(estado, "apertura_concertada", nodo.region_id)
+        if nodo.nodo_id in estado.mesas_tecnicas_agro:
+            estado.mesas_tecnicas_agro.remove(nodo.nodo_id)
+
+        msg = r.mensaje
+        # LA CONTRAPARTE QUE NO ERA SOCIAL. Es el riesgo propio de esta acción y
+        # se paga en respaldo internacional, no en credibilidad: lo que se
+        # discute fuera no es si el acuerdo se cumple, es a quién se sentó el
+        # Estado en la mesa.
+        organizada = nodo.composicion_real.normalizada().estructura_organizada
+        if rng.random() < organizada * P.FACTOR_LEGITIMAR_ESTRUCTURA:
+            estado.reservas.aplicar(
+                {"respaldo_internacional": -P.COSTO_LEGITIMAR_ESTRUCTURA})
+            estado.eventos_turno.append(
+                {"tipo": "contraparte_no_social", "nodo": nodo.nodo_id})
+            msg += (" La contraparte de este cierre no era solo social: el "
+                    "acuerdo le reconoce interlocución a quien la inteligencia "
+                    "está documentando como financiador.")
+        if r.fragil:
+            nodo.caudal *= 0.4
+            estado.reservas.aplicar(P.COSTO_RESERVAS["acuerdo_incumplido"])
+            mobilization.registrar_evento(estado, "acuerdo_incumplido", nodo.region_id)
+            estado.eventos_turno.append(
+                {"tipo": "acuerdo_incumplido", "nodo": nodo.nodo_id})
+            msg += (" El acuerdo se incumplió en horas: quien firmó no manda "
+                    "sobre quien sostiene el cierre.")
+        return Resultado(True, msg + nota_paralelo,
+                         {"caudal": round(nodo.caudal, 2), "via": "concertacion"})
+
+
+@dataclass
+class ActivarInstrumentosSectoriales(Accion):
+    """
+    Crédito, alivios y autorización sanitaria excepcional de movilización.
+
+    **Es la única acción del rol que no depende de nadie más**, y por eso es la
+    que más se va a pedir. Mitiga la pérdida, conserva capacidad productiva y
+    baja el incentivo material de sostener el cierre — y no compensa a la escala
+    del daño, que es lo que la ficha declara y lo que el segundo paquete en la
+    misma región demuestra: rinde la mitad que el primero.
+
+    Y deja un rastro: mover animales y alimento balanceado por rutas alternas es
+    mover ganado sin control sanitario pleno. Eso no cuesta nada dentro del
+    episodio y se cobra entero en el debriefing, contra esta misma cartera.
+    """
+    codigo = "A3"
+    rol = "Agricultura"
+    clase: Clase = "operativa"
+    descripcion = "Instrumentos financieros y autorización sanitaria excepcional"
+    en_claro = (
+        "Da crédito y alivios a los productores con pérdida, y autoriza mover "
+        "animales y su alimento por rutas alternas. Alivia sin resolver, y la "
+        "excepción sanitaria deja un riesgo que se paga después.")
+    region_id: str = ""
+
+    @classmethod
+    def sonda(cls, estado: Estado) -> "Accion | None":
+        if not estado.regiones:
+            return None
+        peor = min(estado.regiones.values(),
+                   key=lambda r: r.dias_autonomia_alimentos)
+        return cls(region_id=peor.region_id)
+
+    def validar(self, estado: Estado) -> Validacion:
+        if self.region_id and self.region_id not in estado.regiones:
+            return Validacion(False, f"No existe la región {self.region_id}.")
+        return Validacion(True)
+
+    def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
+        from src.engine import mobilization
+
+        region = (estado.regiones.get(self.region_id) if self.region_id
+                  else min(estado.regiones.values(),
+                           key=lambda r: r.dias_autonomia_alimentos, default=None))
+        if region is None:
+            return Resultado(False, "No hay ninguna región sobre la que activar.")
+
+        veces = estado.instrumentos_sectoriales.get(region.region_id, 0)
+        factor = P.DECAIMIENTO_ALIVIO_SECTORIAL ** veces
+        estado.instrumentos_sectoriales[region.region_id] = veces + 1
+
+        region.dias_autonomia_alimentos += P.ALIVIO_ALIMENTOS_POR_INSTRUMENTOS * factor
+        region.indice_precios = max(1.0, region.indice_precios - 0.04 * factor)
+        mobilization.erosionar_apoyo_local(
+            estado, region.region_id, P.ALIVIO_APOYO_POR_INSTRUMENTOS * factor)
+        estado.reservas.aplicar({"legitimidad": 3.0 * factor})
+
+        estado.riesgo_sanitario_asumido += 1
+        estado.eventos_turno.append({
+            "tipo": "instrumentos_sectoriales",
+            "region": region.region_id,
+        })
+
+        repetido = ("" if veces == 0 else
+                    f" Es el paquete número {veces + 1} en {region.nombre} y rinde "
+                    f"la mitad que el anterior: los instrumentos de la cartera no "
+                    f"alcanzan a la escala del daño, y repetirlos no los hace "
+                    f"alcanzar.")
+        return Resultado(True, (
+            f"Alivios y crédito activados en {region.nombre}, con autorización "
+            f"sanitaria de movilización por rutas alternas. Baja el incentivo "
+            f"material de sostener el cierre. **El ganado se está moviendo sin "
+            f"control sanitario pleno**: no cuesta nada hoy y se responde de ello "
+            f"al cierre.{repetido}"
+        ), {"region": region.region_id, "paquete": veces + 1,
+            "riesgo_sanitario": estado.riesgo_sanitario_asumido})
+
+
+@dataclass
+class PublicarBalancePerdida(Accion):
+    """
+    El balance de la pérdida irreversible del eslabón pecuario y de los precios.
+
+    Traslada el costo del cierre al plano de la población y erosiona el respaldo
+    ciudadano a los bloqueos. **Y el mismo argumento lo captura de inmediato
+    quien pide mano dura**, que es la razón por la que esta acción es la más
+    peligrosa del rol: puede convertir a su titular en vocero sectorial del
+    escalamiento y cerrarle la interlocución rural de la que vive todo lo demás.
+
+    Si la cifra no está bajo el protocolo único de verificación, se disputa — y
+    alimenta la guerra de números que la Defensoría intenta cerrar.
+    """
+    codigo = "A4"
+    rol = "Agricultura"
+    clase: Clase = "informativa"
+    descripcion = "Balance público de la pérdida pecuaria y del deterioro de precios"
+    en_claro = (
+        "Publica con los gremios cuántos animales se están sacrificando y "
+        "cuánto ha subido la comida. Le quita respaldo ciudadano al cierre, y "
+        "le entrega el argumento de la urgencia a quien pide mano dura.")
+
+    def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
+        from src.engine import mobilization
+
+        # Lo que se publica es el efecto sobre la población, y por eso baja el
+        # apoyo al cierre en TODAS las regiones y no solo donde hay pérdida: la
+        # cifra circula por el país entero.
+        for r in estado.regiones.values():
+            mobilization.erosionar_apoyo_local(estado, r.region_id, 0.04)
+
+        estado.reservas.aplicar(P.COSTO_RESERVAS["balance_perdida_publicado"])
+
+        if estado.banderas.protocolo_verificacion:
+            estado.reservas.aplicar(P.COSTO_RESERVAS["cifra_sectorial_verificada"])
+            nota = ("Sale bajo el protocolo único de verificación, de modo que "
+                    "la cifra se sostiene y nadie la disputa.")
+        else:
+            estado.reservas.aplicar(P.COSTO_RESERVAS["cifra_sectorial_disputada"])
+            estado.eventos_turno.append({"tipo": "cifra_sectorial_disputada"})
+            nota = ("Sin protocolo común de verificación la cifra se disputa, y "
+                    "alimenta la guerra de números en vez de cerrarla.")
+
+        peor = max(estado.regiones.values(),
+                   key=lambda r: r.indice_precios, default=None)
+        estado.eventos_turno.append({"tipo": "balance_perdida"})
+        return Resultado(True, (
+            f"Balance publicado con los gremios. El costo del cierre pasa a "
+            f"medirse en lo que paga un hogar y el respaldo ciudadano a los "
+            f"bloqueos cede en todo el país. **El argumento lo hereda quien pide "
+            f"decisión inmediata.** {nota}"
+        ), {"peor_region": peor.region_id if peor else None,
+            "verificada": estado.banderas.protocolo_verificacion})
+
+
+@dataclass
+class AcordarAcopioYVentanas(Accion):
+    """
+    Acopio, cupos y despacho concentrado en las ventanas ya escoltadas.
+
+    **No pide escolta: hace rendir la que ya está puesta.** Es la contribución
+    cooperativa del rol al frente logístico — el mismo escuadrón mueve casi el
+    doble de comida si la producción llega concentrada en pocos despachos
+    grandes en vez de dispersa. A cambio, un esquema de cupos produce ganadores
+    y perdedores entre productores, y los excluidos son un problema político
+    nuevo en pleno episodio.
+    """
+    codigo = "A5"
+    rol = "Agricultura"
+    clase: Clase = "operativa"
+    descripcion = "Acopio, cupos y despacho concentrado en ventanas escoltadas"
+    en_claro = (
+        "Junta la producción en pocos despachos grandes y los manda por la "
+        "ventana escoltada que ya existe. Llega mucha más comida con la misma "
+        "escolta, y quien queda fuera del cupo lo nota.")
+    corredor_id: str = ""
+
+    @classmethod
+    def sonda(cls, estado: Estado) -> "Accion | None":
+        alimentarios = [c for c in estado.corredores.values()
+                        if "alimentario" in c.clases_prioridad]
+        if not alimentarios:
+            return None
+        mejor = max(alimentarios,
+                    key=lambda c: c.caudal_efectivo(estado.nodos))
+        return cls(corredor_id=mejor.corredor_id)
+
+    def validar(self, estado: Estado) -> Validacion:
+        c = estado.corredores.get(self.corredor_id)
+        if c is None:
+            return Validacion(False, f"No existe el corredor {self.corredor_id}.")
+        if "alimentario" not in c.clases_prioridad:
+            return Validacion(
+                False,
+                f"{c.nombre} no lleva carga alimentaria.",
+                requisitos_faltantes=["un corredor de clase alimentaria"],
+                habilitada_por=["Ministro de Agricultura "
+                                "(clase de prioridad agroalimentaria)"],
+            )
+        if not [u for u in estado.unidades if u.asignacion == "escolta"]:
+            return Validacion(
+                False,
+                "El despacho concentrado va por una ventana escoltada, y no hay.",
+                requisitos_faltantes=["escolta policial"],
+                habilitada_por=["Director General de la Policía Nacional (escoltar)"],
+            )
+        bloqueo = c.punto_que_bloquea(estado.nodos)
+        if bloqueo:
+            return Validacion(
+                False,
+                f"{c.nombre} está bloqueado en {estado.nodos[bloqueo].nombre}.",
+                requisitos_faltantes=[f"abrir {estado.nodos[bloqueo].nombre}"],
+                habilitada_por=["Ministro de Defensa (operar)",
+                                "Ministro del Interior (concertar)"],
+            )
+        return Validacion(True)
+
+    def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
+        c = estado.corredores[self.corredor_id]
+        caudal = c.caudal_efectivo(estado.nodos)
+        regiones = sorted({estado.nodos[n].region_id for n in c.nodos
+                           if n in estado.nodos})
+        supply.reponer_por_escolta(
+            estado, regiones, P.ACOPIO_CONCENTRADO * caudal, "alimentario")
+        for rid in regiones:
+            r = estado.regiones.get(rid)
+            if r is not None:
+                r.indice_precios = max(1.0, r.indice_precios - 0.08 * caudal)
+
+        estado.reservas.aplicar(P.COSTO_RESERVAS["acopio_por_cupos"])
+        estado.eventos_turno.append(
+            {"tipo": "acopio_concentrado", "corredor": c.corredor_id})
+        return Resultado(True, (
+            f"Despacho concentrado por {c.nombre}, con {caudal:.0%} de flujo. "
+            f"La misma escolta mueve casi el doble de comida hacia "
+            f"{len(regiones)} región(es) y los precios ceden. Los productores "
+            f"que quedaron fuera del cupo son un problema político nuevo."
+        ), {"regiones": regiones, "caudal": round(caudal, 2)})
+
+
+# ===========================================================================
 
 CATALOGO = [
     # Presidente
@@ -1675,18 +2498,271 @@ CATALOGO = [
     # Minas
     FijarPrioridadCombustible, DeclararInfraestructuraCritica,
     AcordarPasosSeguros, EntregarCalendarioAgotamiento,
+    # Agricultura
+    FijarClasePrioridadAlimentaria, InstalarMesaTecnicaAgropecuaria,
+    ActivarInstrumentosSectoriales, PublicarBalancePerdida,
+    AcordarAcopioYVentanas,
 ]
 
 
-def catalogo_por_rol() -> dict[str, list[dict]]:
-    """El repertorio de cada rol, generado desde el código y no escrito a mano."""
+# ===========================================================================
+# LA GUÍA DE ACCIONES — qué hace falta antes, y cómo se pide
+# ===========================================================================
+#
+# Las treinta y nueve filas de la tabla que cada titular tiene en su tablero
+# individual, juntas y en un solo sitio. Están aquí y no repartidas por sus
+# clases por una razón de oficio: **una guía se lee comparando sus filas**, y
+# treinta y nueve enunciados de requisito escritos a dos mil líneas de
+# distancia no se pueden redactar con el mismo rasero.
+#
+# EL NOMBRE ES UN VERBO Y CABE EN UN RENGLÓN
+# ------------------------------------------
+# «Autorizar al Ejército», no «Acto administrativo de asistencia militar». El
+# nombre formal no se pierde —va debajo y en pequeño, porque es el que se cita
+# en el pliego—, pero deja de ser lo que hay que descifrar para saber si esta
+# fila es la que se busca. Verbo delante, porque una acción se pide; y sin
+# nombres de norma, de unidad ni de subsistema, porque el nombre lo tiene que
+# entender alguien que llegó esta mañana.
+#
+# EL REQUISITO VA EN CUALITATIVO Y NUNCA EN CIFRA
+# -----------------------------------------------
+# «Escuadrones sin comprometer», no «dos escuadrones». «Que el Comité siga
+# sentado», no «credibilidad por encima de treinta». Con la cifra delante, la
+# sala cuenta hasta el umbral y pide la acción justo ahí — y lo que la guía
+# tiene que enseñar es DE QUÉ DEPENDE cada acción, que es lo que empuja la
+# conversación a la mesa. Cuánto falta hoy lo dice el semáforo, que es otra
+# columna y sí mira el estado real.
+#
+# Hay una prueba que comprueba que en esta columna no entra ningún dígito.
+#
+# EL EJEMPLO TIENE QUE FUNCIONAR DE VERDAD
+# ----------------------------------------
+# No es una paráfrasis: es una frase que, escrita tal cual en la consola,
+# produce esta acción. Hay una prueba que las pasa TODAS por el intérprete
+# determinista y comprueba que cada una llega a su herramienta. Un ejemplo que
+# no funciona es peor que no dar ninguno: se dicta en voz alta delante de la
+# mesa y la consola contesta que no lo entiende.
+#
+# Las de ejemplo vacío no tienen todavía herramienta en el canal de órdenes
+# (`PENDIENTES.md · B10`): existen en el motor y se acuerdan en la sala, pero
+# hoy no se pueden transcribir, y la guía lo dice en vez de callarlo.
+
+GUIA: dict[type, tuple[str, str, str]] = {
+    # --- Presidente ---------------------------------------------------------
+    FijarRegistroEscrito: (
+        "Dejar todo por escrito",
+        "Ninguno. Es de las que se adoptan el primer día y abaratan todo lo demás.",
+        "fijar el registro escrito de decisiones"),
+    FijarLineasRojas: (
+        "Decir qué no se negocia",
+        "Ninguno. Conviene antes de que Interior lleve nada a la mesa.",
+        "fijar las lineas rojas del Ejecutivo"),
+    FirmarAsistenciaMilitar: (
+        "Autorizar al Ejército",
+        "Ninguno. Es ella la que habilita a Defensa a emplear tropa.",
+        "firmar la asistencia militar con limites"),
+    ConvocarAlcaldes: (
+        "Reunir a los alcaldes",
+        "Ninguno.",
+        ""),
+    DesplazarseAlEpicentro: (
+        "Ir al epicentro en persona",
+        "Escuadrones sin comprometer para la escolta presidencial.",
+        ""),
+    # --- Interior -----------------------------------------------------------
+    ExigirProtocoloVoceria: (
+        "Poner un solo vocero",
+        "Ninguno.",
+        "exigir el protocolo de voceria"),
+    ConvocarMesaNacional: (
+        "Sentar al Comité del Paro",
+        "Que el Comité del Paro siga sentado a la mesa.",
+        "convocar la mesa nacional con el Comite del Paro"),
+    AbrirMesaLocal: (
+        "Abrir una mesa en un punto",
+        "Un punto todavía cerrado, con vocería con quien hablar. En la "
+        "jurisdicción del epicentro, además, la Alcaldía en la mesa. HAY QUE "
+        "INSTALARLA CADA JORNADA: la mesa que no sesiona no avanza.",
+        "concertar en el Puente Amarillo con la Alcaldia"),
+    OfrecerContraprestacion: (
+        "Ofrecer algo a cambio",
+        "Ninguno, pero sin líneas rojas fijadas lo ofrecido se renegocia en la sala.",
+        "ofrecer una contraprestacion legislativa"),
+    # --- Alcalde ------------------------------------------------------------
+    CondicionarEmpleoFuerza: (
+        "Exigir que le consulten la fuerza",
+        "Ninguno.",
+        "condicionar el empleo de la fuerza en la ciudad"),
+    InstalarMesaConVoceros: (
+        "Sentarse con los voceros del punto",
+        "Un punto de su propia jurisdicción, todavía cerrado. HAY QUE "
+        "INSTALARLA CADA JORNADA: la mesa que no sesiona no avanza.",
+        "instalar mesa con voceros en el Puente Amarillo"),
+    EsquemaHumanitarioMunicipal: (
+        "Abrir paso a lo humanitario",
+        "Su propia jurisdicción. No cubre el resto del país.",
+        "montar el esquema humanitario municipal"),
+    PublicarParteMunicipal: (
+        "Publicar el conteo de la ciudad",
+        "Ninguno, pero sin protocolo común de verificación la cifra se disputa.",
+        ""),
+    # --- Defensa ------------------------------------------------------------
+    FijarReglasEmpleoSector: (
+        "Poner reglas a sus unidades",
+        "Ninguno.",
+        ""),
+    OperarNodo: (
+        "Desbloquear un punto por la fuerza",
+        "Un punto todavía cerrado y unidades disponibles del tipo que se pida. "
+        "Con tropa, la asistencia militar firmada; en el epicentro, la "
+        "concertación con la Alcaldía si la Alcaldía la exigió.",
+        "operar el Puente Amarillo con ESMAD, con dupla de la Defensoria"),
+    RedesplegarMilitares: (
+        "Mover tropa a donde haga falta",
+        "Unidades militares en reserva.",
+        "redesplegar militares a infraestructura"),
+    PresentarEvidenciaInteligencia: (
+        "Mostrar quién financia los cierres",
+        "Ninguno.",
+        ""),
+    # --- Policía ------------------------------------------------------------
+    ClasificarParteOperacional: (
+        "Separar lo confirmado de lo estimado",
+        "Ninguno.",
+        "clasificar el parte operacional"),
+    DisponerESMAD: (
+        "Concentrar el ESMAD",
+        "Escuadrones todavía en contención estática de donde traerlos.",
+        "concentrar el ESMAD"),
+    Escoltar: (
+        "Escoltar una caravana o misión médica",
+        "Escuadrones sin comprometer. Si el corredor sigue bloqueado la escolta "
+        "sale, pero la carga no pasa.",
+        "escoltar una mision medica por el Corredor hospitalario"),
+    SolicitarRelevo: (
+        "Relevar a las unidades cansadas",
+        "Unidades desplegadas con fatiga que relevar.",
+        "relevar las unidades agotadas"),
+    # --- Defensoría ---------------------------------------------------------
+    ExigirEstandaresEmpleo: (
+        "Exigir reglas, identificación y cámaras",
+        "Ninguno. Es la de mayor rendimiento del ejercicio y no cuesta un escuadrón.",
+        "exigir los estandares de empleo de la fuerza"),
+    AdoptarProtocoloVerificacion: (
+        "Acordar una sola forma de verificar",
+        "Ninguno.",
+        ""),
+    AsignarDuplas: (
+        "Mandar a sus verificadores",
+        "Duplas libres esta jornada, y decir qué mirar. Salen del mismo bolsillo "
+        "que el acompañamiento de operaciones.",
+        "verificar el Puente Amarillo y el Peaje del Puerto"),
+    RequerirCorredoresHumanitarios: (
+        "Exigir un paso humanitario permanente",
+        "Ninguno.",
+        "requerir un corredor humanitario permanente"),
+    ManifestarDudaPermanencia: (
+        "Poner en duda su permanencia",
+        "Ninguno, pero se gasta: cada pronunciamiento pesa menos que el anterior.",
+        "manifestar duda sobre la permanencia en la mesa"),
+    # --- Transporte ---------------------------------------------------------
+    AdoptarCriterioPriorizacion: (
+        "Fijar el orden de los corredores",
+        "Ninguno.",
+        "adoptar el criterio de priorizacion de corredores"),
+    OrganizarCaravana: (
+        "Organizar una caravana",
+        "Escolta ya dispuesta por la Policía, y el corredor sin ningún punto "
+        "que lo bloquee.",
+        "organizar una caravana por el Corredor del Sur"),
+    NegociarConGremios: (
+        "Hablar con los camioneros",
+        "Que los gremios no se hayan sumado ya al paro.",
+        "negociar con los gremios camioneros"),
+    PublicarMapaCierres: (
+        "Publicar el mapa de cierres",
+        "Ninguno. Anunciar abierto lo que no deja pasar se desmiente solo.",
+        ""),
+    # --- Minas --------------------------------------------------------------
+    FijarPrioridadCombustible: (
+        "Decidir a qué va el combustible",
+        "Ordenar los cuatro usos, todos y sin repetir.",
+        "fijar la prioridad de combustible"),
+    DeclararInfraestructuraCritica: (
+        "Poner custodia a una instalación",
+        "Instalaciones del registro de infraestructura relevante, y capacidad "
+        "libre para custodiarlas: lo que se protege sale de lo que desbloquea.",
+        "declarar infraestructura critica la refineria"),
+    AcordarPasosSeguros: (
+        "Acordar ventanas de paso",
+        "Un punto donde la vocería reconocida controle algo. Donde no manda "
+        "nadie no hay con quién acordar.",
+        ""),
+    EntregarCalendarioAgotamiento: (
+        "Decir cuántos días quedan",
+        "Ninguno. Difundirlo acelera lo que mide.",
+        "entregar el calendario de agotamiento"),
+    # --- Agricultura --------------------------------------------------------
+    FijarClasePrioridadAlimentaria: (
+        "Poner los alimentos en la prioridad",
+        "Ninguno. Si Transporte ya fijó su criterio, esto lo reordena delante "
+        "de la mesa y se nota.",
+        "fijar la clase de prioridad agroalimentaria"),
+    InstalarMesaTecnicaAgropecuaria: (
+        "Sentarse con el campo",
+        "Un punto rural todavía cerrado —fuera del epicentro— con organización "
+        "con quien hablar. No necesita al Comité del Paro. HAY QUE INSTALARLA "
+        "CADA JORNADA: la mesa que no sesiona no avanza.",
+        "instalar mesa tecnica agropecuaria en el Cruce de San Isidro"),
+    ActivarInstrumentosSectoriales: (
+        "Aliviar a los productores",
+        "Ninguno, y es la única suya que no depende de nadie. Cada paquete en "
+        "la misma región rinde menos que el anterior.",
+        "activar los instrumentos sectoriales en Las Cumbres"),
+    PublicarBalancePerdida: (
+        "Publicar lo que se está perdiendo",
+        "Ninguno, pero sin protocolo común de verificación la cifra se disputa.",
+        "publicar el balance de perdida del eslabon pecuario"),
+    AcordarAcopioYVentanas: (
+        "Concentrar el despacho de alimentos",
+        "Escolta ya dispuesta por la Policía, y un corredor de clase alimentaria "
+        "sin ningún punto que lo bloquee.",
+        "acordar el esquema de acopio por el Corredor del Sur"),
+}
+
+for _cls, (_nom, _req, _ej) in GUIA.items():
+    _cls.nombre = _nom
+    _cls.requisitos_previos = _req
+    _cls.ejemplo_consola = _ej
+
+
+def catalogo_por_rol(estado: Estado | None = None) -> dict[str, list[dict]]:
+    """
+    El repertorio de cada rol, generado desde el código y no escrito a mano.
+
+    Con un estado delante, cada acción viaja además con su SEMÁFORO: si se puede
+    pedir hoy y, si no, qué falta. Sin estado —el catálogo que ve el modelo— sale
+    el repertorio pelado, porque ahí la pregunta es qué existe y no qué se puede.
+    """
     out: dict[str, list[dict]] = {}
     for cls in CATALOGO:
-        out.setdefault(cls.rol, []).append({
+        ficha = {
             "codigo": cls.codigo,
             "accion": cls.__name__,
             "clase": cls.clase,
+            # TRES ROTULOS, TRES LECTORES. `nombre` es el de la sala —verbo y un
+            # renglón—, `en_claro` explica qué cambia, y `descripcion` es el
+            # nombre formal del acto, el que se cita en el pliego.
+            "nombre": cls.nombre,
             "descripcion": cls.descripcion,
             "en_claro": cls.en_claro,
-        })
+            # Las dos columnas de la guía. `requisitos_previos` es un hecho
+            # sobre la acción y no depende del estado; el semáforo, que sí
+            # depende, viaja aparte en `disponibilidad`.
+            "requisitos_previos": cls.requisitos_previos,
+            "ejemplo_consola": cls.ejemplo_consola,
+        }
+        if estado is not None:
+            ficha["disponibilidad"] = cls.disponibilidad(estado).a_dict()
+        out.setdefault(cls.rol, []).append(ficha)
     return out

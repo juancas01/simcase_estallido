@@ -22,7 +22,7 @@
 // recomienda.
 //
 // Y NO HAY MODERADOR COMO FIGURA APARTE: quien opera la consola puede ser uno de
-// los ocho. El sistema conduce el turno.
+// los nueve. El sistema conduce el turno.
 //
 // ESTA PORTADA ES UN LANZADOR, no un documento. Cada tarjeta dice su nombre y su
 // ruta; para qué sirve cada una está detrás de su marca de ayuda.
@@ -32,12 +32,61 @@
 // es `.rejilla-roles`, en `index.css`.
 // ---------------------------------------------------------------------------
 
+import { Component } from 'react'
+
 import Tablero from './components/Tablero'
 import Consola from './components/Consola'
 import VistaPrivada from './components/VistaPrivada'
 import Ayuda from './components/Ayuda'
 import { ROLES } from './comun.jsx'
 import LogoAiLab from '../logos/LOGO Ai Lab_blanco.png'
+
+// ---------------------------------------------------------------------------
+// LA RED DE SEGURIDAD
+//
+// React desmonta el árbol entero cuando un componente lanza durante el pintado.
+// Sin nada que lo intercepte, **el resultado es una pantalla en blanco**: ni
+// mensaje, ni traza, ni forma de saber si el problema es el servidor, la red o
+// un dato con una forma inesperada. En una sala con diez pantallas encendidas y
+// dos horas de reloj, eso es el fallo más caro que puede tener esta interfaz,
+// porque no se puede diagnosticar sin abrir la consola del navegador.
+//
+// Con esto, lo peor que puede pasar es una tarjeta que dice qué se rompió y un
+// botón para recargar. Una pantalla que explica su fallo se arregla en la sala;
+// una en blanco, no.
+// ---------------------------------------------------------------------------
+
+class Salvavidas extends Component {
+  constructor(props) {
+    super(props)
+    this.state = { error: null }
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error }
+  }
+
+  render() {
+    if (!this.state.error) return this.props.children
+    return (
+      <div className="pantalla">
+        <div className="cuerpo cargando">
+          <div className="cargando-caja con-error">
+            <div className="eyebrow">Esta pantalla se rompió al dibujarse</div>
+            <p className="cargando-titulo">
+              El motor sigue corriendo. Lo que falló es la interfaz.
+            </p>
+            <p className="cargando-detalle">{String(this.state.error)}</p>
+            <button className="primario"
+                    onClick={() => window.location.reload()}>
+              Recargar la pantalla
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+}
 
 const AYUDA_TABLERO = (
   <>
@@ -63,7 +112,7 @@ const AYUDA_CONSOLA = (
       alta antes de ejecutarlo.
     </p>
     <p>
-      No se proyecta a la sala. Puede operarla cualquiera de los ocho: quien lo
+      No se proyecta a la sala. Puede operarla cualquiera de los nueve: quien lo
       hace transcribe, y no conduce el ejercicio ni decide su ritmo.
     </p>
   </>
@@ -144,7 +193,7 @@ function Portada() {
 }
 
 /** Un bloque de la portada. `rejilla` nombra la clase que reparte las tarjetas:
-    la de los ocho roles necesita una propia y las demás se quedan con la de la
+    la de los nueve roles necesita una propia y las demás se quedan con la de la
     portada, que acomoda una sola tarjeta ancha. */
 function Seccion({ titulo, ayuda, rejilla = 'rejilla-portada', children }) {
   return (
@@ -161,6 +210,10 @@ function Seccion({ titulo, ayuda, rejilla = 'rejilla-portada', children }) {
 }
 
 export default function App() {
+  return <Salvavidas><Superficie /></Salvavidas>
+}
+
+function Superficie() {
   const ruta = decodeURIComponent(window.location.pathname)
 
   if (ruta === '/tablero') return <Tablero />
@@ -174,8 +227,14 @@ export default function App() {
   }
 
   if (ruta.startsWith('/vista/')) {
-    const rol = ruta.slice('/vista/'.length)
-    if (ROLES.some(r => r.id === rol)) return <VistaPrivada rol={rol} />
+    // NORMALIZADO. `Policía` y `Defensoría` llevan tilde, y una tilde puede
+    // llegar en dos codificaciones Unicode distintas —compuesta o
+    // descompuesta— según de dónde salga el enlace. Sin normalizar, la
+    // comparación falla y el titular aterriza en la portada sin entender por
+    // qué su propia vista no existe.
+    const rol = ruta.slice('/vista/'.length).normalize('NFC')
+    const ficha = ROLES.find(r => r.id.normalize('NFC') === rol)
+    if (ficha) return <VistaPrivada rol={ficha.id} />
   }
 
   return <Portada />

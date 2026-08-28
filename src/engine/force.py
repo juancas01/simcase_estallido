@@ -125,7 +125,7 @@ def multiplicador_costo_civil(nodo: Nodo) -> float:
     Cuánto más cuesta un incidente según a quién se le hizo.
 
     **Es la primera de las dos vías por las que la mezcla real de un punto tiene
-    consecuencia** (§P1 de la propuesta). Un incidente en un punto que es 90 %
+    consecuencia** (`docs/COMO_FUNCIONA.md` §8). Un incidente en un punto que es 90 %
     protesta legítima cuesta casi el doble que uno donde la mitad es otra cosa:
     es fuerza sobre población civil, y se paga como tal.
 
@@ -187,7 +187,7 @@ def ejecutar_operacion(
         viral = rng.random() < p_viral
 
     # `atribuible` decide SOBRE QUIÉN cae el costo. Sin orden escrita con
-    # responsable nominado, el costo se reparte sobre los ocho y golpea la
+    # responsable nominado, el costo se reparte sobre los nueve y golpea la
     # cohesión — que es exactamente la tensión del Ministro de Defensa.
     atribuible = bool(responsable_nominado) and estado.banderas.registro_escrito
 

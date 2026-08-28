@@ -17,7 +17,7 @@ EL CICLO
 NO HAY MODERADOR COMO FIGURA APARTE (v2). El sistema conduce el turno: lleva el
 reloj de cada fase, produce el parte de apertura y devuelve el plan interpretado
 con su banda de riesgo. Quien opera la consola solo transcribe, y puede ser uno
-de los ocho.
+de los nueve.
 """
 
 from __future__ import annotations
@@ -122,6 +122,59 @@ class MotorCrisis:
         })
 
     # ------------------------------------------------------------------
+    # LA JORNADA — las dos mitades que la sala vive
+    # ------------------------------------------------------------------
+    #
+    # El reloj de sala parte la jornada en dos tramos con reglas opuestas:
+    # trece minutos de día en los que se ordena, y dos de noche en los que se
+    # mira lo que salió. Estos dos métodos son las bisagras, y existen porque
+    # abrir el día y resolverlo NO son el mismo acto:
+    #
+    #     abrir_jornada()    no avanza el mundo. Pone la mesa: es de día, hay
+    #                        tres duplas otra vez, y la fecha de la pared sube.
+    #     cerrar_jornada()   avanza el mundo. Resuelve el día con lo que haya en
+    #                        cola y a continuación pasa la noche.
+    #
+    # La noche va DENTRO de cerrar_jornada y no en un botón aparte, porque los
+    # dos minutos de consecuencias tienen que enseñar las dos cosas a la vez: lo
+    # que produjo la orden y lo que produjo la noche. Separarlas obligaba a la
+    # sala a leer media consecuencia, empezar a deliberar, y recibir la otra
+    # mitad a mitad de la conversación siguiente.
+    # ------------------------------------------------------------------
+
+    def abrir_jornada(self) -> int:
+        """
+        Empieza el día de la jornada siguiente. **No avanza el mundo.**
+
+        Reponer aquí las duplas y no dentro del paso no es cosmético: la
+        Defensoría tiene que ver sus tres duplas MIENTRAS decide a dónde
+        mandarlas. Si se repusieran al resolver, su propia pantalla le diría
+        durante los trece minutos que no le queda ninguna.
+        """
+        self.estado.jornada_abierta = max(
+            self.estado.turno_decision, self.estado.jornada_abierta) + 1
+        self.estado.franja = "dia"
+        information.reponer_duplas(self.estado)
+        return self.estado.jornada_abierta
+
+    def cerrar_jornada(self) -> list[ResultadoTurno]:
+        """
+        Resuelve el día con lo que la mesa dejó en cola, y pasa la noche.
+
+        Devuelve los pasos dados, en orden. Después de la última jornada no hay
+        noche que sufrir: el país que la sala entrega lo dice la proyección.
+        """
+        pasos = [self.paso(franja="dia")]
+        if self.estado.turno_decision < P.TURNOS_DECISION:
+            pasos.append(self.paso(franja="noche"))
+        else:
+            # No hay noche que sufrir, pero la sala SÍ tiene sus dos minutos de
+            # consecuencias — y durante ellos el tablero no puede decir «día».
+            # La franja es lo que la sala está viviendo; el motor ya no avanza.
+            self.estado.franja = "noche"
+        return pasos
+
+    # ------------------------------------------------------------------
     # El paso
     # ------------------------------------------------------------------
 
@@ -135,7 +188,14 @@ class MotorCrisis:
         es_dia = e.franja == "dia"
         if es_dia:
             e.turno_decision += 1
-            # Las tres duplas se reponen al empezar cada turno de decisión.
+            # La jornada abierta nunca puede quedarse por detrás de la resuelta:
+            # quien corre el motor sin reloj de sala —las pruebas, el corredor
+            # sin interfaz— no llama a `abrir_jornada()` nunca.
+            e.jornada_abierta = max(e.jornada_abierta, e.turno_decision)
+            # Las tres duplas se reponen al empezar cada turno de decisión. Con
+            # reloj de sala ya las repuso `abrir_jornada()`, y volver a hacerlo
+            # aquí no quita nada: entre una cosa y la otra no se gasta ninguna,
+            # porque las acciones se ejecutan más abajo.
             information.reponer_duplas(e)
 
         res = ResultadoTurno(turno=e.turno_decision, franja=e.franja)
@@ -178,7 +238,20 @@ class MotorCrisis:
         if es_dia or not P.COBRAR_BANDERAS_SOLO_DE_DIA:
             self._cobrar_ausencia_de_banderas()
 
+        # 4b · El riesgo de infraestructura, que se acumula sin avisar.
+        #      Solo de día: la exposición se cuenta por JORNADAS sin custodia, y
+        #      contarla también de noche la duplicaría sin que nada cambie.
+        if es_dia:
+            self._acumular_riesgo_infraestructura()
+
         # 5 · Motores de subsistema, en orden fijo
+        #
+        # Las mesas se revisan ANTES que nada y solo de día: hay que mirar la
+        # jornada tal como la dejaron las órdenes, y una mesa que no sesionó hoy
+        # es un hecho de la jornada, no de la noche. De noche no se instala nada
+        # y no hay nada que reprochar.
+        if es_dia:
+            aperture.revisar_mesas(e)
         aperture.step(e, self.rng)
         aperture.revisar_acuerdos(e, self.rng)
         supply.step(e, horas=P.HORAS_POR_TURNO)
@@ -211,9 +284,10 @@ class MotorCrisis:
     # no sale.
     HECHOS_DE_PUNTO = frozenset({
         "operacion", "punto_verificado", "apertura", "reapertura",
-        "desgaste", "paso_seguro", "acuerdo_incumplido",
+        "desgaste", "paso_seguro", "acuerdo_incumplido", "mesa_congelada",
     })
-    CAMPOS_DE_HECHO = frozenset({"tipo", "via", "unidad", "dupla", "incidente", "por"})
+    CAMPOS_DE_HECHO = frozenset({"tipo", "via", "unidad", "dupla", "incidente",
+                                 "por", "jornadas"})
 
     def hechos_por_punto(self) -> dict[str, list[dict]]:
         """
@@ -227,7 +301,7 @@ class MotorCrisis:
         operó en este punto, una dupla lo miró, el acuerdo se rompió— y nunca
         dónde está la fuerza AHORA. Lo primero sale en las noticias esa misma
         tarde; lo segundo es de la Dirección General de la Policía, y en el
-        tablero dejaría sin oficio a uno de los ocho.
+        tablero dejaría sin oficio a uno de los nueve.
         """
         if not self.historial:
             return {}
@@ -368,15 +442,106 @@ class MotorCrisis:
         if not b.criterio_priorizacion:
             e.reservas.aplicar(P.COSTO_RESERVAS["sin_criterio_priorizacion"])
 
+    def _acumular_riesgo_infraestructura(self) -> None:
+        """
+        Una jornada más sin custodia, por cada instalación que la sala no protegió.
+
+        **No produce ningún evento y no toca ninguna reserva.** Si lo hiciera, la
+        sala vería moverse el número y jugaría contra él — y lo que este contador
+        mide no es un daño que ocurrió, sino un riesgo que se asumió. Se cobra
+        entero en el debriefing, que es donde se responde de esa clase de cosa.
+        """
+        for i in self.estado.infraestructura.values():
+            if not i.protegida:
+                i.jornadas_sin_proteger += 1
+
+    def riesgo_infraestructura(self) -> dict:
+        """
+        Lo que la sala dejó sin proteger, y durante cuánto. **Para el cierre.**
+
+        La exposición pondera las jornadas sin custodia por lo que depende de
+        cada instalación: dejar una refinería vital cinco jornadas no es lo mismo
+        que dejar un centro de acopio. Sale con el detalle, porque el número solo
+        no abre ninguna conversación — lo que la abre es la lista de nombres.
+        """
+        e = self.estado
+        filas = []
+        for i in sorted(e.infraestructura.values(),
+                        key=lambda x: (-P.PESO_CRITICIDAD.get(x.criticidad, 1.0),
+                                       -x.jornadas_sin_proteger)):
+            peso = P.PESO_CRITICIDAD.get(i.criticidad, 1.0)
+            filas.append({
+                "instalacion": i.nombre,
+                "region": e.regiones[i.region_id].nombre
+                if i.region_id in e.regiones else i.region_id,
+                "criticidad": i.criticidad,
+                "protegida": i.protegida,
+                "jornadas_sin_proteger": i.jornadas_sin_proteger,
+                "de_que_depende": i.de_que_depende,
+                "exposicion": round(peso * i.jornadas_sin_proteger, 1),
+            })
+        total = round(sum(f["exposicion"] for f in filas), 1)
+        vitales = [f for f in filas
+                   if f["criticidad"] == "vital" and not f["protegida"]]
+        return {
+            "exposicion_total": total,
+            "grave": total >= P.EXPOSICION_INFRA_GRAVE,
+            "protegidas": sum(1 for f in filas if f["protegida"]),
+            "total": len(filas),
+            "vitales_sin_proteger": [f["instalacion"] for f in vitales],
+            "detalle": filas,
+        }
+
     def _aplicar_umbrales(self, cruzados: list[str]) -> None:
+        """
+        Los umbrales duros, y **la única puerta de esta clase que se abre en los
+        dos sentidos**.
+
+        Las dos ramas del Comité estaban colapsadas en una: suspender por bajar
+        de 30 y retirarse por bajar de 15 hacían exactamente lo mismo, y lo
+        hacían para siempre. El umbral de 15 era código muerto y la sala que
+        reparaba su credibilidad no recibía nada a cambio.
+        """
         e = self.estado
         for u in cruzados:
             if u == "gremios_se_suman":
                 e.posicion_gremios = "sumados"
             elif u == "gremios_evaluan" and e.posicion_gremios == "fuera":
                 e.posicion_gremios = "evaluando"
-            elif u in ("comite_suspende", "comite_se_retira_definitivo"):
+            elif u == "comite_se_retira_definitivo":
+                if e.comite_disponible or not e.comite_retirado_definitivo:
+                    e.eventos_turno.append({"tipo": "comite_se_retira_definitivo"})
                 e.comite_disponible = False
+                e.comite_retirado_definitivo = True
+            elif u == "comite_suspende":
+                if e.comite_disponible:
+                    e.eventos_turno.append({"tipo": "comite_suspende"})
+                e.comite_disponible = False
+
+        self._revisar_vuelta_del_comite()
+
+    def _revisar_vuelta_del_comite(self) -> None:
+        """
+        El Comité se vuelve a sentar cuando la credibilidad remonta el umbral.
+
+        No lo puede decir `umbrales_cruzados()`, que informa de lo que está
+        cruzado AHORA y calla en cuanto se deja de estar por debajo. Por eso la
+        vuelta necesita su propia comprobación y por eso no existía.
+
+        **Salvo que se haya ido en definitiva.** Por debajo de 15 la retirada no
+        se deshace: es la diferencia entre los dos umbrales que el modelo
+        declaraba y no aplicaba.
+        """
+        e = self.estado
+        if e.comite_disponible or e.comite_retirado_definitivo:
+            return
+        if e.reservas.credibilidad_mesa < P.UMBRALES["credibilidad_comite_suspende"]:
+            return
+        e.comite_disponible = True
+        e.eventos_turno.append({
+            "tipo": "comite_vuelve",
+            "credibilidad": round(e.reservas.credibilidad_mesa, 1),
+        })
 
     def _recalcular_encuadre(self) -> None:
         """El mismo hecho cuesta distinto según el encuadre vigente."""
@@ -409,6 +574,9 @@ class MotorCrisis:
     def _resumen(self, res: ResultadoTurno) -> str:
         e = self.estado
         region, dias = e.dias_autonomia_minimos()
+        # Por debajo de cero no quedan «−2,0 días» de nada: no queda nada, y lo
+        # que corre a partir de ahí es el contador de muertes evitables.
+        dias = max(0.0, dias)
         abiertos = len(e.nodos_abiertos())
         return (
             f"T{e.turno_decision} ({res.franja}) · puntos abiertos {abiertos}/{len(e.nodos)} · "
@@ -443,6 +611,7 @@ class MotorCrisis:
         for i in range(turnos):
             self.paso(franja="noche" if i % 2 else "dia")
         region, dias = e.dias_autonomia_minimos()
+        dias = max(0.0, dias)     # por debajo de cero no queda nada, no «−2 días»
         return {
             "antes": antes,
             "despues": {
@@ -480,8 +649,15 @@ class MotorCrisis:
             "aperturas_netas": (ap_fuerza + ap_conc + ap_desg) - reap,
             "aperturas": {"fuerza": ap_fuerza, "concertacion": ap_conc, "desgaste": ap_desg},
             "reaperturas": reap,
+            # NUNCA `inf`, y no es un detalle de estilo: `float("inf")` no es
+            # JSON válido, así que una sala que hubiera abierto por la fuerza y
+            # ni una vez por concertación —que es justo la corrida sobre la que
+            # más hay que hablar— **tumbaba el endpoint de métricas con un 500
+            # en mitad del debriefing.** `None` se lee «no hubo ninguna
+            # concertación con la que comparar», que es lo que pasa.
             "ratio_fuerza_concertacion": (
-                round(ap_fuerza / ap_conc, 2) if ap_conc else (float("inf") if ap_fuerza else 0)
+                round(ap_fuerza / ap_conc, 2) if ap_conc
+                else (None if ap_fuerza else 0)
             ),
             "turno_primer_registro_escrito": primer_registro,
             "mitigadores_al_cierre": f"{mitigadores}/3",
@@ -496,6 +672,20 @@ class MotorCrisis:
             "escoltas_atacadas": sum(1 for x in eventos if x.get("tipo") == "escolta_atacada"),
             "dudas_permanencia": e.dudas_permanencia,
             "reservas": self._reservas_dict(),
+            # EL RIESGO QUE SE ASUMIÓ, no el daño que ocurrió. No hay acciones
+            # en contra de la infraestructura: lo que el cierre cobra es lo que
+            # se dejó sin custodiar, y durante cuántas jornadas.
+            "infraestructura": self.riesgo_infraestructura(),
+            # EL OTRO RIESGO QUE SE ASUMIÓ Y NO SE VIO. Cada autorización
+            # sanitaria excepcional movió animales y alimento balanceado por
+            # rutas alternas sin control pleno. Dentro del episodio no cuesta
+            # nada —igual que la infraestructura sin custodia—, y por eso está
+            # aquí: para que en el debriefing haya un número contra el que
+            # preguntar de quién fue la decisión y qué se compró con ella.
+            "riesgo_sanitario": {
+                "excepciones_autorizadas": e.riesgo_sanitario_asumido,
+                "regiones_con_alivios": dict(e.instrumentos_sectoriales),
+            },
             "posicion_gremios": e.posicion_gremios,
             "comite_disponible": e.comite_disponible,
             "lineas_declaradas": dict(self.lineas_declaradas),

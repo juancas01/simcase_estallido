@@ -19,7 +19,7 @@ antes que este.
 6. [La API](#6-la-api)
 7. [Las capas de lenguaje natural](#7-las-capas-de-lenguaje-natural)
 8. [El frontend](#8-el-frontend)
-9. [Las pruebas](#9-las-pruebas)
+9. [Las propiedades que se verifican](#9-las-propiedades-que-se-verifican)
 10. [Cómo añadir cosas](#10-cómo-añadir-cosas)
 11. [Convenciones](#11-convenciones)
 12. [Puesta en marcha](#12-puesta-en-marcha)
@@ -34,7 +34,7 @@ De ahí sale la propiedad más importante del repositorio, y la que conviene
 comprobar antes de tocar nada:
 
 ```bash
-uv run pytest -q          # 150 pruebas, ninguna llama a un modelo
+uv run pytest -q          # ninguna verificación llama a un modelo
 ```
 
 **El motor corre entero sin llave de API.** No es una comodidad de desarrollo: es
@@ -68,53 +68,57 @@ ejercicio sigue con plantillas deterministas y lo dice en el campo
 simcase_estallido/
 │
 ├── src/engine/          EL MOTOR · único dueño del estado · sin IA
-│   ├── parameters.py    328 l   todas las constantes, con nombre y unidad
-│   ├── state.py         646 l   de qué está hecho el país + vista_publica()
-│   ├── loader.py        289 l   construye t=0 desde data/ y verifica invariantes
+│   ├── parameters.py       531 l   todas las constantes, con nombre y unidad
+│   ├── state.py            853 l   de qué está hecho el país + vista_publica()
+│   ├── loader.py           385 l   construye t=0 desde data/ y verifica invariantes
 │   │
-│   ├── mobilization.py  183 l   el adversario reflexivo
-│   ├── force.py         367 l   riesgo, mitigadores, incidentes, ESMAD, escolta
-│   ├── aperture.py      224 l   las tres vías de abrir, reaperturas, acuerdos
-│   ├── supply.py        227 l   el reloj, el oxígeno, la prioridad de combustible
-│   ├── information.py   341 l   verdad, estimaciones sesgadas, duplas, denuncias
+│   ├── mobilization.py     255 l   el adversario reflexivo
+│   ├── force.py            367 l   riesgo, mitigadores, incidentes, ESMAD, escolta
+│   ├── aperture.py         293 l   las tres vías de abrir · LAS MESAS · acuerdos
+│   ├── supply.py           227 l   el reloj, el oxígeno, la prioridad de combustible
+│   ├── information.py      342 l   verdad, estimaciones sesgadas, duplas, denuncias
+│   ├── territory.py        473 l   lecturas del mapa · INTERVENCIÓN · geometría
 │   │
-│   ├── views.py         539 l   LAS OCHO VISTAS PRIVADAS
-│   ├── actions.py     1 692 l   las 34 acciones de los ocho roles
-│   └── simulation.py    502 l   el bucle de turnos · paso() es la única puerta
+│   ├── views.py            860 l   LAS NUEVE VISTAS PRIVADAS
+│   ├── actions.py        2 744 l   las 39 acciones + la GUÍA de cada una
+│   └── simulation.py       692 l   el bucle · paso() es la única puerta
 │
-├── src/api/main.py      400 l   capa delgada · 15 endpoints y el catch-all del SPA
+├── src/api/main.py     880 l   capa delgada · endpoints y catch-all del SPA
 │
 ├── src/agents/          LAS CAPAS DE LENGUAJE NATURAL · opcionales
-│   ├── config.py        159 l   .env, llave, y el presupuesto de latencia duro
-│   ├── resolver.py      345 l   entidades → ids, determinista, cuatro estados
-│   ├── herramientas.py  835 l   esquemas tipados generados del catálogo
-│   ├── nlu.py           736 l   el cauce de nueve pasos
-│   └── entorno.py       294 l   los seis agentes de entorno
+│   ├── config.py           159 l   .env, llave, y el presupuesto de latencia duro
+│   ├── resolver.py         345 l   entidades → ids, determinista, cuatro estados
+│   ├── herramientas.py   1 073 l   esquemas tipados generados del catálogo
+│   ├── nlu.py              787 l   el cauce de nueve pasos
+│   └── entorno.py          303 l   los seis agentes de entorno
 │
 ├── web_ui/src/          LAS SUPERFICIES · React 19 + Vite
-│   ├── App.jsx          174 l   enrutado y portada
-│   ├── comun.jsx        161 l   ROLES, FASES, api(), useDatos, Barra, Delta
-│   ├── definiciones.jsx 612 l   las 38 definiciones formales de los globos
-│   ├── etiquetas.jsx    146 l   identificador del motor → rótulo de pantalla
-│   ├── index.css        787 l   el sistema visual entero
+│   ├── App.jsx             241 l   enrutado y portada
+│   ├── comun.jsx           262 l   ROLES, api(), useDatos, Medidor, Tendencia
+│   ├── definiciones.jsx    784 l   las definiciones formales de los globos
+│   ├── etiquetas.jsx       292 l   identificador del motor → rótulo de pantalla
+│   ├── index.css         1 660 l   el sistema visual entero
 │   └── components/      Tablero · VistaPrivada · Consola · Mapa · Reloj · Ayuda
+│                        (`Mapa.jsx`, 1 160 l, DIBUJA; no calcula ni una cifra)
 │
 ├── data/escenario/      EL CASO, en datos y no en código
 ├── scripts/             el corredor sin interfaz, para calibrar sin sala
-├── tests/             2 106 l   150 verificadores sin modelo, en 2,3 s
-│   ├── conftest.py              —   silencia LAS DOS capas: nada sale a la red
-│   ├── test_invariantes.py     63   el motor
-│   └── test_canal_ordenes.py   87   las capas que hablan con personas
+│   ├── correr_ejercicio.py  siete estrategias de referencia · --comparar
+│   ├── repertorio.py   escribe `docs/GUIA_DE_ACCIONES.md` desde el catálogo
+│   └── mapa/           CÓMO SE CONSTRUYE EL MAPA · nueve pasos, desde
+│                       datos cartográficos abiertos hasta el escenario
+├── tests/               los verificadores · ninguno llama a un modelo
 │
 ├── README.md            por dónde empezar
 ├── PENDIENTES.md        qué falta · el único sitio donde se lleva la cuenta
 └── docs/                este documento y los demás
 ```
 
-**Los tamaños importan aquí.** `actions.py` con 1 692 líneas es el archivo más
-grande y es el que más se toca: 34 clases, cada una con su validación y su
-ejecución. Si crece mucho más, el corte natural es por frente (seguridad,
-estrategia, logística), no por tipo de acción.
+**Los tamaños importan aquí.** `actions.py`, con casi dos mil líneas, es el
+archivo más grande y el que más se toca: 39 clases, cada una con su validación y
+su ejecución. Si crece mucho más, el corte natural es por frente (seguridad,
+estrategia, logística), no por tipo de acción. El segundo es `index.css`, y ahí
+el corte natural sería por superficie.
 
 ---
 
@@ -123,11 +127,11 @@ estrategia, logística), no por tipo de acción.
 ### El estado
 
 Todo el mundo vive en un objeto `Estado` ([`state.py`](../src/engine/state.py)),
-con **tres niveles espaciales** porque los ocho roles no deciden sobre lo mismo:
+con **tres niveles espaciales** porque los nueve roles no deciden sobre lo mismo:
 
 ```
-Nodo       un punto de cierre          24    Policía · Interior · Alcalde
-Corredor   una secuencia de puntos      5    Transporte · Defensa
+Nodo       un punto de cierre          11    Policía · Interior · Alcalde
+Corredor   una secuencia de puntos      4    Transporte · Defensa
 Region     un área con su reloj         4    Minas · Interior
 ```
 
@@ -135,8 +139,8 @@ Más `Reservas`, `Banderas`, `Unidad`, `Denuncia`, `Acuerdo` y el registro de
 decisiones.
 
 > **Desviación deliberada respecto de la guía de arquitectura.** Esa guía
-> recomienda arrays paralelos de NumPy. Aquí se usan objetos, a propósito: 24
-> nodos y no 657, lógica ramificada y no aritmética uniforme, 12 pasos por
+> recomienda arrays paralelos de NumPy. Aquí se usan objetos, a propósito: once
+> nodos y no 657, lógica ramificada y no aritmética uniforme, doce pasos por
 > ejercicio y no 288. La regla que **sí** se conserva es el identificador estable
 > y opaco (`nodo_id`), con los nombres legibles fuera del motor.
 
@@ -170,9 +174,10 @@ Dos datos, y son los que sostienen el ejercicio entero:
 | `Nodo.composicion_real` | capa 1, `state.py` | se acabaría el dilema de operar a ciegas |
 | `Denuncia.veraz` | capa 1, `state.py` | verificar dejaría de costar algo |
 
-**Cuatro pruebas los custodian**, y no solo en `vista_publica()`: también en las
-ocho vistas privadas, en los deltas y en los hechos del mapa. Cada vez que se
-añade una superficie hay que preguntarse si abre una puerta trasera a estos dos.
+**Están custodiados en las cuatro superficies**, no solo en `vista_publica()`:
+también en las nueve vistas privadas, en los deltas y en los hechos del mapa. Cada
+vez que se añade una superficie hay que preguntarse si abre una puerta trasera a
+estos dos.
 
 ---
 
@@ -186,12 +191,29 @@ nada de él más allá de su forma:
   "fecha_inicio": "2021-05-11T06:00",
   "region_epicentro": "R-BEL",
   "regiones":   [ … 4 … ],
-  "corredores": [ … 5 … ],
-  "nodos":      [ … 24, con x/y para el mapa esquemático … ],
+  "corredores": [ … 4 … ],
+  "nodos":      [ … 10, con x/y sobre un vértice REAL de la red vial y
+                    DENTRO del polígono de su región … ],
+  "infraestructura": [ … 12 instalaciones con nombre, sitio, criticidad
+                    cualitativa y de qué depende cada una … ],
+  "mapa":       { … contorno real, tramos de litoral y frontera, agua
+                    interior, RED VIAL real, TRAZADOS ruteados de los
+                    cuatro corredores, cuatro polígonos de región,
+                    rótulos, mares, puerto y ciudad … },
   "denuncias_iniciales": [ … el hecho H2 … ],
-  "hecho_h1":   { … el incidente que la sala recibe … }
+  "hecho_h1":   { … el incidente que la sala recibe · apunta a la
+                    instalación por su identificador … }
 }
 ```
+
+**El bloque `mapa` no se escribe a mano.** Sale de un proceso de construcción
+que parte de datos cartográficos abiertos —línea de costa y carreteras
+principales de un sitio real que no consta— y produce: la silueta por
+rasterizado y marching squares, las cuatro regiones por reparto de la rejilla
+con **fronteras compartidas** (cada una se simplifica una vez y se usa dos, de
+modo que la teselación es exacta por construcción), y los trazados de corredor
+por Dijkstra sobre el grafo vial. Los diez puntos se siembran **sobre** el
+trazado ya ruteado de su corredor, no al revés.
 
 **Por qué en datos y no en código.** Se puede cambiar el escenario, apagar un
 hecho detonante o probar otro territorio sin tocar el motor. Y `loader.py`
@@ -199,7 +221,25 @@ verifica las invariantes al cargar, **fallando ruidosamente**:
 
 - toda región necesita al menos un corredor humanitario
 - nunca una sola denuncia sin verificar (hacen falta ≥2, con veracidad distinta)
-- todo punto necesita posición en el mapa
+- **todo punto cae dentro del polígono de su región**
+- **toda instalación cae dentro del polígono de la suya**, y sus puntos
+  contiguos existen
+- el hecho H1 custodia una instalación **que está en el registro**
+
+La última es nueva y es del mapa interactivo. Mientras el mapa fue un esquema de
+líneas, las coordenadas no afirmaban nada. Ahora afirman en qué región está cada
+bloqueo, y el reparto territorial es justo lo que la sala está leyendo. No puede
+ser «lo revisó alguien al dibujarlo»: el motor genera cierres nuevos por su
+cuenta cuando la intensidad sube, y `mobilization._hueco_en` los coloca dentro
+del polígono por la misma razón.
+
+Y una más que vigila la suite y no el cargador, porque necesita el contorno:
+**nada cae en el agua de dentro.** Es la trampa de este mapa — el contorno
+*encierra* el estuario, porque para repartir el territorio entre las cuatro
+regiones el agua interior se rellena. De modo que `dentro(contorno)` da `True`
+en mitad del agua, y las dos comprobaciones de arriba dejarían pasar un bloqueo
+dibujado sobre el estrecho: se dibuja, se puede pinchar, tiene sus seis
+lecturas, y está en el agua.
 
 Un escenario que no las cumpla no arranca. Es preferible a arrancar y producir
 un ejercicio sin dilema.
@@ -214,9 +254,9 @@ lógica vive en el motor, que no sabe que esta capa existe.**
 ```
 GET  /api/tablero              el tablero + deltas + hechos del mapa
 GET  /api/vista/{rol}          la vista privada de un rol
-GET  /api/vistas               las ocho, para el corredor sin interfaz
+GET  /api/vistas               las nueve, para el corredor sin interfaz
 GET  /api/esfera               lo que se dice
-GET  /api/catalogo             las 34 acciones, con su `en_claro`
+GET  /api/catalogo             las 39 acciones, con su `en_claro`
 GET  /api/config               si hay llave de API, y cuál es el archivo .env
 GET  /api/metricas             las métricas de cierre
 GET  /api/proyeccion           el país a 72 horas
@@ -224,10 +264,17 @@ GET  /api/consulta/{tema}      la rama de solo lectura del canal de órdenes
 
 POST /api/consola/interpretar  texto → plan, con su banda de riesgo
 POST /api/consola/elegir       resuelve una ambigüedad con elección tipada
-POST /api/consola/ejecutar     ejecuta un plan ya leído en voz alta
-POST /api/consola/noche        resuelve el interludio nocturno
-POST /api/consola/fase/{fase}  mueve el reloj de fases
+POST /api/consola/encolar      confirma una orden sin gastar la jornada
+POST /api/consola/ejecutar     encola y cierra el día, en un solo acto
+POST /api/consola/resolver     cierra el día con lo que haya en cola
 POST /api/consola/declarar_linea   la declaración del turno 0
+
+POST /api/consola/reloj/iniciar    arranca el ejercicio y abre la jornada 1
+POST /api/consola/reloj/pausa      detiene el reloj interno · y lo reanuda
+POST /api/consola/reloj/noche      cierra el día YA y sirve las consecuencias
+POST /api/consola/reloj/jornada    abre el día siguiente YA
+POST /api/consola/reloj/reiniciar  la cuenta a cero. NO rebobina el mundo
+POST /api/consola/fase/{fase}      pone la sala en un tramo, para depurar
 
 GET  /{full_path}              sirve web_ui/dist (el SPA)
 ```
@@ -235,6 +282,27 @@ GET  /{full_path}              sirve web_ui/dist (el SPA)
 **El estado vive en memoria del proceso** (`_estado` y `motor`, globales). Es la
 limitación conocida y es el pendiente **B1**: al cerrar el proceso se pierde la
 corrida, y el debriefing dura más que cualquier turno.
+
+### El reloj de sala, y por qué vive en la API
+
+La jornada son quince minutos partidos en dos tramos —trece de día en que se
+ordena y dos de noche en que no—, y las transiciones las dispara un **latido de
+fondo cada segundo** más una comprobación en cada lectura del tablero. Tres
+piezas sostienen eso:
+
+| Pieza | Qué hace |
+|---|---|
+| `sala["reloj"]` | tres instantes: `sesion_desde`, `jornada_desde`, `pausa_desde`. La fase se deriva de ellos |
+| `_sincronizar()` | lleva el mundo a donde el reloj dice que está. Idempotente |
+| `_cerrojo` | un `RLock` sobre todo lo que mueve el mundo |
+
+**El cerrojo no es defensivo, es necesario.** Los endpoints declarados con `def`
+corren en un pool de hilos y encima hay un latido: sin él, dos pantallas
+consultando el tablero en el segundo en que expira el día resolvían la jornada
+**dos veces**, y no se notaba hasta ver dos noches seguidas en el historial.
+
+Y el motor no sabe nada de esto. Expone dos bisagras —`abrir_jornada()` y
+`cerrar_jornada()`— y quién las llama, cuándo y por qué es asunto de esta capa.
 
 ---
 
@@ -321,7 +389,7 @@ React 19 + Vite, sin router: [`App.jsx`](../web_ui/src/App.jsx) mira
 
 | Archivo | Qué guarda | Por qué existe |
 |---|---|---|
-| `comun.jsx` | `ROLES`, `FASES`, `api()`, `useDatos`, `Barra`, `Delta` | lo que usan todas las superficies |
+| `comun.jsx` | `ROLES`, `api()`, `useDatos`, `Medidor`, `Tendencia`, `Cargando` | lo que usan todas las superficies |
 | `definiciones.jsx` | las 38 definiciones de los globos de ayuda | **un umbral cambia en un solo párrafo** |
 | `etiquetas.jsx` | `sin_verificar` → «Sin verificar» | el identificador es del motor; el rótulo es de la sala |
 | `index.css` | el sistema visual entero | tokens, no valores sueltos |
@@ -345,86 +413,80 @@ aviso, rojo es deterioro.
 
 ---
 
-## 9. Las pruebas
+## 9. Las propiedades que se verifican
 
-**150, sin modelo, en poco más de dos segundos.** Corren en cada cambio.
-
-> **Que no salgan a la red no se hereda: se comprueba.** La cabecera de
-> `test_canal_ordenes.py` decía que ninguna prueba llamaba a un modelo, y era
-> verdad a medias. Su accesorio silenciaba la capa 4, pero las cinco pruebas que
-> pasan por `/api/consola/ejecutar` disparan después la **capa 3** —la esfera
-> pública— con el cliente real: **176 s por corrida y llamadas facturadas**, en
-> la suite que se corre en cada cambio. Hoy las silencia
-> [`tests/conftest.py`](../tests/conftest.py) con `autouse`, las dos, y
-> `test_las_dos_capas_estan_silenciadas_en_las_pruebas` lo custodia.
+**Lo que se comprueba en cada cambio no es una lista de pruebas: es una lista de
+propiedades**, y todas están aquí porque **se rompieron alguna vez** o porque su
+ruptura sería silenciosa — que es la peor clase de fallo: el ejercicio pierde su
+objeto sin que nada reviente ruidosamente.
 
 ```bash
 uv run pytest -q
-uv run pytest -q tests/test_canal_ordenes.py   # las capas 3 y 4
-uv run pytest -q -k "delta or mapa"            # un subconjunto
 ```
 
-Cada prueba existe porque **su propiedad se rompió alguna vez** o porque su
-ruptura sería silenciosa — que es la peor clase de fallo: el ejercicio pierde su
-objeto sin que nada reviente.
+Se agrupan en dos frentes, porque custodian dos cosas muy distintas.
 
-Van en dos archivos porque custodian dos cosas distintas:
+### El motor — que el mundo se comporte como dice el diseño
 
-| Archivo | Cuántas | Qué custodia |
-|---|---|---|
-| `test_invariantes.py` | 63 | **el motor** — que el mundo se comporte como dice el diseño |
-| `test_canal_ordenes.py` | 87 | **las capas 3 y 4** — que lo que ocho personas dicen en voz alta se traduzca a lo que quisieron decir, o se repregunte |
+| Propiedad | Por qué importa |
+|---|---|
+| **Lo que nunca sale** | la mezcla real y la veracidad de una denuncia, en las **cuatro** superficies: tablero, vistas privadas, deltas y hechos del mapa |
+| **La mezcla real sí importa** | que `composicion_real` cambie el resultado de una corrida — se desconectó una vez sin que nada avisara |
+| **El reloj y el oxígeno** | que las muertes dependan de las decisiones y no del guion |
+| **Riesgo y mitigadores** | el techo de 0,98, y que el estándar no rescate a quien opera sin cuidado |
+| **Duplas y denuncias** | el bolsillo de tres, y que verificar aquí sea no verificar allá |
+| **La mesa y el tiempo** | que la cohesión no vuelva a ser una rampa determinista |
+| **Aperturas** | que un corredor valga lo que su peor punto |
+| **Jurisdicción y validación** | que una acción inválida no tumbe el resto de la orden |
+| **Las nueve vistas** | que quepan en una pantalla y que los sesgos vayan en direcciones opuestas |
+| **El escenario** | las invariantes del cargador, el territorio ficticio, las posiciones del mapa |
+| **Reloj, deltas y hechos** | que el delta mida el último paso y no abra puertas traseras |
+| **La documentación** | que cada `PENDIENTE(Xn)` del código apunte a una entrada real |
 
-> **El segundo archivo llegó tarde.** Durante varias versiones, sesenta y tres
-> verificadores custodiaban el motor —que nadie toca durante el ejercicio— y
-> **cero** custodiaban el canal por el que entran las órdenes de ocho personas en
-> dos horas. Al sondearlo aparecieron nueve fallos, cuatro de ellos silenciosos.
+La última es inusual y se ganó su sitio: **la promesa de navegación en los dos
+sentidos de `PENDIENTES.md` ya se había roto en silencio.**
 
-Las del motor, agrupadas por lo que protegen:
+### El canal de órdenes — que se traduzca lo que la sala quiso decir
 
-| Grupo | Cuántas | Qué protegen |
-|---|---|---|
-| **Lo que nunca sale** | 4 | la mezcla real y la veracidad, en las cuatro superficies |
-| **La mezcla real sí importa** | 3 | que `composicion_real` cambie el resultado — se rompió una vez |
-| **El reloj y el oxígeno** | 4 | que las muertes dependan de las decisiones |
-| **Riesgo y mitigadores** | 4 | el techo de 0,98 y que el estándar no rescate al descuidado |
-| **Duplas y denuncias** | 6 | el bolsillo de tres, y que verificar aquí sea no verificar allá |
-| **La mesa y el tiempo** | 8 | que la cohesión no sea una rampa determinista |
-| **Aperturas** | 6 | que un corredor valga lo que su peor punto |
-| **Jurisdicción y validación** | 5 | que una acción inválida no tumbe el resto |
-| **Las ocho vistas** | 7 | que quepan en una pantalla y que los sesgos vayan en direcciones opuestas |
-| **El escenario** | 4 | invariantes, territorio ficticio, posiciones del mapa |
-| **Reloj, deltas y hechos** | 6 | que el delta mida el último paso y no abra puertas traseras |
-| **La documentación** | 2 | que `PENDIENTE(Xn)` apunte a una entrada real |
+| Propiedad | Por qué importa |
+|---|---|
+| **Un recurso que no existe** | que «el Puente de Brooklyn» no se opere en el que más se le parezca |
+| **Una orden que no existe** | que no se fuerce la acción más parecida, y que el silencio diga por qué |
+| **La ambigüedad** | que se pregunte, y que una orden compuesta no le robe el lugar a la otra |
+| **Las enumeraciones** | que la unidad pedida no se cambie por la de por defecto |
+| **Los criterios** | que «todos los puntos» sean N acciones y no la primera |
+| **Preguntar no es ordenar** | que una consulta no ejecute nada ni gaste una jornada |
+| **Lo que la sala oye** | que la lectura en voz alta diga el rol, el punto y los mitigadores |
+| **La consola** | que nada se ejecute a medias ni se caiga en silencio |
+| **La degradación** | que sin llave, y con el proveedor caído, el canal siga traduciendo |
+| **El repertorio, sin llave** | que ninguna herramienta quede sin disparador — el canal no puede negar tener una acción que tiene |
+| **Requisitos que no se regalan** | que el canal no se conceda la Alcaldía, ni una cifra, ni un responsable que nadie dijo |
+| **Los valores por defecto** | que lo que el motor va a usar se diga en voz alta antes de confirmarlo |
+| **El presupuesto y la esfera** | que la espera sea la declarada, y que solo publiquen las seis fuentes |
 
-Las dos últimas son inusuales y se ganaron su sitio: **la promesa de navegación
-en los dos sentidos de `PENDIENTES.md` ya se había roto en silencio.**
+> **Este frente llegó tarde, y conviene recordar por qué.** Durante varias
+> versiones todo lo verificado custodiaba el motor —que nadie toca durante el
+> ejercicio— y **nada** custodiaba el canal por el que entran las órdenes de nueve
+> personas en dos horas. Al sondearlo aparecieron dieciocho fallos, nueve de
+> ellos silenciosos. Están contados en
+> [`docs/historial/resueltos.md`](historial/resueltos.md#4--primera-revisión-del-canal-de-órdenes).
 
-Y las del canal de órdenes:
+### Dos reglas del banco de verificación
 
-| Grupo | Cuántas | Qué protegen |
-|---|---|---|
-| **Un recurso que no existe** | 6 | que «el Puente de Brooklyn» no se opere en el que más se le parezca |
-| **Una orden que no existe** | 5 | que no se fuerce la acción más parecida, y que el silencio diga por qué |
-| **La ambigüedad** | 3 | que se pregunte, y que una orden compuesta no le robe el lugar a la otra |
-| **Las enumeraciones** | 5 | que la unidad pedida no se cambie por la de por defecto |
-| **Los criterios** | 4 | que «todos los puntos» sean N acciones y no la primera |
-| **Preguntar no es ordenar** | 5 | que una consulta no ejecute nada |
-| **Lo que la sala oye** | 6 | que la lectura diga sobre qué punto se actúa |
-| **La consola** | 8 | que nada se ejecute a medias ni se caiga en silencio |
-| **La degradación** | 3 | que sin llave, y con el proveedor caído, el canal siga traduciendo |
-| **Lo que no puede salir** | 2 | la mezcla real y la veracidad, también por esta superficie |
-| **El repertorio, sin llave** | 4 | que ninguna herramienta quede sin disparador — el canal no puede negar tener una acción que tiene |
-| **Requisitos que no se regalan** | 5 | que el canal no se conceda la Alcaldía, ni una cifra, ni un responsable que nadie dijo |
-| **Los valores por defecto** | 5 | que lo que el motor va a usar se diga en voz alta antes de confirmarlo |
-| **El presupuesto y la esfera** | 6 | que la espera sea la declarada, y que solo publiquen las seis fuentes |
-| **La consola, segunda tanda** | 4 | que preguntar no gaste un turno y que corregir una lista no la borre |
+**Nada sale a la red.** Las dos capas de lenguaje natural se silencian a la vez,
+con un accesorio único y automático, y eso también se comprueba. **Un accesorio
+por archivo es justo lo que dejó media puerta abierta** durante varias versiones:
+se silenciaba la capa 4 y la capa 3 seguía haciendo llamadas facturadas en cada
+corrida.
 
-**Ninguna llama a un modelo.** El accesorio `sin_modelo` fuerza la rama
-determinista, que además es la que corre cuando no hay llave: si alguna dejara de
-pasar al quitar el modelo, la degradación sería decorativa.
+**Se fuerza la rama determinista**, que además es la que corre cuando no hay
+llave: si algo dejara de pasar al quitar el modelo, la degradación sería
+decorativa.
 
----
+> **Lo que hoy no se verifica es la interfaz.** Ninguna comprobación mira lo que
+> la pantalla dibuja, y un fallo de una línea llegó a vaciar las nueve vistas
+> privadas con todo lo demás en verde. Es el pendiente **B9** de
+> [`PENDIENTES.md`](../PENDIENTES.md).
 
 ## 10. Cómo añadir cosas
 
@@ -438,6 +500,8 @@ class MiAccion(Accion):
     codigo = "X1"
     rol = "Minas"
     clase: Clase = "operativa"          # constitutiva | operativa | informativa
+                                        # en pantalla: Protocolo | Operación |
+                                        # Información  (etiquetas.jsx)
     descripcion = "El nombre formal del acto"
     en_claro = ("Qué hace, en una frase. "
                 "Qué cuesta o qué habilita, en otra.")
@@ -455,7 +519,7 @@ class MiAccion(Accion):
 ### Un rol nuevo
 
 Tocaría `views.py` (su vista), `actions.py` (su repertorio), `comun.jsx` (su
-título) y la ficha impresa. Es el cambio más caro del repositorio: **ocho es un
+título) y la ficha impresa. Es el cambio más caro del repositorio: **nueve es un
 número de diseño**, no una constante.
 
 ### Un punto, un corredor, una región
@@ -517,11 +581,12 @@ del dato (`information.estimar_nodo`) en vez de sacarla del `rng` del motor.
 ## 12. Puesta en marcha
 
 ```bash
-# 1 · el motor y las pruebas
+# 1 · el motor y su verificación
 uv sync
 uv run pytest -q
 
 # 2 · una corrida completa sin montar la sala
+uv run python scripts/repertorio.py            # la guía que se reparte
 uv run python scripts/correr_ejercicio.py --detalle
 uv run python scripts/correr_ejercicio.py --comparar
 uv run python scripts/correr_ejercicio.py --vistas
