@@ -44,7 +44,6 @@ lunes por la mañana:
 | **B8** | órdenes condicionales en el canal | no | el motor sabe; el canal no lee «si…» · hoy se avisa |
 | **A7** | ¿la consola puede decir qué punto bloquea un corredor? | — | esperando · es el dato exclusivo de Transporte |
 | **B9** | **ninguna prueba mira lo que la interfaz dibuja** | no | **no existe** · un fallo de una línea vació las nueve vistas y la suite pasó entera |
-| **B10** | ocho acciones no se pueden pedir por la consola | no | existen en el motor · el canal no tiene herramienta para ellas |
 | **B11** | la lista agroalimentaria no se comprueba después | no | se concede la clase y nadie mira si se cumplió |
 | **B12** | tres constantes y tres campos que nadie lee | no | declarados y con prueba que impide que crezcan |
 
@@ -679,48 +678,6 @@ Se deja anotado y no hecho por una razón de método: es el **tercer** cobro
 nocturno que se añadiría —mesas congeladas, riesgo de infraestructura, y este— y
 conviene ver una corrida con personas antes de seguir apilando consecuencias que
 la sala no ve venir. Va con **P4**.
-
-### B10 · Ocho de las treinta y nueve acciones no se pueden pedir por la consola
-
-**Se hizo visible al montar la guía de acciones**, que da a cada acción una
-columna con la frase que la pide. Ocho se quedaron con esa columna vacía:
-
-| Rol | Como la ve el participante | En el código |
-|---|---|---|
-| Presidente | Reunir a los alcaldes | `ConvocarAlcaldes` |
-| Presidente | Ir al epicentro en persona | `DesplazarseAlEpicentro` |
-| Alcalde | Publicar el conteo de la ciudad | `PublicarParteMunicipal` |
-| Defensa | Poner reglas a sus unidades | `FijarReglasEmpleoSector` |
-| Defensa | Mostrar quién financia los cierres | `PresentarEvidenciaInteligencia` |
-| Defensoría | Acordar una sola forma de verificar | `AdoptarProtocoloVerificacion` |
-| Transporte | Publicar el mapa de cierres | `PublicarMapaCierres` |
-| Minas | Acordar ventanas de paso | `AcordarPasosSeguros` |
-
-Existen en el motor, están probadas y el corredor sin interfaz las ejecuta. Lo
-que no existe es su **herramienta** en `herramientas.py`, y la consola es la
-única puerta al motor durante una sesión — de modo que hoy, con gente dentro,
-esas ocho no se pueden ejecutar.
-
-> No es un descubrimiento nuevo: `LAS_ACCIONES.md` ya las marcaba con un «no» en
-> su columna **LN**. Lo nuevo es que ahora **el participante lo ve en su propia
-> pantalla**, que es donde tenía que verse. La guía lo dice en vez de callarlo:
-> «todavía no se transcribe: se acuerda en la mesa».
-
-Dos de ellas son las que más molestan, y conviene decir por qué:
-
-- **`FijarReglasEmpleoSector`** enciende dos mitigadores. Su equivalente de la
-  Defensoría —`ExigirEstandaresEmpleo`, que enciende tres— sí se pide, así que
-  el Ministro de Defensa no puede adoptar por su cuenta el estándar de su propio
-  sector.
-- **`AcordarPasosSeguros`** es la única vía de Minas para hacer pasar suministro
-  sin abrir el punto ni gastar escolta.
-
-**El arreglo es mecánico**: una entrada en `HERRAMIENTAS` y un disparador en
-`DISPARADORES` por acción, más su fila en `GUIA`. Media hora y ocho pruebas —la
-que ya existe (`test_cada_ejemplo_de_la_guia_produce_su_accion`) las cubriría
-sola en cuanto tengan ejemplo. Se deja anotado y no hecho porque **añade ocho
-caminos nuevos al canal justo antes de una recalibración** (C5), y conviene
-medir una cosa cada vez.
 
 ### B9 · Ninguna prueba mira lo que la interfaz dibuja
 

@@ -87,8 +87,21 @@ ARGUMENTOS_EN_CLARO: dict = {
     "ofrece_compensacion": lambda v: ("ofreciendo compensación" if v else
                                       "sin ofrecer compensación"),
     "margen": lambda v: f"margen negociable: {v}",
-    "instalaciones": lambda v: f"instalaciones: {', '.join(v)}" if v else "",
     "orden": lambda v: f"orden de prioridad: {' > '.join(v)}" if v else "",
+    # Los cinco de las ocho acciones que hasta ahora no se podían pedir. Los
+    # tres booleanos se leen EN LOS DOS SENTIDOS, porque en las tres el valor
+    # por defecto es el que la sala no dijo y tiene que poder corregir.
+    "concede_prioridad": lambda v: ("concediendo prioridad de fuerza al "
+                                    "epicentro" if v else
+                                    "SIN conceder prioridad de fuerza"),
+    "acompana": lambda v: {"mesa": "acompañando la mesa",
+                           "operacion": "acompañando la operación"}.get(
+                               str(v), "sin acompañar la mesa ni la operación"),
+    "disputa_cifra": lambda v: ("disputando la cifra nacional" if v else
+                                "sin disputar la cifra nacional"),
+    "declara_solidez": lambda v: ("declarando qué casos no se sostienen ante "
+                                  "un juez" if v else
+                                  "SIN declarar qué casos no se sostienen"),
 }
 
 UNIDADES_EN_CLARO = {"esmad": "ESMAD", "policia": "policía", "militar": "militares"}
@@ -114,7 +127,8 @@ _NOMBRE_CAMPO = {
 
 
 def _en_claro_argumento(campo: str, valor) -> str:
-    if campo in ("nodo_id", "corredor_id", "region_id", "puntos", "denuncias"):
+    if campo in ("nodo_id", "corredor_id", "region_id", "puntos", "denuncias",
+                 "instalaciones"):
         return ""            # las entidades ya salen resueltas, con su nombre
     if campo == "tipo_unidad":
         return f"con {UNIDADES_EN_CLARO.get(str(valor), valor)}"

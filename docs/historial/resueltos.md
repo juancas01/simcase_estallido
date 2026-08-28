@@ -21,6 +21,7 @@ en cuanto se borra el texto que la discutió.
 7. [El paquete detonante](#7--el-paquete-detonante)
 8. [Las superficies](#8--las-superficies)
 9. [Revisión general del motor](#9--revisión-general-del-motor)
+10. [Las ocho que no se podían pedir](#10--las-ocho-que-no-se-podían-pedir)
 
 ---
 
@@ -342,3 +343,115 @@ Ninguno tumbaba nada, y por eso ninguno se había visto.
 > contrastar contra nada: sale en la pantalla con la palabra «días» al lado y se
 > cree. `PENDIENTES.md · B9` —«ninguna prueba mira lo que la interfaz dibuja»—
 > sigue siendo la entrada que más falta hace.
+
+---
+
+## 10 · Las ocho que no se podían pedir
+
+Era [`PENDIENTES.md` · B10](../../PENDIENTES.md), y salió de la pregunta más
+simple que se le puede hacer a este repositorio: *¿todas las acciones se pueden
+pedir?* **Treinta y una de treinta y nueve.**
+
+Las ocho existían en el motor, estaban probadas y el corredor sin interfaz las
+ejecutaba. Lo que no existía era su puerta. **La consola es la ÚNICA entrada al
+motor durante una sesión**, así que con gente en la sala esas ocho se acordaban
+de palabra y no se transcribían: el Ministro de Defensa no podía adoptar el
+estándar de su propio sector, y Minas no tenía cómo hacer pasar suministro sin
+abrir el punto ni gastar escolta.
+
+| Rol | Como la ve el participante | Cómo se pide ahora |
+|---|---|---|
+| Presidente | Reunir a los alcaldes | «reunir a los alcaldes de las ciudades críticas» |
+| Presidente | Ir al epicentro en persona | «ir al epicentro en persona» |
+| Alcalde | Publicar el conteo de la ciudad | «publicar el parte municipal de la ciudad» |
+| Defensa | Poner reglas a sus unidades | «fijar las reglas de empleo del sector» |
+| Defensa | Mostrar quién financia los cierres | «presentar la evidencia de inteligencia» |
+| Defensoría | Acordar una sola forma de verificar | «adoptar el protocolo único de verificación» |
+| Transporte | Publicar el mapa de cierres | «publicar el mapa de cierres» |
+| Minas | Acordar ventanas de paso | «acordar pasos seguros en el Puente Amarillo» |
+
+### Lo que no era mecánico
+
+`PENDIENTES.md` decía que el arreglo lo era: una entrada en `HERRAMIENTAS`, un
+disparador y una fila en `GUIA`. Lo es hasta que se mira **con qué vecina choca
+cada llave nueva** — y las ocho chocan con alguna, porque el intérprete sin
+modelo busca raíces dentro del texto:
+
+| La orden | Disparaba además | Y eso es |
+|---|---|---|
+| «adoptar el protocolo de **verific**ación» | las tres duplas de la Defensoría | el recurso más escaso del rol, gastado sin pedirlo |
+| «fijar las **reglas de empleo** del sector» | el estándar que exige la Defensoría | **otro rol firmando** |
+| «ir al epicentro acompañando la **oper**ación» | una operación de desbloqueo sin punto | una orden que nadie dio |
+| «clasificar el parte **oper**acional» | lo mismo | y esta **ya estaba ahí**, encontrada al barrer los treinta y nueve ejemplos |
+
+La salida fácil era una exclusión de texto entero, que es lo que el archivo ya
+usaba dos veces. **Y habría sido peor que el problema**: una exclusión mira el
+mensaje completo, de modo que «operen el Puente Amarillo y clasifiquen el parte
+operacional» habría perdido la operación **en silencio**. Una acción de más se
+ve en la lectura en voz alta; una acción de menos, no.
+
+Así que se separaron con dos reglas, las dos en `_clausulas`:
+
+- **`FRASES_OPACAS`** — tramos donde una raíz no cuenta porque está dentro del
+  nombre de otra cosa: «parte operacional», «de verificación», «de verificar».
+  «Asignar duplas de verificación» sigue siendo una orden de duplas, porque su
+  raíz aparece fuera del tramo.
+- **A igualdad de posición, gana la raíz más larga.** «Reglas de empleo del
+  sector» y «reglas de empleo» empiezan en la misma letra; la específica se
+  queda con la orden. Dos acciones distintas no pueden empezar en el mismo
+  carácter, así que esto no pierde ninguna — y evita excluir «del sector» del
+  estándar de la Defensoría, que sí la habría perdido en cuanto alguien pidiera
+  las dos cosas en el mismo mensaje.
+
+### Dos que se entendían y se rechazaban siempre
+
+Salieron de barrer los treinta y nueve ejemplos, y son de la misma familia que
+lo anterior: **la acción se puede pedir y no se puede hacer.**
+
+- **`DeclararInfraestructuraCritica`** traía `["refineria"]` como valor por
+  defecto, y la refinería **empieza el escenario custodiada**. La orden se
+  entendía, construía la acción correcta y se rechazaba —«esa instalación ya
+  está bajo custodia»— en todas las primeras jornadas. Un valor por defecto que
+  siempre se rechaza no es un valor por defecto: es una acción que la sala no
+  tiene. Ahora la instalación **se dice**, y para eso el registro de
+  infraestructura entró en el catálogo del resolutor, que es lo que da la
+  repregunta con candidatos. La resolución final la sigue haciendo el motor,
+  que no acepta difuso: acertar mal ahí pone la custodia en la instalación
+  equivocada y deja sin proteger la que se quiso proteger.
+- **`AcordarPasosSeguros`** pedía el paso en el Puente Amarillo, que es el
+  punto con **menos vocería reconocida** del escenario — justo donde no hay con
+  quién acordarlo.
+
+`test_ningun_ejemplo_de_la_guia_se_rechaza_en_la_primera_jornada` lo vigila.
+Deja pasar dos, declaradas: la caravana de Transporte y el acopio de
+Agricultura necesitan una escolta que pone la Policía, y eso no es un defecto
+de la ficha — es la interdependencia del ejercicio.
+
+### Tres booleanos que había que poder decir
+
+Tres de las ocho llevan un campo que cambia lo que el motor cobra, y ninguno se
+deducía de que la orden sonara razonable:
+
+- **`concede_prioridad`** (reunir a los alcaldes) y **`declara_solidez`**
+  (evidencia de inteligencia) se piden como `delimitada`: **no se dan por
+  puestos.** El primero cede prioridad de fuerza al epicentro; el segundo dice
+  qué casos no aguantan ante un juez, cuesta hoy y protege la credibilidad del
+  sector el resto del episodio.
+- **`disputa_cifra`** (parte municipal) va al revés, y es la excepción: viene
+  puesto. No concede nada a quien lo pide —está en el nombre de la acción— así
+  que no se contrasta contra el texto; se lee en voz alta antes de confirmar.
+
+### Lo que queda vigilado
+
+- `test_las_treinta_y_nueve_acciones_se_pueden_pedir_por_la_consola` — cada
+  acción con **las tres cosas**: herramienta, disparador y ejemplo.
+- `test_ningun_ejemplo_de_la_guia_arrastra_una_accion_de_mas` — la contraparte
+  que faltaba: la prueba anterior miraba que la suya **estuviera**, no que fuera
+  **la única**. Por ahí se colaban las dos de `oper`.
+- `test_las_ocho_llaves_nuevas_no_le_roban_la_orden_a_su_vecina` — y, al revés,
+  que la vecina siga siendo alcanzable.
+
+> Y se fue una rama muerta: la celda que dibujaba «todavía no se transcribe: se
+> acuerda en la mesa» ya no puede ocurrir, y la columna **LN** de
+> `LAS_ACCIONES.md` —que decía cuáles sí y cuáles no— tenía las treinta y nueve
+> celdas diciendo lo mismo.

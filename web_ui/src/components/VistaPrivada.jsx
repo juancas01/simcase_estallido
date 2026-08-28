@@ -271,14 +271,11 @@ function Accion({ accion: a }) {
 
       <td className="accion-previos">{a.requisitos_previos || '—'}</td>
 
+      {/* Las treinta y nueve tienen ejemplo, y hay una prueba en el motor que
+          lo exige. Ocho no lo tuvieron, y esta celda dibujaba en su lugar un
+          «todavía no se transcribe» que ya no puede ocurrir. */}
       <td>
-        {a.ejemplo_consola ? (
-          <code className="accion-ejemplo">{a.ejemplo_consola}</code>
-        ) : (
-          <span className="accion-sin-canal">
-            Todavía no se transcribe: se acuerda en la mesa
-          </span>
-        )}
+        <code className="accion-ejemplo">{a.ejemplo_consola}</code>
       </td>
     </tr>
   )

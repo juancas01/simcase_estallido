@@ -143,6 +143,12 @@ def _catalogo(estado: Estado) -> list[dict]:
         out.append({"id": c.corredor_id, "nombre": c.nombre, "tipo": "corredor"})
     for r in estado.regiones.values():
         out.append({"id": r.region_id, "nombre": r.nombre, "tipo": "region"})
+    # El registro de infraestructura relevante. Entró porque sin él la única
+    # instalación que se podía declarar crítica era la que el valor por defecto
+    # traía escrita —la refinería, que empieza custodiada—, de modo que la orden
+    # se entendía y se rechazaba siempre.
+    for i in estado.infraestructura.values():
+        out.append({"id": i.infra_id, "nombre": i.nombre, "tipo": "instalacion"})
     return out
 
 
@@ -249,7 +255,8 @@ def _no_encontrado(estado, crudo, n, completo, puntuados, tipo, mejor):
 
 
 NOMBRE_TIPO = {"punto": "punto de cierre", "corredor": "corredor",
-               "region": "región"}
+               "region": "región",
+               "instalacion": "instalación del registro de infraestructura"}
 
 
 def _pista_de_tipo(estado: Estado, x: dict, esperado: str) -> str:

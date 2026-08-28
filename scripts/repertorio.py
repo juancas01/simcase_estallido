@@ -58,9 +58,6 @@ TIPOS = {
     "informativa": "Información",
 }
 
-SIN_CANAL = "⚠ Todavía no se transcribe: se acuerda en la mesa"
-
-
 def celda(texto: str) -> str:
     """Un párrafo del código metido en una celda de tabla, sin romperla."""
     return re.sub(r"\s+", " ", texto or "").strip().replace("|", "\\|")
@@ -68,7 +65,6 @@ def celda(texto: str) -> str:
 
 def documento() -> str:
     cat = actions.catalogo_por_rol()
-    sin_canal = sum(1 for fs in cat.values() for f in fs if not f["ejemplo_consola"])
 
     L: list[str] = []
     w = L.append
@@ -130,13 +126,6 @@ def documento() -> str:
     w("Los nombres de puntos, corredores y regiones son los del escenario, y están")
     w("en el mapa del tablero general.")
     w("")
-    if sin_canal:
-        w("> **%d de las %d todavía no se pueden transcribir.** Existen en el motor"
-          % (sin_canal, sum(len(f) for f in cat.values())))
-        w("> y se acuerdan en la mesa, pero el canal de órdenes aún no las reconoce.")
-        w("> Van marcadas en su columna. Está anotado en")
-        w("> [`PENDIENTES.md`](../PENDIENTES.md) · B10.")
-        w("")
     w("---")
     w("")
 
@@ -147,8 +136,8 @@ def documento() -> str:
         w("| Acción | Tipo | Qué hace | Qué hace falta antes | Cómo pedirla en la consola |")
         w("|---|---|---|---|---|")
         for f in fichas:
-            ejemplo = ("`%s`" % celda(f["ejemplo_consola"])
-                       if f["ejemplo_consola"] else SIN_CANAL)
+            # Ninguna ficha llega sin ejemplo: hay una prueba que lo exige.
+            ejemplo = "`%s`" % celda(f["ejemplo_consola"])
             w("| **%s** | %s | %s | %s | %s |" % (
                 celda(f["nombre"]),
                 TIPOS.get(f["clase"], f["clase"]),

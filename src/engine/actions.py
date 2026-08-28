@@ -2543,9 +2543,10 @@ CATALOGO = [
 # no funciona es peor que no dar ninguno: se dicta en voz alta delante de la
 # mesa y la consola contesta que no lo entiende.
 #
-# Las de ejemplo vacío no tienen todavía herramienta en el canal de órdenes
-# (`PENDIENTES.md · B10`): existen en el motor y se acuerdan en la sala, pero
-# hoy no se pueden transcribir, y la guía lo dice en vez de callarlo.
+# Ninguna fila tiene el ejemplo vacío, y hay una prueba que lo exige. Ocho lo
+# tuvieron hasta que se cerró `B10`: existían en el motor y se acordaban de
+# palabra porque el canal no tenía herramienta para ellas. Una acción que no se
+# puede transcribir es una acción que la sala no tiene.
 
 GUIA: dict[type, tuple[str, str, str]] = {
     # --- Presidente ---------------------------------------------------------
@@ -2564,11 +2565,11 @@ GUIA: dict[type, tuple[str, str, str]] = {
     ConvocarAlcaldes: (
         "Reunir a los alcaldes",
         "Ninguno.",
-        ""),
+        "reunir a los alcaldes de las ciudades criticas"),
     DesplazarseAlEpicentro: (
         "Ir al epicentro en persona",
         "Escuadrones sin comprometer para la escolta presidencial.",
-        ""),
+        "ir al epicentro en persona"),
     # --- Interior -----------------------------------------------------------
     ExigirProtocoloVoceria: (
         "Poner un solo vocero",
@@ -2605,12 +2606,12 @@ GUIA: dict[type, tuple[str, str, str]] = {
     PublicarParteMunicipal: (
         "Publicar el conteo de la ciudad",
         "Ninguno, pero sin protocolo común de verificación la cifra se disputa.",
-        ""),
+        "publicar el parte municipal de la ciudad"),
     # --- Defensa ------------------------------------------------------------
     FijarReglasEmpleoSector: (
         "Poner reglas a sus unidades",
         "Ninguno.",
-        ""),
+        "fijar las reglas de empleo del sector"),
     OperarNodo: (
         "Desbloquear un punto por la fuerza",
         "Un punto todavía cerrado y unidades disponibles del tipo que se pida. "
@@ -2624,7 +2625,7 @@ GUIA: dict[type, tuple[str, str, str]] = {
     PresentarEvidenciaInteligencia: (
         "Mostrar quién financia los cierres",
         "Ninguno.",
-        ""),
+        "presentar la evidencia de inteligencia"),
     # --- Policía ------------------------------------------------------------
     ClasificarParteOperacional: (
         "Separar lo confirmado de lo estimado",
@@ -2651,7 +2652,7 @@ GUIA: dict[type, tuple[str, str, str]] = {
     AdoptarProtocoloVerificacion: (
         "Acordar una sola forma de verificar",
         "Ninguno.",
-        ""),
+        "adoptar el protocolo unico de verificacion"),
     AsignarDuplas: (
         "Mandar a sus verificadores",
         "Duplas libres esta jornada, y decir qué mirar. Salen del mismo bolsillo "
@@ -2682,7 +2683,7 @@ GUIA: dict[type, tuple[str, str, str]] = {
     PublicarMapaCierres: (
         "Publicar el mapa de cierres",
         "Ninguno. Anunciar abierto lo que no deja pasar se desmiente solo.",
-        ""),
+        "publicar el mapa de cierres"),
     # --- Minas --------------------------------------------------------------
     FijarPrioridadCombustible: (
         "Decidir a qué va el combustible",
@@ -2690,14 +2691,15 @@ GUIA: dict[type, tuple[str, str, str]] = {
         "fijar la prioridad de combustible"),
     DeclararInfraestructuraCritica: (
         "Poner custodia a una instalación",
-        "Instalaciones del registro de infraestructura relevante, y capacidad "
-        "libre para custodiarlas: lo que se protege sale de lo que desbloquea.",
-        "declarar infraestructura critica la refineria"),
+        "Decir CUÁL, de las del registro de infraestructura relevante, y que "
+        "quede capacidad libre para custodiarla: lo que se protege sale de lo "
+        "que desbloquea.",
+        "declarar infraestructura critica el Acopio de combustible de Puerto Espejo"),
     AcordarPasosSeguros: (
         "Acordar ventanas de paso",
         "Un punto donde la vocería reconocida controle algo. Donde no manda "
         "nadie no hay con quién acordar.",
-        ""),
+        "acordar pasos seguros en la Porteria de la refineria"),
     EntregarCalendarioAgotamiento: (
         "Decir cuántos días quedan",
         "Ninguno. Difundirlo acelera lo que mide.",

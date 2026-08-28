@@ -131,6 +131,28 @@ HERRAMIENTAS: dict[str, dict] = {
         },
         "requeridos": [],
     },
+    "presentar_evidencia": {
+        "rol": "Ministro de Defensa",
+        "descripcion": "Evidencia de financiación de cierres y su solidez judicial",
+        "para_el_modelo": ("Lo que Inteligencia tiene sobre QUIÉN FINANCIA los "
+                           "cierres. No es el parte de lo ocurrido —eso es "
+                           "clasificar_parte, del Director de Policía."),
+        "entidades": {},
+        "entidades_lista": {"puntos": "punto"},
+        "construir": lambda a: A.PresentarEvidenciaInteligencia(
+            nodos=list(a.get("puntos") or []),
+            declara_solidez=bool(a.get("declara_solidez", False))),
+        # Declarar qué casos NO aguantan es un mitigador y se pide igual que
+        # `delimitada`: cuesta hoy y protege la credibilidad del sector después.
+        # Nadie lo concede por su cuenta.
+        "por_defecto": {"declara_solidez": False},
+        "esquema": {
+            "puntos": ("array", "sobre qué puntos, o vacío para los tres más organizados"),
+            "declara_solidez": ("boolean",
+                                "si dice cuáles de sus casos NO se sostienen ante un juez"),
+        },
+        "requeridos": [],
+    },
     # --- Estrategia ---
     "firmar_asistencia_militar": {
         "rol": "Presidente",
@@ -204,6 +226,52 @@ HERRAMIENTAS: dict[str, dict] = {
         "esquema": {"nodo_id": ("string", "El punto, TAL CUAL lo dijo la persona")},
         "requeridos": ["nodo_id"],
     },
+    "convocar_alcaldes": {
+        "rol": "Presidente",
+        "descripcion": "Convocatoria a los alcaldes de las ciudades críticas",
+        "para_el_modelo": ("Reúne a los ALCALDES para llegar a la mesa con una "
+                           "sola posición. No es la mesa nacional con el "
+                           "Comité del Paro, que es del Ministro del Interior."),
+        "entidades": {},
+        "construir": lambda a: A.ConvocarAlcaldes(
+            concede_prioridad=bool(a.get("concede_prioridad", False))),
+        "por_defecto": {"concede_prioridad": False},
+        "esquema": {"concede_prioridad": (
+            "boolean", "si se concede prioridad de fuerza al epicentro a cambio")},
+        "requeridos": [],
+    },
+    "ir_al_epicentro": {
+        "rol": "Presidente",
+        "descripcion": "Desplazamiento presidencial al epicentro",
+        "para_el_modelo": ("El Presidente VIAJA en persona y consume dos "
+                           "escuadrones de escolta. No mueve tropa: eso es "
+                           "redesplegar_militares."),
+        "entidades": {},
+        "construir": lambda a: A.DesplazarseAlEpicentro(
+            acompana=a.get("acompana", "ninguna")),
+        "por_defecto": {"acompana": "ninguna"},
+        "esquema": {"acompana": ("string", "mesa, operacion o ninguna",
+                                 ["mesa", "operacion", "ninguna"])},
+        "requeridos": [],
+    },
+    "publicar_parte_municipal": {
+        "rol": "Alcalde",
+        "descripcion": "Parte municipal verificado y disputa de la cifra nacional",
+        "para_el_modelo": ("El conteo verificado de SU ciudad. No es el parte "
+                           "operacional clasificado, que es del Director de "
+                           "Policía."),
+        "entidades": {},
+        # Aquí el valor por defecto SÍ es el que cuesta, y no se contrasta con
+        # `NO_SE_INFIERE`: disputar la cifra nacional no concede nada a quien lo
+        # pide —es la sustancia de la acción, y está en su propio nombre—. Se
+        # dice en voz alta antes de confirmar y se corrige con un botón.
+        "construir": lambda a: A.PublicarParteMunicipal(
+            disputa_cifra=bool(a.get("disputa_cifra", True))),
+        "por_defecto": {"disputa_cifra": True},
+        "esquema": {"disputa_cifra": (
+            "boolean", "si el parte contradice abiertamente la cifra nacional")},
+        "requeridos": [],
+    },
     # --- Defensoría ---
     "asignar_duplas": {
         "rol": "Defensoría",
@@ -272,10 +340,21 @@ HERRAMIENTAS: dict[str, dict] = {
         "entidades": {},
         "para_el_modelo": ("Pone bajo custodia una instalacion del registro de "
                            "infraestructura relevante. Los nombres viajan TAL "
-                           "CUAL los dijo la persona: los resuelve el motor."),
+                           "CUAL los dijo la persona."),
+        # QUÉ INSTALACIÓN SE DICE, NO SE SUPONE. El valor por defecto era
+        # `["refineria"]`, y la refinería empieza el escenario CUSTODIADA: la
+        # orden se entendía, construía la acción correcta, y se rechazaba —«esa
+        # instalación ya está bajo custodia»— en todas las primeras jornadas. Un
+        # valor por defecto que siempre se rechaza no es un valor por defecto:
+        # es una acción que la sala no tiene.
+        #
+        # El registro entró además en el catálogo del resolutor, que es lo que
+        # da la repregunta con candidatos cuando el nombre no es exacto. La
+        # resolución final la sigue haciendo el motor, que no acepta difuso:
+        # acertar mal aquí pone la custodia en la instalación equivocada.
+        "entidades_lista": {"instalaciones": "instalacion"},
         "construir": lambda a: A.DeclararInfraestructuraCritica(
-            instalaciones=list(a.get("instalaciones") or ["refineria"])),
-        "por_defecto": {"instalaciones": ["refineria"]},
+            instalaciones=list(a.get("instalaciones") or [])),
         "esquema": {"instalaciones": ("array",
                                       "las instalaciones a proteger, TAL CUAL "
                                       "las dijo la persona")},
@@ -356,6 +435,32 @@ HERRAMIENTAS: dict[str, dict] = {
         },
         "requeridos": ["corredor_id"],
     },
+    "publicar_mapa_cierres": {
+        "rol": "Ministro de Transporte",
+        "descripcion": "Mapa de cierres y anuncio verificado de aperturas",
+        "para_el_modelo": ("Publica DÓNDE está cerrado y qué punto bloquea cada "
+                           "corredor. Si además se nombra un corredor, se "
+                           "anuncia abierto — y anunciarlo sin caudal se "
+                           "desmiente solo."),
+        "entidades": {"corredor_id": "corredor"},
+        "construir": lambda a: A.PublicarMapaCierres(
+            anunciar=a.get("corredor_id") or ""),
+        "esquema": {"corredor_id": (
+            "string", "el corredor que se anuncia abierto, o vacío para solo publicar el mapa")},
+        "requeridos": [],
+    },
+    "acordar_pasos_seguros": {
+        "rol": "Ministro de Minas",
+        "descripcion": "Pasos seguros y ventanas de despacho concertadas",
+        "para_el_modelo": ("Ventanas horarias para que pase el suministro por un "
+                           "PUNTO cerrado, sin abrirlo y sin gastar escolta. No "
+                           "es escoltar, ni organizar una caravana, ni el acopio "
+                           "agroalimentario."),
+        "entidades": {"nodo_id": "punto"},
+        "construir": lambda a: A.AcordarPasosSeguros(nodo_id=a.get("nodo_id", "")),
+        "esquema": {"nodo_id": ("string", "El punto, TAL CUAL lo dijo la persona")},
+        "requeridos": ["nodo_id"],
+    },
     # --- Constitutivas de la mesa ---
     "fijar_registro_escrito": {
         "rol": "Presidente",
@@ -415,6 +520,28 @@ HERRAMIENTAS: dict[str, dict] = {
                            "del combustible entre usos, que es de Minas."),
         "entidades": {},
         "construir": lambda a: A.FijarClasePrioridadAlimentaria(),
+        "esquema": {},
+        "requeridos": [],
+    },
+    "fijar_reglas_sector": {
+        "rol": "Ministro de Defensa",
+        "descripcion": "Reglas de empleo del sector y registro audiovisual obligatorio",
+        "para_el_modelo": ("El Ministro de Defensa las ADOPTA para sus propias "
+                           "unidades. Que la Defensoría se las EXIJA al Gobierno "
+                           "es otra acción distinta: exigir_estandares."),
+        "entidades": {},
+        "construir": lambda a: A.FijarReglasEmpleoSector(),
+        "esquema": {},
+        "requeridos": [],
+    },
+    "adoptar_protocolo_verificacion": {
+        "rol": "Defensoría",
+        "descripcion": "Protocolo único de verificación de cifras y denuncias",
+        "para_el_modelo": ("UNA sola forma de verificar, igual para todos. No es "
+                           "mandar duplas al terreno —eso es asignar_duplas— ni "
+                           "el protocolo de vocería, que es del Interior."),
+        "entidades": {},
+        "construir": lambda a: A.AdoptarProtocoloVerificacion(),
         "esquema": {},
         "requeridos": [],
     },
@@ -507,6 +634,16 @@ ENUMS: dict[str, dict[str, str]] = {
         "alimentario": "alimentario", "alimentos": "alimentario",
         "alimenticio": "alimentario", "general": "general", "carga": "general",
     },
+    # Con qué se hace coincidir el viaje del Presidente. Las tres son gestos
+    # distintos y el motor las cobra distinto: acompañar la mesa la respalda,
+    # acompañar la operación la asume como propia, e ir sin acompañar ninguna
+    # hace verificable la prioridad territorial sin comprometerse.
+    "acompana": {
+        "acompanando la mesa": "mesa", "con la mesa": "mesa", "mesa": "mesa",
+        "acompanando la operacion": "operacion",
+        "con la operacion": "operacion", "operacion": "operacion",
+        "sin acompanar": "ninguna", "ninguna": "ninguna", "ninguno": "ninguna",
+    },
     "modo": {
         "infraestructura": "infraestructura", "estatica": "infraestructura",
         "proteccion estatica": "infraestructura",
@@ -547,6 +684,15 @@ NO_SE_INFIERE: dict[str, tuple[str, ...]] = {
                                                   "alcaldesa"),
     "dupla_presente": ("dupla", "defensoria acompan", "acompanamiento"),
     "delimitada": ("delimit", "con limites", "con reglas escritas", "acotad"),
+    # Ceder prioridad de fuerza al epicentro es lo que compra el acuerdo con los
+    # alcaldes, y compromete el reparto del resto del país. Se dice o no se dice.
+    "concede_prioridad": ("prioridad", "corresponsabilidad",
+                          "concertacion previa", "a cambio"),
+    # Decir qué casos no aguantan ante un juez es el mitigador de la evidencia:
+    # cuesta hoy y protege la credibilidad del sector el resto del episodio. Es
+    # la misma figura que `delimitada`, y se pide igual.
+    "declara_solidez": ("solidez", "solido", "sostiene", "aguanta", "judicial",
+                        "ante un juez"),
 }
 
 
@@ -707,7 +853,18 @@ DISPARADORES: list[tuple[str, list[str], list[str]]] = [
                                   "tramite legislativo"], []),
     ("esquema_humanitario", ["esquema humanitario", "ollas comunitarias",
                              "barrios aislados"], []),
+    # `verific` está dentro de «protocolo de verificación», que es la acción
+    # CONSTITUTIVA de la Defensoría y no el envío de sus tres duplas al terreno.
+    # Adoptar el protocolo mandaba además unas duplas que nadie pidió, y con
+    # ellas se iba el recurso más escaso que tiene el rol. Lo separa
+    # `FRASES_OPACAS`, no una exclusión: «asignar duplas de verificación» tiene
+    # que seguir siendo una orden de duplas.
     ("asignar_duplas", ["dupla", "verific"], ["oper", "acompan", "acompañ"]),
+    # `reglas de empleo` está dentro de «reglas de empleo DEL SECTOR», que es la
+    # del Ministro de Defensa. La Defensoría EXIGE el estándar; Defensa lo ADOPTA
+    # para sus propias unidades. Son dos roles y dos acciones, y las separa la
+    # regla de la raíz más larga en `_clausulas` — no una exclusión, que dejaría
+    # muda a la Defensoría cada vez que alguien pidiera las dos en un mensaje.
     ("exigir_estandares", ["estandar", "reglas de empleo",
                            "identificacion de agentes"], []),
     ("requerir_corredor_humanitario", ["corredor humanitario", "paso humanitario"], []),
@@ -754,6 +911,35 @@ DISPARADORES: list[tuple[str, list[str], list[str]]] = [
     ("fijar_clase_alimentaria", ["clase de prioridad agroalimentaria",
                                  "prioridad agroalimentaria", "clase alimentaria",
                                  "prioridad de los alimentos"], []),
+    # --- Las ocho que no tenían llave (`historial/resueltos.md` §10) --------
+    #
+    # Existían en el motor, estaban probadas y el corredor sin interfaz las
+    # ejecutaba. Lo que no existía era su puerta: la consola es la ÚNICA entrada
+    # al motor durante una sesión, de modo que con gente en la sala esas ocho se
+    # acordaban de palabra y no se podían transcribir.
+    ("convocar_alcaldes", ["alcaldes", "cumbre de alcaldes"], []),
+    # «al epicentro» a secas NO dispara, a propósito: media orden del ejercicio
+    # menciona el epicentro —«operar el punto del epicentro»— y esta es la única
+    # acción en la que ir ES la acción. Las raíces son frases, no palabras.
+    ("ir_al_epicentro", ["ir al epicentro", "viajar al epicentro",
+                         "desplazarse al epicentro", "desplazamiento presidencial",
+                         "ir en persona"], []),
+    ("publicar_parte_municipal", ["parte municipal", "conteo de la ciudad",
+                                  "cifra municipal"], []),
+    ("fijar_reglas_sector", ["reglas de empleo del sector", "reglas del sector",
+                             "registro audiovisual"], []),
+    ("presentar_evidencia", ["inteligencia", "quien financia",
+                             "financiacion de los cierres"], []),
+    ("adoptar_protocolo_verificacion", ["protocolo de verificacion",
+                                        "protocolo unico", "protocolo comun",
+                                        "una sola forma de verificar"], []),
+    ("publicar_mapa_cierres", ["mapa de cierres", "mapa de bloqueos",
+                               "publicar el mapa"], []),
+    # «ventanas» a secas es de `acordar_acopio`, que las acuerda para la carga
+    # agroalimentaria por un CORREDOR. Estas son para el suministro por un PUNTO
+    # cerrado, y son de Minas.
+    ("acordar_pasos_seguros", ["paso seguro", "pasos seguros",
+                               "ventanas de despacho", "ventanas horarias"], []),
 ]
 
 
@@ -965,12 +1151,35 @@ def _numero_en_letras(t_clausula: str) -> int | None:
 FRASES_PARAMETRO = (
     "concertado con", "concertada con", "concertados con", "concertadas con",
     "concertado previamente", "previa concertacion", "sin concertar",
+    # «Ir al epicentro acompañando la operación» no son dos órdenes: es UNA con
+    # su modo puesto. Sin esto, la raíz `oper` abría una operación de desbloqueo
+    # sin punto —que la sala vería como «falta un dato» sobre algo que nadie
+    # pidió— y encima se llevaba el resto de la frase.
+    "acompanando la operacion", "acompanando la mesa",
+    "acompana la operacion", "acompana la mesa",
+)
+
+
+# Y frases que NO son parámetro de nadie: son el nombre de otra cosa, y llevan
+# dentro la raíz de una acción que nadie pidió.
+#
+# «Clasificar el parte OPERacional» disparaba además una operación de desbloqueo
+# —sin punto, así que la sala la veía como «falta un dato» sobre algo que nunca
+# ordenó—. Es el mismo modo de falla que «despacho concentrado», y aquí se
+# resuelve sin excluir: una exclusión mira el texto ENTERO, de modo que «operen
+# el Puente Amarillo y clasifiquen el parte operacional» habría perdido la
+# operación en silencio, que es peor que la acción de más.
+FRASES_OPACAS = (
+    "parte operacional",
+    # «Protocolo de verificación» es la constitutiva de la Defensoría, no el
+    # envío de sus tres duplas al terreno. La raíz `verific` vive dentro.
+    "de verificacion", "de verificar",
 )
 
 
 def _tramos_parametro(t: str) -> list[tuple[int, int]]:
     tramos = []
-    for f in FRASES_PARAMETRO:
+    for f in FRASES_PARAMETRO + FRASES_OPACAS:
         i = t.find(f)
         while i != -1:
             tramos.append((i, i + len(f)))
@@ -1000,14 +1209,37 @@ def _clausulas(t: str) -> list[tuple[str, list[str], list[str], int, int]]:
 
     encontrados = []
     for nombre, raices, excluye in DISPARADORES:
-        posiciones = [i for i in (_primera_posicion(r) for r in raices) if i >= 0]
-        if not posiciones:
+        hallazgos = [(i, r) for i, r in
+                     ((_primera_posicion(r), r) for r in raices) if i >= 0]
+        if not hallazgos:
             continue
         if any(x in t for x in excluye):
             continue
-        encontrados.append((min(posiciones), nombre, raices, excluye))
+        pos = min(i for i, _ in hallazgos)
+        raiz = max((r for i, r in hallazgos if i == pos), key=len)
+        encontrados.append((pos, -len(raiz), nombre, raices, excluye))
 
     encontrados.sort()
+
+    # DOS DISPARADORES QUE EMPIEZAN EN LA MISMA LETRA: GANA EL MÁS ESPECÍFICO.
+    #
+    # «Fijar las reglas de empleo DEL SECTOR» es del Ministro de Defensa, que las
+    # adopta para sus propias unidades; «reglas de empleo» a secas es el estándar
+    # que la Defensoría le exige al Gobierno. Son dos roles y dos acciones, y sus
+    # raíces empiezan en la misma letra: la corta está dentro de la larga.
+    #
+    # Dos acciones distintas no pueden empezar en el mismo carácter, así que
+    # quedarse con la de raíz más larga no pierde ninguna orden — y evita tener
+    # que excluir «del sector» del estándar de la Defensoría, que sí la perdería
+    # en cuanto alguien pidiera las dos cosas en el mismo mensaje.
+    unicos, vistas = [], set()
+    for pos, _largo, nombre, raices, excluye in encontrados:
+        if pos in vistas:
+            continue
+        vistas.add(pos)
+        unicos.append((pos, nombre, raices, excluye))
+    encontrados = unicos
+
     salida = []
     for i, (pos, nombre, raices, excluye) in enumerate(encontrados):
         fin = encontrados[i + 1][0] if i + 1 < len(encontrados) else len(t)
@@ -1022,6 +1254,8 @@ def _extraer_entidades(estado: Estado, texto: str, tipo: str) -> list[str]:
         candidatos = [n.nombre for n in estado.nodos.values()]
     elif tipo == "corredor":
         candidatos = [c.nombre for c in estado.corredores.values()]
+    elif tipo == "instalacion":
+        candidatos = [i.nombre for i in estado.infraestructura.values()]
     else:
         candidatos = [r.nombre for r in estado.regiones.values()]
     encontrados = [c for c in candidatos if _sin_tildes(c) in t]
@@ -1049,6 +1283,9 @@ def _extraer_entidad(estado: Estado, texto: str, tipo: str) -> str | None:
         candidatos += list(estado.corredores)
     elif tipo == "region":
         candidatos = [r.nombre for r in estado.regiones.values()]
+    elif tipo == "instalacion":
+        candidatos = [i.nombre for i in estado.infraestructura.values()]
+        candidatos += list(estado.infraestructura)
 
     encontrados = [c for c in candidatos if _sin_tildes(c) in t]
     if encontrados:

@@ -2347,49 +2347,166 @@ def test_ninguna_constante_de_parameters_queda_sin_leer():
     assert not huerfanas, f"constantes sin leer y sin declarar: {sorted(huerfanas)}"
 
 
-def test_se_sabe_cuantas_acciones_se_pueden_pedir_por_la_consola():
+def test_las_treinta_y_nueve_acciones_se_pueden_pedir_por_la_consola():
     """
-    **31 de 39.** Las ocho que faltan existen en el motor, se ejecutan y solo
-    las alcanza el corredor sin interfaz (`PENDIENTES.md · B10`).
+    **Las 39, sin excepción.** Ocho no se podían hasta que se cerró `B10`.
 
-    La prueba fija el número para que añadir una acción sin herramienta sea una
-    decisión visible y no un descuido — que es exactamente como llegaron las
-    ocho que hay.
+    La consola es la ÚNICA entrada al motor durante una sesión: una acción sin
+    herramienta existe, se ejecuta y está probada, pero con gente en la sala se
+    acuerda de palabra y no se transcribe. Que el motor la tenga no significa
+    que el ejercicio la tenga.
+
+    Cada una necesita las tres cosas y la prueba mira las tres: una herramienta
+    que la construya, un disparador que la alcance sin llave, y un ejemplo en su
+    ficha. Añadir la cuarenta sin una de ellas para aquí.
     """
     from src.agents import herramientas
 
-    construidas = set()
-    for spec in herramientas.HERRAMIENTAS.values():
-        if spec.get("solo_lectura"):
-            continue
-        construidas.add(type(spec["construir"](spec.get("por_defecto", {}))).__name__)
-
-    sin_canal = sorted(c.__name__ for c in actions.CATALOGO
-                       if c.__name__ not in construidas)
-    assert sin_canal == [
-        "AcordarPasosSeguros",
-        "AdoptarProtocoloVerificacion",
-        "ConvocarAlcaldes",
-        "DesplazarseAlEpicentro",
-        "FijarReglasEmpleoSector",
-        "PresentarEvidenciaInteligencia",
-        "PublicarMapaCierres",
-        "PublicarParteMunicipal",
-    ], sin_canal
-
-    # Y las que sí tienen herramienta la tienen COMPLETA: disparador y ejemplo.
-    con_disparador = {n for n, _, _ in herramientas.DISPARADORES}
     por_accion = {}
     for nombre, spec in herramientas.HERRAMIENTAS.items():
         if spec.get("solo_lectura"):
             continue
-        por_accion[type(spec["construir"](spec.get("por_defecto", {}))).__name__] = nombre
+        clase = type(spec["construir"](spec.get("por_defecto", {}))).__name__
+        por_accion[clase] = nombre
+
+    sin_canal = sorted(c.__name__ for c in actions.CATALOGO
+                       if c.__name__ not in por_accion)
+    assert sin_canal == [], f"existen en el motor y no se pueden pedir: {sin_canal}"
+
+    con_disparador = {n for n, _, _ in herramientas.DISPARADORES}
     for cls in actions.CATALOGO:
-        if cls.__name__ in sin_canal:
-            assert not cls.ejemplo_consola, cls.__name__
-            continue
         assert por_accion[cls.__name__] in con_disparador, cls.__name__
         assert cls.ejemplo_consola, cls.__name__
+
+
+def test_ningun_ejemplo_de_la_guia_arrastra_una_accion_de_mas(estado):
+    """
+    **La contraparte de `test_cada_ejemplo_de_la_guia_produce_su_accion`**, que
+    solo miraba que la suya estuviera y no que fuera la única.
+
+    Por ahí se colaban dos: «clasificar el parte OPERacional» disparaba además
+    una operación de desbloqueo, y «acordar el despacho CONCENTRado» una
+    concentración de ESMAD. Una acción de más no es un error de comprensión: es
+    una orden que nadie dio, y llega al pliego firmada por su rol.
+    """
+    from src.agents import herramientas
+
+    for cls in actions.CATALOGO:
+        construidas = []
+        for l in herramientas.interpretar_sin_modelo(estado, cls.ejemplo_consola):
+            spec = herramientas.HERRAMIENTAS[l["nombre"]]
+            if spec.get("solo_lectura"):
+                continue
+            construidas.append(type(spec["construir"](l["argumentos"])).__name__)
+        assert construidas == [cls.__name__], (
+            f"«{cls.ejemplo_consola}» produce {construidas}")
+
+
+def test_ningun_ejemplo_de_la_guia_se_rechaza_en_la_primera_jornada(estado):
+    """
+    **Un ejemplo que se entiende y se rechaza es peor que uno que no se
+    entiende**, porque parece que el sistema falla y lo que falla es la ficha.
+    Se dicta en voz alta en la primera jornada, delante de la mesa.
+
+    Salieron dos al barrer los treinta y nueve:
+
+    - `DeclararInfraestructuraCritica` traía `["refineria"]` como valor por
+      defecto, y **la refinería empieza el escenario custodiada**: la orden
+      construía la acción correcta y se rechazaba siempre.
+    - `AcordarPasosSeguros` pedía el paso en el punto con MENOS vocería del
+      escenario, que es justo donde no hay con quién acordarlo.
+
+    Las dos que quedan no son un defecto de la ficha: son la interdependencia
+    del ejercicio. La escolta la pone la Policía, y hasta que la pone, ni la
+    caravana de Transporte ni el acopio de Agricultura pueden salir. Por eso
+    están declaradas aquí y no silenciadas.
+    """
+    from src.agents import herramientas, nlu
+
+    NECESITAN_ESCOLTA = {"OrganizarCaravana", "AcordarAcopioYVentanas"}
+
+    rechazadas = {}
+    for cls in actions.CATALOGO:
+        # Por el cauce entero: el intérprete cita el nombre TAL CUAL y quien lo
+        # resuelve es `_a_accion_plan`. Comprobarlo antes de resolver mediría
+        # otra cosa —«no existe el punto Puente Amarillo»— y no lo que la sala ve.
+        llamada = herramientas.interpretar_sin_modelo(
+            estado, cls.ejemplo_consola)[0]
+        ap = nlu._a_accion_plan(estado, llamada, cls.ejemplo_consola)
+        spec = herramientas.HERRAMIENTAS[ap.herramienta]
+        v = spec["construir"](ap.argumentos).validar(estado)
+        if not v.ok:
+            rechazadas[cls.__name__] = v.motivo
+
+    inesperadas = {k: v for k, v in rechazadas.items()
+                   if k not in NECESITAN_ESCOLTA}
+    assert not inesperadas, f"ejemplos que se rechazan en t=0: {inesperadas}"
+    assert set(rechazadas) == NECESITAN_ESCOLTA, sorted(rechazadas)
+
+
+def test_las_ocho_llaves_nuevas_no_le_roban_la_orden_a_su_vecina(estado):
+    """
+    **Cada una de las ocho tiene una vecina cuya raíz lleva dentro**, y ese es
+    el modo de falla que ya se cobró dos veces en este archivo.
+
+    Las tres que importan, porque en las tres cambia el ROL que firma:
+    adoptar el protocolo de verificación no manda duplas al terreno; fijar las
+    reglas del sector es de Defensa y no el estándar que exige la Defensoría; e
+    ir al epicentro acompañando la operación no ordena ninguna operación.
+    """
+    from src.agents import herramientas
+
+    def nombres(frase):
+        return [l["nombre"]
+                for l in herramientas.interpretar_sin_modelo(estado, frase)]
+
+    assert nombres("adoptar el protocolo unico de verificacion") == [
+        "adoptar_protocolo_verificacion"]
+    assert nombres("acordar una sola forma de verificar") == [
+        "adoptar_protocolo_verificacion"]
+    assert nombres("fijar las reglas de empleo del sector") == [
+        "fijar_reglas_sector"]
+    assert nombres("ir al epicentro acompanando la operacion") == [
+        "ir_al_epicentro"]
+    assert nombres("acordar pasos seguros en el Puente Amarillo") == [
+        "acordar_pasos_seguros"]
+
+    # Y al revés: la vecina sigue siendo alcanzable, que es lo que una exclusión
+    # de texto entero habría roto en cuanto se pidieran las dos en un mensaje.
+    assert nombres("asignar duplas de verificacion en el Puente Amarillo") == [
+        "asignar_duplas"]
+    assert nombres("exigir los estandares de empleo de la fuerza") == [
+        "exigir_estandares"]
+    dos = nombres("exigir los estandares y fijar las reglas del sector")
+    assert dos == ["exigir_estandares", "fijar_reglas_sector"], dos
+
+
+def test_lo_que_la_sala_oye_de_las_ocho_acciones_nuevas(estado):
+    """
+    **Tres de las ocho llevan un booleano que cambia lo que el motor cobra**, y
+    ninguno se decía. Un valor por defecto que se ejecuta y no se lee en voz
+    alta es la sala confirmando una cosa y el motor haciendo otra.
+    """
+    from src.agents import nlu
+
+    def leer(frase):
+        return nlu.interpretar(estado, frase, "p").acciones[0]
+
+    a = leer("reunir a los alcaldes de las ciudades criticas")
+    assert a.argumentos["concede_prioridad"] is False
+    assert "SIN conceder prioridad" in a.en_claro()
+
+    a = leer("presentar la evidencia de inteligencia")
+    assert a.argumentos["declara_solidez"] is False
+    assert "SIN declarar" in a.en_claro()
+
+    a = leer("publicar el parte municipal de la ciudad")
+    assert a.argumentos["disputa_cifra"] is True
+    assert "disputando la cifra nacional" in a.en_claro()
+
+    a = leer("ir al epicentro en persona")
+    assert a.argumentos["acompana"] == "ninguna"
+    assert "sin acompanar" in a.en_claro().replace("ñ", "n")
 
 
 def test_validar_no_muta_el_estado(estado):

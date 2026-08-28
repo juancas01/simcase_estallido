@@ -1550,12 +1550,6 @@ tr.aviso > td:first-child { padding-left: 0.65rem; }
   max-width: 17rem;
 }
 
-.accion-sin-canal {
-  font-size: 0.78rem;
-  color: var(--texto-3);
-  font-style: italic;
-}
-
 /* ---------------------------------------------------------------------------
    LA PREGUNTA DEL COMIENZO DEL DÍA
 

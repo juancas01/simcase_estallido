@@ -53,11 +53,6 @@ delimitada, de noche—, hay que decirlo con esas mismas palabras.
 Los nombres de puntos, corredores y regiones son los del escenario, y están
 en el mapa del tablero general.
 
-> **8 de las 39 todavía no se pueden transcribir.** Existen en el motor
-> y se acuerdan en la mesa, pero el canal de órdenes aún no las reconoce.
-> Van marcadas en su columna. Está anotado en
-> [`PENDIENTES.md`](../PENDIENTES.md) · B10.
-
 ---
 
 ## 01 · Presidente de la República
@@ -67,8 +62,8 @@ en el mapa del tablero general.
 | **Dejar todo por escrito** | Protocolo | Deja por escrito cada decisión y quién responde por ella. Sin registro, al cierre nadie puede decir quién ordenó qué. | Ninguno. Es de las que se adoptan el primer día y abaratan todo lo demás. | `fijar el registro escrito de decisiones` |
 | **Decir qué no se negocia** | Protocolo | Anuncia qué está y qué no está sobre la mesa. Fija el terreno de lo negociable antes de que lo fije otro. | Ninguno. Conviene antes de que Interior lleve nada a la mesa. | `fijar las lineas rojas del Ejecutivo` |
 | **Autorizar al Ejército** | Operación | Autoriza que el Ejército apoye a la Policía. Da más fuerza disponible, y militares frente a multitudes suben la tensión en la calle. | Ninguno. Es ella la que habilita a Defensa a emplear tropa. | `firmar la asistencia militar con limites` |
-| **Reunir a los alcaldes** | Operación | Reúne a los alcaldes de las ciudades más golpeadas. Sirve para llegar a la mesa con una sola posición en vez de varias. | Ninguno. | ⚠ Todavía no se transcribe: se acuerda en la mesa |
-| **Ir al epicentro en persona** | Información | Viaja en persona a la ciudad más afectada. Es un gesto público de que el Gobierno da la cara. | Escuadrones sin comprometer para la escolta presidencial. | ⚠ Todavía no se transcribe: se acuerda en la mesa |
+| **Reunir a los alcaldes** | Operación | Reúne a los alcaldes de las ciudades más golpeadas. Sirve para llegar a la mesa con una sola posición en vez de varias. | Ninguno. | `reunir a los alcaldes de las ciudades criticas` |
+| **Ir al epicentro en persona** | Información | Viaja en persona a la ciudad más afectada. Es un gesto público de que el Gobierno da la cara. | Escuadrones sin comprometer para la escolta presidencial. | `ir al epicentro en persona` |
 
 ## 02 · Ministro del Interior
 
@@ -86,16 +81,16 @@ en el mapa del tablero general.
 | **Exigir que le consulten la fuerza** | Protocolo | Exige que cualquier operación en su ciudad se acuerde antes con la Alcaldía. Baja el riesgo de que salga mal, y le quita velocidad a Defensa. | Ninguno. | `condicionar el empleo de la fuerza en la ciudad` |
 | **Sentarse con los voceros del punto** | Operación | Sienta a hablar a los voceros de un punto de su ciudad. Es la vía pactada, hecha desde el municipio. | Un punto de su propia jurisdicción, todavía cerrado. HAY QUE INSTALARLA CADA JORNADA: la mesa que no sesiona no avanza. | `instalar mesa con voceros en el Puente Amarillo` |
 | **Abrir paso a lo humanitario** | Operación | Monta un paso para ambulancias, oxígeno y alimentos en su jurisdicción. No abre el punto: abre una ventana. | Su propia jurisdicción. No cubre el resto del país. | `montar el esquema humanitario municipal` |
-| **Publicar el conteo de la ciudad** | Información | Publica su propio conteo de lo que pasó en la ciudad. Si contradice la cifra nacional, uno de los dos queda desmentido. | Ninguno, pero sin protocolo común de verificación la cifra se disputa. | ⚠ Todavía no se transcribe: se acuerda en la mesa |
+| **Publicar el conteo de la ciudad** | Información | Publica su propio conteo de lo que pasó en la ciudad. Si contradice la cifra nacional, uno de los dos queda desmentido. | Ninguno, pero sin protocolo común de verificación la cifra se disputa. | `publicar el parte municipal de la ciudad` |
 
 ## 04 · Ministro de Defensa
 
 | Acción | Tipo | Qué hace | Qué hace falta antes | Cómo pedirla en la consola |
 |---|---|---|---|---|
-| **Poner reglas a sus unidades** | Protocolo | Ordena que sus unidades vayan identificadas, con reglas escritas y grabando. Baja mucho la probabilidad de que una operación termine mal. | Ninguno. | ⚠ Todavía no se transcribe: se acuerda en la mesa |
+| **Poner reglas a sus unidades** | Protocolo | Ordena que sus unidades vayan identificadas, con reglas escritas y grabando. Baja mucho la probabilidad de que una operación termine mal. | Ninguno. | `fijar las reglas de empleo del sector` |
 | **Desbloquear un punto por la fuerza** | Operación | Manda a la fuerza pública a abrir un punto. Es lo más rápido que existe y lo más caro: el punto suele volver a cerrarse esa misma noche. | Un punto todavía cerrado y unidades disponibles del tipo que se pida. Con tropa, la asistencia militar firmada; en el epicentro, la concertación con la Alcaldía si la Alcaldía la exigió. | `operar el Puente Amarillo con ESMAD, con dupla de la Defensoria` |
 | **Mover tropa a donde haga falta** | Operación | Mueve tropa a proteger instalaciones críticas. Libera policía para otras tareas e inmoviliza esas unidades donde las puso. | Unidades militares en reserva. | `redesplegar militares a infraestructura` |
-| **Mostrar quién financia los cierres** | Información | Presenta lo que Inteligencia tiene sobre quién financia los cierres. Vale según lo sólido que sea; si no se sostiene, se vuelve en contra. | Ninguno. | ⚠ Todavía no se transcribe: se acuerda en la mesa |
+| **Mostrar quién financia los cierres** | Información | Presenta lo que Inteligencia tiene sobre quién financia los cierres. Vale según lo sólido que sea; si no se sostiene, se vuelve en contra. | Ninguno. | `presentar la evidencia de inteligencia` |
 
 ## 05 · Director General de la Policía
 
@@ -111,7 +106,7 @@ en el mapa del tablero general.
 | Acción | Tipo | Qué hace | Qué hace falta antes | Cómo pedirla en la consola |
 |---|---|---|---|---|
 | **Exigir reglas, identificación y cámaras** | Protocolo | Exige que la fuerza actúe con reglas escritas, identificada y grabando. Es lo que hace que después se pueda saber qué pasó de verdad. | Ninguno. Es la de mayor rendimiento del ejercicio y no cuesta un escuadrón. | `exigir los estandares de empleo de la fuerza` |
-| **Acordar una sola forma de verificar** | Protocolo | Establece una sola manera de verificar cifras y denuncias, igual para todos. Evita que cada cartera traiga su propio número. | Ninguno. | ⚠ Todavía no se transcribe: se acuerda en la mesa |
+| **Acordar una sola forma de verificar** | Protocolo | Establece una sola manera de verificar cifras y denuncias, igual para todos. Evita que cada cartera traiga su propio número. | Ninguno. | `adoptar el protocolo unico de verificacion` |
 | **Mandar a sus verificadores** | Operación | Manda a sus verificadores a mirar puntos concretos. Solo tiene tres por turno, y también hacen falta para comprobar denuncias y acompañar operaciones. | Duplas libres esta jornada, y decir qué mirar. Salen del mismo bolsillo que el acompañamiento de operaciones. | `verificar el Puente Amarillo y el Peaje del Puerto` |
 | **Exigir un paso humanitario permanente** | Operación | Exige que haya un paso permanente para lo humanitario. Negarlo es lo que más caro cuesta de cara al exterior. | Ninguno. | `requerir un corredor humanitario permanente` |
 | **Poner en duda su permanencia** | Información | Dice en público que se está planteando si tiene sentido seguir en la mesa. Es su palanca más fuerte y se gasta: la segunda vez pesa menos que la primera. | Ninguno, pero se gasta: cada pronunciamiento pesa menos que el anterior. | `manifestar duda sobre la permanencia en la mesa` |
@@ -123,15 +118,15 @@ en el mapa del tablero general.
 | **Fijar el orden de los corredores** | Protocolo | Fija en qué orden se atienden los corredores y por qué. Sin criterio, cada turno se discute lo mismo desde cero. | Ninguno. | `adoptar el criterio de priorizacion de corredores` |
 | **Organizar una caravana** | Operación | Junta la carga en una caravana por un corredor prioritario. Necesita escolta para poder pasar. | Escolta ya dispuesta por la Policía, y el corredor sin ningún punto que lo bloquee. | `organizar una caravana por el Corredor del Sur` |
 | **Hablar con los camioneros** | Operación | Habla con los camioneros antes de que decidan sumarse al paro. Si se suman, se cierra lo que hoy todavía circula. | Que los gremios no se hayan sumado ya al paro. | `negociar con los gremios camioneros` |
-| **Publicar el mapa de cierres** | Información | Publica dónde está cerrado y qué se ha abierto. Anunciar una apertura que no se sostiene cuesta credibilidad. | Ninguno. Anunciar abierto lo que no deja pasar se desmiente solo. | ⚠ Todavía no se transcribe: se acuerda en la mesa |
+| **Publicar el mapa de cierres** | Información | Publica dónde está cerrado y qué se ha abierto. Anunciar una apertura que no se sostiene cuesta credibilidad. | Ninguno. Anunciar abierto lo que no deja pasar se desmiente solo. | `publicar el mapa de cierres` |
 
 ## 08 · Ministro de Minas y Energía
 
 | Acción | Tipo | Qué hace | Qué hace falta antes | Cómo pedirla en la consola |
 |---|---|---|---|---|
 | **Decidir a qué va el combustible** | Protocolo | Decide a qué va primero el combustible que queda: hospitales, transporte o industria. Es un criterio permanente, no una entrega puntual. | Ordenar los cuatro usos, todos y sin repetir. | `fijar la prioridad de combustible` |
-| **Poner custodia a una instalación** | Operación | Pone bajo custodia una instalación del registro de infraestructura relevante. Queda protegida, e inmoviliza fuerza que hace falta en otra parte. | Instalaciones del registro de infraestructura relevante, y capacidad libre para custodiarlas: lo que se protege sale de lo que desbloquea. | `declarar infraestructura critica la refineria` |
-| **Acordar ventanas de paso** | Operación | Acuerda ventanas horarias para que pasen carrotanques por un punto. Pasa el suministro sin abrir el bloqueo. | Un punto donde la vocería reconocida controle algo. Donde no manda nadie no hay con quién acordar. | ⚠ Todavía no se transcribe: se acuerda en la mesa |
+| **Poner custodia a una instalación** | Operación | Pone bajo custodia una instalación del registro de infraestructura relevante. Queda protegida, e inmoviliza fuerza que hace falta en otra parte. | Decir CUÁL, de las del registro de infraestructura relevante, y que quede capacidad libre para custodiarla: lo que se protege sale de lo que desbloquea. | `declarar infraestructura critica el Acopio de combustible de Puerto Espejo` |
+| **Acordar ventanas de paso** | Operación | Acuerda ventanas horarias para que pasen carrotanques por un punto. Pasa el suministro sin abrir el bloqueo. | Un punto donde la vocería reconocida controle algo. Donde no manda nadie no hay con quién acordar. | `acordar pasos seguros en la Porteria de la refineria` |
 | **Decir cuántos días quedan** | Información | Dice cuántos días de oxígeno, combustible y comida le quedan a cada región. Es el dato que solo usted tiene, y difundirlo también genera pánico. | Ninguno. Difundirlo acelera lo que mide. | `entregar el calendario de agotamiento` |
 
 ## 09 · Ministro de Agricultura y Desarrollo Rural

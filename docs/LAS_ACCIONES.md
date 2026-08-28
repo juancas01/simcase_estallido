@@ -84,55 +84,57 @@ las fichas:
 
 ## En una mirada
 
-**P** Protocolo · **O** Operación · **I** Información · **LN** se puede pedir
-por el canal de lenguaje natural
+**P** Protocolo · **O** Operación · **I** Información
+
+**Las treinta y nueve se piden por la consola, en lenguaje corriente.** Hubo una
+columna que decía cuáles sí y cuáles no; se fue con las ocho que decían que no.
 
 La primera columna de cada acción es **cómo se llama en la sala**; la segunda,
 cómo se llama en el código. La guía entera en lenguaje corriente, con lo que
 hace falta antes y cómo se pide, está en
 [`GUIA_DE_ACCIONES.md`](GUIA_DE_ACCIONES.md).
 
-| Rol | | Acción | | | LN |
-|---|---|---|---|---|---|
-| **Presidente** | P | **Dejar todo por escrito** | `FijarRegistroEscrito` | registro escrito y responsable nominado | sí |
-| | P | **Decir qué no se negocia** | `FijarLineasRojas` | el marco de lo negociable | sí |
-| | O | **Autorizar al Ejército** | `FirmarAsistenciaMilitar` | la única firma que habilita tropa | sí |
-| | O | **Reunir a los alcaldes** | `ConvocarAlcaldes` | corresponsabilidad territorial | **no** |
-| | I | **Ir al epicentro en persona** | `DesplazarseAlEpicentro` | ir en persona | **no** |
-| **Interior** | P | **Poner un solo vocero** | `ExigirProtocoloVoceria` | una sola voz y plazo suspensivo | sí |
-| | O | **Sentar al Comité del Paro** | `ConvocarMesaNacional` | **la única que produce un acuerdo verificable** | sí |
-| | O | **Abrir una mesa en un punto** | `AbrirMesaLocal` | concertar un punto · **hay que instalarla cada jornada** | sí |
-| | I | **Ofrecer algo a cambio** | `OfrecerContraprestacion` | la moneda no violenta | sí |
-| **Alcalde** | P | **Exigir que le consulten la fuerza** | `CondicionarEmpleoFuerza` | concertación previa en su ciudad | sí |
-| | O | **Sentarse con los voceros del punto** | `InstalarMesaConVoceros` | la mesa municipal · **cada jornada** | sí |
-| | O | **Abrir paso a lo humanitario** | `EsquemaHumanitarioMunicipal` | **la única vía que no cuesta ninguna reserva** | sí |
-| | I | **Publicar el conteo de la ciudad** | `PublicarParteMunicipal` | su propio conteo | **no** |
-| **Defensa** | P | **Poner reglas a sus unidades** | `FijarReglasEmpleoSector` | dos mitigadores | **no** |
-| | O | **Desbloquear un punto por la fuerza** | `OperarNodo` | **la que más mueve el tablero** | sí |
-| | O | **Mover tropa a donde haga falta** | `RedesplegarMilitares` | tropa a infraestructura, o aire | sí |
-| | I | **Mostrar quién financia los cierres** | `PresentarEvidenciaInteligencia` | quién financia los cierres | **no** |
-| **Policía** | P | **Separar lo confirmado de lo estimado** | `ClasificarParteOperacional` | confirmado, estimado, en verificación | sí |
-| | O | **Concentrar el ESMAD** | `DisponerESMAD` | concentrar fuerza | sí |
-| | O | **Escoltar una caravana o misión médica** | `Escoltar` | **la condición material de todo lo logístico** | sí |
-| | O | **Relevar a las unidades cansadas** | `SolicitarRelevo` | bajar la fatiga | sí |
-| **Defensoría** | P | **Exigir reglas, identificación y cámaras** | `ExigirEstandaresEmpleo` | **tres mitigadores de golpe** | sí |
-| | P | **Acordar una sola forma de verificar** | `AdoptarProtocoloVerificacion` | una sola cifra oficial | **no** |
-| | O | **Mandar a sus verificadores** | `AsignarDuplas` | las tres del turno | sí |
-| | O | **Exigir un paso humanitario permanente** | `RequerirCorredoresHumanitarios` | paso permanente | sí |
-| | I | **Poner en duda su permanencia** | `ManifestarDudaPermanencia` | su palanca, y se gasta | sí |
-| **Transporte** | P | **Fijar el orden de los corredores** | `AdoptarCriterioPriorizacion` | en qué orden se atiende | sí |
-| | O | **Organizar una caravana** | `OrganizarCaravana` | mover carga | sí |
-| | O | **Hablar con los camioneros** | `NegociarConGremios` | que no se sumen | sí |
-| | I | **Publicar el mapa de cierres** | `PublicarMapaCierres` | dónde está cerrado | **no** |
-| **Minas** | P | **Decidir a qué va el combustible** | `FijarPrioridadCombustible` | **la segunda entrada del reloj** | sí |
-| | O | **Poner custodia a una instalación** | `DeclararInfraestructuraCritica` | proteger, inmovilizando · **del registro de infraestructura** | sí |
-| | O | **Acordar ventanas de paso** | `AcordarPasosSeguros` | pasar sin abrir | **no** |
-| | I | **Decir cuántos días quedan** | `EntregarCalendarioAgotamiento` | el reloj, y lo que difundirlo hace | sí |
-| **Agricultura** | P | **Poner los alimentos en la prioridad** | `FijarClasePrioridadAlimentaria` | reordena corredores, no añade ninguno | sí |
-| | O | **Sentarse con el campo** | `InstalarMesaTecnicaAgropecuaria` | **la única mesa que sobrevive a la salida del Comité** | sí |
-| | O | **Aliviar a los productores** | `ActivarInstrumentosSectoriales` | la única suya que no depende de nadie | sí |
-| | O | **Concentrar el despacho de alimentos** | `AcordarAcopioYVentanas` | hace rendir la escolta que ya hay | sí |
-| | I | **Publicar lo que se está perdiendo** | `PublicarBalancePerdida` | el costo del cierre, en lo que paga un hogar | sí |
+| Rol | | Acción | | |
+|---|---|---|---|---|
+| **Presidente** | P | **Dejar todo por escrito** | `FijarRegistroEscrito` | registro escrito y responsable nominado |
+| | P | **Decir qué no se negocia** | `FijarLineasRojas` | el marco de lo negociable |
+| | O | **Autorizar al Ejército** | `FirmarAsistenciaMilitar` | la única firma que habilita tropa |
+| | O | **Reunir a los alcaldes** | `ConvocarAlcaldes` | corresponsabilidad territorial |
+| | I | **Ir al epicentro en persona** | `DesplazarseAlEpicentro` | ir en persona |
+| **Interior** | P | **Poner un solo vocero** | `ExigirProtocoloVoceria` | una sola voz y plazo suspensivo |
+| | O | **Sentar al Comité del Paro** | `ConvocarMesaNacional` | **la única que produce un acuerdo verificable** |
+| | O | **Abrir una mesa en un punto** | `AbrirMesaLocal` | concertar un punto · **hay que instalarla cada jornada** |
+| | I | **Ofrecer algo a cambio** | `OfrecerContraprestacion` | la moneda no violenta |
+| **Alcalde** | P | **Exigir que le consulten la fuerza** | `CondicionarEmpleoFuerza` | concertación previa en su ciudad |
+| | O | **Sentarse con los voceros del punto** | `InstalarMesaConVoceros` | la mesa municipal · **cada jornada** |
+| | O | **Abrir paso a lo humanitario** | `EsquemaHumanitarioMunicipal` | **la única vía que no cuesta ninguna reserva** |
+| | I | **Publicar el conteo de la ciudad** | `PublicarParteMunicipal` | su propio conteo |
+| **Defensa** | P | **Poner reglas a sus unidades** | `FijarReglasEmpleoSector` | dos mitigadores |
+| | O | **Desbloquear un punto por la fuerza** | `OperarNodo` | **la que más mueve el tablero** |
+| | O | **Mover tropa a donde haga falta** | `RedesplegarMilitares` | tropa a infraestructura, o aire |
+| | I | **Mostrar quién financia los cierres** | `PresentarEvidenciaInteligencia` | quién financia los cierres |
+| **Policía** | P | **Separar lo confirmado de lo estimado** | `ClasificarParteOperacional` | confirmado, estimado, en verificación |
+| | O | **Concentrar el ESMAD** | `DisponerESMAD` | concentrar fuerza |
+| | O | **Escoltar una caravana o misión médica** | `Escoltar` | **la condición material de todo lo logístico** |
+| | O | **Relevar a las unidades cansadas** | `SolicitarRelevo` | bajar la fatiga |
+| **Defensoría** | P | **Exigir reglas, identificación y cámaras** | `ExigirEstandaresEmpleo` | **tres mitigadores de golpe** |
+| | P | **Acordar una sola forma de verificar** | `AdoptarProtocoloVerificacion` | una sola cifra oficial |
+| | O | **Mandar a sus verificadores** | `AsignarDuplas` | las tres del turno |
+| | O | **Exigir un paso humanitario permanente** | `RequerirCorredoresHumanitarios` | paso permanente |
+| | I | **Poner en duda su permanencia** | `ManifestarDudaPermanencia` | su palanca, y se gasta |
+| **Transporte** | P | **Fijar el orden de los corredores** | `AdoptarCriterioPriorizacion` | en qué orden se atiende |
+| | O | **Organizar una caravana** | `OrganizarCaravana` | mover carga |
+| | O | **Hablar con los camioneros** | `NegociarConGremios` | que no se sumen |
+| | I | **Publicar el mapa de cierres** | `PublicarMapaCierres` | dónde está cerrado |
+| **Minas** | P | **Decidir a qué va el combustible** | `FijarPrioridadCombustible` | **la segunda entrada del reloj** |
+| | O | **Poner custodia a una instalación** | `DeclararInfraestructuraCritica` | proteger, inmovilizando · **del registro de infraestructura** |
+| | O | **Acordar ventanas de paso** | `AcordarPasosSeguros` | pasar sin abrir |
+| | I | **Decir cuántos días quedan** | `EntregarCalendarioAgotamiento` | el reloj, y lo que difundirlo hace |
+| **Agricultura** | P | **Poner los alimentos en la prioridad** | `FijarClasePrioridadAlimentaria` | reordena corredores, no añade ninguno |
+| | O | **Sentarse con el campo** | `InstalarMesaTecnicaAgropecuaria` | **la única mesa que sobrevive a la salida del Comité** |
+| | O | **Aliviar a los productores** | `ActivarInstrumentosSectoriales` | la única suya que no depende de nadie |
+| | O | **Concentrar el despacho de alimentos** | `AcordarAcopioYVentanas` | hace rendir la escolta que ya hay |
+| | I | **Publicar lo que se está perdiendo** | `PublicarBalancePerdida` | el costo del cierre, en lo que paga un hogar |
 
 ---
 ---
@@ -1038,7 +1040,7 @@ castigo real no es la penalización: **es el reloj**, que corre igual.
 # Cinco cosas que este recuento deja a la vista
 
 Salieron de escribir el documento, no de leerlo, y todas son verificables desde
-el código. **Cuatro siguen abiertas; la cuarta ya está corregida** y se deja
+el código. **Tres siguen abiertas; la segunda y la cuarta ya están corregidas** y se dejan
 anotada porque la clase de fallo que ilustra es fácil de repetir.
 
 ### 1 · La Policía no tiene acción informativa
@@ -1067,30 +1069,18 @@ No es un error de código: es una decisión de diseño que la cabecera describe 
 o una acción que falta. **Se corrige la frase o se añade la acción**, y esa es una
 decisión del equipo docente, no del repositorio.
 
-### 2 · Ocho acciones no se pueden pedir en lenguaje natural
+### 2 · Ocho acciones no se podían pedir en lenguaje natural — **corregido**
 
-El canal de órdenes expone **31 herramientas**; el motor tiene **39 acciones**.
-Las ocho que faltan:
+**Ya está arreglado.** El canal expone las **39**, y la historia —qué eran, por
+qué faltaban, y qué hizo falta para que las ocho llaves nuevas no le robaran la
+orden a su vecina— está en
+[`historial/resueltos.md` §10](historial/resueltos.md#10--las-ocho-que-no-se-podían-pedir).
 
-| Rol | Clase | Acción |
-|---|---|---|
-| Presidente | operativa | `ConvocarAlcaldes` |
-| Presidente | informativa | `DesplazarseAlEpicentro` |
-| Alcalde | informativa | `PublicarParteMunicipal` |
-| Defensa | constitutiva | `FijarReglasEmpleoSector` |
-| Defensa | informativa | `PresentarEvidenciaInteligencia` |
-| Defensoría | constitutiva | `AdoptarProtocoloVerificacion` |
-| Transporte | informativa | `PublicarMapaCierres` |
-| Minas | operativa | `AcordarPasosSeguros` |
-
-**Cuatro de las ocho informativas del ejercicio están entre ellas.** La clase
-«informa» —cambiar lo que el país tiene por cierto— es la peor servida por el
-canal, y es justamente la que la sala pedirá con palabras y no con un formulario.
-
-Dos tienen sustituto y cinco no: `FijarReglasEmpleoSector` y
-`AdoptarProtocoloVerificacion` escriben banderas que otra acción también escribe,
-así que la sala puede llegar al mismo estado por otra vía. Las otras seis no
-tienen equivalente.
+Se deja anotado por lo que enseña, que sigue valiendo: **cuatro de las ocho eran
+informativas.** La clase «informa» —cambiar lo que el país tiene por cierto— era
+la peor servida por el canal, y es justamente la que la sala pide con palabras y
+no con un formulario. Una acción que el motor tiene y la consola no alcanza
+existe en el código y no existe en el ejercicio.
 
 ### 3 · El margen de las líneas rojas no se comprueba
 
