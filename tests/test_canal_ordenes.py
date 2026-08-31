@@ -353,14 +353,14 @@ def test_verificar_por_criterio_no_produce_una_lista_vacia(estado):
     daba por lista: se ordenaba verificar y no se verificaba nada.
     """
     a = solo(estado, "verificar los cerrados")
-    assert a.herramienta == "asignar_duplas"
+    assert a.herramienta == "desplegar_equipos"
     assert a.argumentos["puntos"], "el criterio tiene que expandirse"
 
 
 def test_verificar_sin_decir_que_no_es_viable(estado, motor):
     """La misma regla, custodiada también desde el motor."""
-    from src.engine.actions import AsignarDuplas
-    v = AsignarDuplas(nodos=[], denuncias=[]).validar(estado)
+    from src.engine.actions import DesplegarEquiposTerreno
+    v = DesplegarEquiposTerreno(nodos=[], denuncias=[]).validar(estado)
     assert not v.ok
     assert "qué verificar" in (v.motivo or "")
 
@@ -886,7 +886,7 @@ def test_la_lectura_cuenta_cuantos_puntos_entendio(estado):
     posible cuando el tercero ni se reconoció como nombre — que es justo lo que
     pasa en la rama sin modelo.
     """
-    a = nlu._a_accion_plan(estado, {"nombre": "asignar_duplas", "argumentos": {
+    a = nlu._a_accion_plan(estado, {"nombre": "desplegar_equipos", "argumentos": {
         "puntos": ["Puente Amarillo", "Puente de Brooklyn", "Alto del Mirador"]}})
     assert "Sobre 2:" in a.en_claro()
     assert "Puente de Brooklyn" in (a.motivo or "")
@@ -939,7 +939,7 @@ def test_una_orden_de_verdad_si_gasta_el_turno(consola):
 
 def test_corregir_un_punto_de_una_lista_completa_en_vez_de_borrar(consola):
     """
-    `asignar_duplas` lleva tres puntos en un solo acto. Elegir el que faltaba
+    `desplegar_equipos` lleva tres puntos en un solo acto. Elegir el que faltaba
     sustituía la lista entera por un texto suelto: el botón de corregir dejaba
     la orden peor que antes.
     """

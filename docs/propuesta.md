@@ -1,7 +1,7 @@
 # El diseño del juego — el ejercicio como decisión compartida
 
 **Qué es esto.** El modo de juego y el modelo del mundo: qué se simula y hasta
-dónde, qué ve cada uno de los nueve, qué puede hacer, y cómo eso afecta a los
+dónde, qué ve cada uno de los siete, qué puede hacer, y cómo eso afecta a los
 demás. **No hay que saber programar para leerlo.**
 
 **Qué NO es esto.** Ni el detalle de cada acción —eso es
@@ -9,7 +9,7 @@ demás. **No hay que saber programar para leerlo.**
 —eso es [`COMO_FUNCIONA.md`](COMO_FUNCIONA.md)—, ni dónde vive cada cosa en el
 repositorio —eso es [`EL_CODIGO.md`](EL_CODIGO.md)—.
 
-> Los términos propios del caso —punto de cierre, corredor, dupla, escuadrón,
+> Los términos propios del caso —punto de cierre, corredor, equipo de terreno, escuadrón,
 > mitigador— se explican al usarlos por primera vez, y están todos reunidos en el
 > [glosario](#glosario) al final.
 
@@ -23,8 +23,8 @@ tienen la misma pantalla común delante y todos están diciendo la verdad:
 > **Transporte:** *«El corredor al puerto mueve los alimentos de 780 mil
 > personas. Llevo el costo diario y es el más caro de todos.»*
 >
-> **Minas:** *«El corredor hospitalario es el único camino humanitario que sirve
-> a Las Cumbres, y Las Cumbres tiene oxígeno para menos de dos días.»*
+> **Agricultura:** *«El corredor hospitalario es el único camino humanitario que
+> sirve a Las Cumbres, y Las Cumbres tiene oxígeno para menos de dos días.»*
 >
 > **Policía:** *«El punto que bloquea el corredor al puerto es el más caliente
 > del país. Si no se atiende hoy, mañana no es un punto: son tres.»*
@@ -32,8 +32,9 @@ tienen la misma pantalla común delante y todos están diciendo la verdad:
 > **Alcalde:** *«Ese puerto es el que alimenta a mi ciudad, y llevo nueve días
 > con el comercio paralizado.»*
 >
-> **Defensoría:** *«En ese punto hay una denuncia grave que no he podido
-> verificar. Operar ahí antes de verificarla es el peor escenario posible.»*
+> **Defensa:** *«En ese punto hay una denuncia grave que mis equipos no han
+> podido verificar. Operar ahí antes de verificarla es el peor escenario
+> posible — y el que va a verificarla soy yo.»*
 
 **Cinco criterios legítimos, una escolta, ninguna respuesta correcta.** Nadie
 ocultó nada, nadie mintió, y la decisión sigue siendo difícil — porque lo es.
@@ -50,7 +51,7 @@ ocultó nada, nadie mintió, y la decisión sigue siendo difícil — porque lo 
 |---|---|---|
 | **1** | **Cada rol tiene una vista privada** con su cartera en alta resolución, en su propio dispositivo | Para que su criterio tenga peso propio y las decisiones tengan más consideraciones |
 | **2** | **El tablero general lleva el grueso de la información** | La simulación se sigue desde ahí. La vista privada es un complemento fino, no un sustituto |
-| **3** | **Entre 4 y 5 acciones por rol**, no todas iguales | El Presidente decide más que el Ministro de Minas. Lo que importa es que ninguno se quede corto |
+| **3** | **Entre 4 y 6 acciones por rol**, no todas iguales | El Presidente decide más que el Alcalde. Lo que importa es que ninguno se quede corto |
 | **4** | **No hay moderador como figura aparte** | Quien opera la consola puede ser un participante. El sistema conduce el turno |
 
 ### Sobre el input del GovLab
@@ -73,7 +74,7 @@ había dejado planteado.**
 1. [El principio: resolución, no secreto](#1-el-principio-resolución-no-secreto)
 2. [El mundo: qué se modela y hasta dónde](#2-el-mundo-qué-se-modela-y-hasta-dónde)
 3. [El tablero general](#3-el-tablero-general)
-4. [Las nueve vistas privadas](#4-las-nueve-vistas-privadas)
+4. [Las siete vistas privadas](#4-las-nueve-vistas-privadas)
 5. [Las acciones](#5-las-acciones)
 6. [Cómo se juega un turno](#6-cómo-se-juega-un-turno)
 7. [Los dilemas que esto garantiza](#7-los-dilemas-que-esto-garantiza)
@@ -98,15 +99,16 @@ LA VISTA DE MINAS dice:       Las Cumbres
                                 alimentos     2,5 días
 ```
 
-La mesa entera sabe que Las Cumbres está mal. **Solo Minas sabe cuánto tiempo
+La mesa entera sabe que Las Cumbres está mal. **Solo Agricultura sabe cuánto tiempo
 queda**, y hasta que lo diga la sala no puede ponerle fecha a nada. No es un
 secreto: es que nadie más tiene ese instrumento.
 
 Lo mismo con los demás. El tablero dice que el corredor al puerto está cerrado;
 Transporte sabe **cuál de sus puntos** lo bloquea. El tablero dice cuántos
 escuadrones quedan libres; la Policía sabe **cuán cansados están y cuánto tardan
-en llegar**. El tablero muestra las cifras que circulan; la Defensoría sabe
-**cuál de las denuncias alcanzó a verificar y cuál no**.
+en llegar**. El tablero muestra las cifras que circulan; Defensa sabe **cuál de
+las denuncias alcanzaron a verificar sus equipos y cuál no** — y ahí está la
+incomodidad del diseño, porque las denuncias son sobre su propia fuerza.
 
 > **La regla que ordena todo el reparto:**
 >
@@ -129,7 +131,7 @@ la tiene actualizada.**
 **Aunque un rol diga su número en voz alta, el número no se escribe en el tablero
 general.** La mesa lo oyó, alguien puede anotarlo, y ahí queda.
 
-> **Consultar a un rol una vez no lo agota.** Si Minas dijo en el turno 2 que
+> **Consultar a un rol una vez no lo agota.** Si Agricultura dijo en el turno 2 que
 > quedaban 1,8 días, en el turno 3 ese número cambió — y sigue siendo el único
 > que tiene el nuevo. La mesa tiene que volver a preguntarle. **Cada turno, cada
 > rol vuelve a ser necesario.**
@@ -156,19 +158,21 @@ legítimos y que apuntan a sitios distintos.
 | **Qué corredor se abre primero** | población afectada · días de autonomía · costo económico · calor del punto · qué ciudad reclama |
 | **Cómo se abre** | rápido y se cierra esa noche · lento y se sostiene · gratis y tarda cuatro turnos |
 | **Dónde va la escolta** | carga de alimentos · carrotanques de combustible · misión médica |
-| **Dónde van las tres duplas** de la Defensoría | verificar la denuncia grave · acompañar la operación · medir un punto que nadie ha mirado |
+| **Dónde van los tres equipos de terreno** de Defensa | verificar la denuncia grave · medir un punto que nadie ha mirado |
 | **Qué se declara infraestructura crítica** | evitar un daño irreversible · no inmovilizar la fuerza que abre caminos |
 | **Cuánta evidencia se exige** antes de tratar un punto como violencia organizada | actuar tarde · actuar sobre población civil |
 
-> **Una dupla** es una pareja de funcionarios de la Defensoría del Pueblo que va
-> al terreno a constatar qué está pasando en un punto, un hospital o un sitio de
-> detención. Van de a dos porque protege a los verificadores y porque dos
-> testigos producen una constancia mucho más difícil de desestimar. Es el término
-> que usa el Manual de Roles y es la práctica institucional real. **La Defensoría
-> tiene tres, y con ellas tiene que cubrir diez puntos.**
+> **Un equipo de terreno** es una pareja de funcionarios que va al sitio a
+> constatar qué está pasando en un punto. Van de a dos porque protege a quien
+> verifica y porque dos testigos producen una constancia mucho más difícil de
+> desestimar. **Defensa tiene tres, y con ellos tiene que cubrir diez puntos.**
+>
+> **Los desplegaba la Defensoría del Pueblo y ahora los despliega Defensa**, que
+> es también quien ordena las operaciones sobre las que se denuncia. La capacidad
+> de mirar no se perdió; se perdió que quien mira no responda ante quien operó.
 
 **Ninguna de estas seis decisiones tiene una respuesta que un participante pueda
-deducir solo.** Y todas salen mejor si los nueve hablaron antes — que es
+deducir solo.** Y todas salen mejor si los siete hablaron antes — que es
 exactamente lo que se quiere entrenar.
 
 ---
@@ -178,14 +182,14 @@ exactamente lo que se quiere entrenar.
 ### 2.1 Tres niveles, porque las decisiones se toman en tres niveles
 
 El ejercicio anterior —una inundación— tenía una sola unidad de territorio: la
-manzana. Aquí hacen falta tres, **porque los nueve roles no deciden sobre lo
+manzana. Aquí hacen falta tres, **porque los siete roles no deciden sobre lo
 mismo**.
 
 | Nivel | Qué es | Cuántos | Quién decide sobre él |
 | --- | --- | ---: | --- |
 | **Punto de cierre** | Un bloqueo concreto, con nombre y ubicación | **11** | La Policía (dónde va la fuerza) · Interior y el Alcalde (con quién se habla) |
 | **Corredor** | Una secuencia ordenada de puntos entre un origen y un destino | **4** | Transporte (cuál se prioriza) · Defensa (cuál se opera) |
-| **Región** | Un departamento o área metropolitana | **4** | Minas (dónde va el combustible) · Interior (dónde se concerta) |
+| **Región** | Un departamento o área metropolitana | **4** | Agricultura (el reloj) · Transporte (dónde va el combustible) · Interior (dónde se concerta) |
 
 Un mismo hecho se lee distinto en cada nivel, y eso es lo que produce
 conversación: **abrir un punto** es una operación; **abrir un corredor** es una
@@ -222,8 +226,8 @@ Presidente, ni en la de quien opera la consola. Se revela en el debriefing.
 > **Es lo que hace que la pregunta «¿esto es protesta o es otra cosa?» tenga
 > contenido.** Si el sistema repartiera la respuesta, no habría nada que decidir.
 > Lo único que existe son cuatro lecturas parciales que se equivocan en
-> direcciones distintas — y tres duplas para resolver la duda en tres puntos de
-> once.
+> direcciones distintas — y tres equipos de terreno para resolver la duda en tres
+> puntos de once, desplegados por una de esas partes.
 
 **La trampa de con quién se habla.** Lo que se logra abrir por concertación es
 proporcional a cuánto controla realmente el vocero con quien se pactó. Negociar
@@ -337,9 +341,10 @@ camino abierto → entra combustible → hay diésel para los carrotanques
 
 **Cortar la cadena en cualquier punto la rompe entera.** Por eso el oxígeno no
 modela salud: modela **el alcance de una decisión logística**. Y por eso ninguna
-cartera lo resuelve sola — hacen falta cuatro: Minas prioriza el suministro,
-Transporte le da clase humanitaria al corredor, la Policía escolta el
-carrotanque, la Defensoría lo exige como derecho.
+cartera lo resuelve sola — hacen falta cuatro: Transporte prioriza el suministro
+y le da clase humanitaria al corredor, la Policía escolta el carrotanque, el
+Interior lo exige como paso permanente, y Agricultura es quien sabe cuántos días
+quedan.
 
 **Y hay una regla de diseño que hay que hacer cumplir a la fuerza:** toda región
 debe tener **al menos una vía viable** de atender su oxígeno. Si una región no
@@ -471,14 +476,14 @@ CAPA 1 · LO QUE PASA          El estado real del país. Solo el sistema.
                               No se muestra jamás — se revela en el debriefing.
                                         ↓  filtrado por competencia y sesgo
 CAPA 2 · LO QUE EL ESTADO VE  El tablero general (grano grueso, para todos)
-                              + nueve vistas privadas (grano fino, cada uno la suya)
+                              + siete vistas privadas (grano fino, cada uno la suya)
                                         ↓  solo pasa lo que alguien AFIRMA en público
 CAPA 3 · LO QUE SE DICE       Prensa, redes, gremios, comunidad internacional.
                               Puede contradecir a las dos anteriores, y lo hace.
 ```
 
 **Compartir dentro de la capa 2 es hablar**, y no requiere ningún mecanismo: si
-Minas dice cuántos días quedan, los otros siete lo oyeron. El sistema no lleva la
+Agricultura dice cuántos días quedan, los otros seis lo oyeron. El sistema no lleva la
 contabilidad de quién le dijo qué a quién, **y el dato no se escribe en el
 tablero** (§1.3).
 
@@ -594,7 +599,7 @@ su peor punto»* deja de ser una regla que hay que explicar: se ve.
 
 **Hace visibles los huecos.** Un punto marcado `?` proyectado en la pared es una
 petición de decisión con destinatario: hay alguien en la mesa que puede
-resolverlo gastando una dupla, y todos lo están viendo.
+resolverlo gastando un equipo de terreno, y todos lo están viendo.
 
 **Da algo que señalar.** Nueve personas discutiendo sobre «el corredor al puerto»
 sin nada delante es una conversación abstracta. Con el mapa proyectado, la
@@ -609,12 +614,12 @@ la traducción visual del principio de §1.1.
 |---|---|
 | **Todos** (tablero) | Estado de cada punto, líneas y regiones con su semáforo |
 | **Transporte** | Cuánto cuesta cada corredor por día y cuánta población depende de él |
-| **Minas** | Los días exactos de cada región, y hacia dónde van mañana |
+| **Agricultura** | Los días exactos de cada región, y hacia dónde van mañana |
 | **Policía** | Dónde está cada escuadrón, cuán cansado, y a qué punto alcanza a llegar |
-| **Defensoría** | Cuándo se verificó cada punto por última vez y qué se constató |
+| **Interior** | Qué instalaciones están sin custodia y de qué depende cada una |
 | **Alcalde** | Su jurisdicción ampliada: con quién se puede hablar en cada punto |
 | **Interior** | Dónde hay vocería reconocida y cuánto controla — *con su sesgo* |
-| **Defensa** | Dónde señala financiación su inteligencia — *con su sesgo* |
+| **Defensa** | Dónde señala financiación su inteligencia — *con su sesgo* · y cuándo se verificó cada punto por última vez |
 
 #### Tres guardarraíles
 
@@ -657,7 +662,7 @@ esa ciudad un cuello de botella.
 
 **Las cuatro regiones.** Un semáforo de abastecimiento —verde, ámbar, rojo—
 **sin números**, y el contador de muertes evitables, que solo crece y no se
-compensa con nada. **Los días exactos los tiene Minas.** Antes de que los diga,
+compensa con nada. **Los días exactos los tiene Agricultura.** Antes de que los diga,
 la mesa sabe que hay un problema y no sabe cuánto tiempo tiene.
 
 **La fuerza disponible.** Cuántos escuadrones quedan sin comprometer, sobre el
@@ -682,7 +687,7 @@ una.
 
 ---
 
-## 4. Las nueve vistas privadas
+## 4. Las siete vistas privadas
 
 ### 4.1 El principio
 
@@ -710,11 +715,11 @@ Esta es la pieza que hace que compartir valga la pena, y la regla que la produce
 
 | El mismo hecho | Lo ve así… | Y así… | Quién lo resuelve |
 |---|---|---|---|
-| Cuánta estructura organizada hay en un punto | **Defensa**: más de la que hay | **Alcalde**: menos | la Defensoría, si gasta una dupla ahí |
-| Lo mismo, pero en un punto **rural** | **Defensa**: 0,33–0,42 | **Agricultura**: 0,00–0,14 | la Defensoría · y ahí lo real es 0,04–0,12 |
+| Cuánta estructura organizada hay en un punto | **Defensa**: más de la que hay | **Alcalde**: menos | Defensa, si gasta un equipo ahí — **y es juez y parte** |
+| Lo mismo, pero en un punto **rural** | **Defensa**: 0,33–0,42 | **Agricultura**: 0,00–0,14 | nadie de fuera · y ahí lo real es 0,04–0,12 |
 | Cuánto controla el vocero con quien se negocia | **Interior**: más | **Alcalde**: bien, pero solo en su ciudad | hablando entre ellos |
-| Cuántas víctimas hubo | **Policía**: menos | **Alcalde**: más | la Defensoría, si verificó |
-| Cuánto tiempo queda | **Minas**: exacto | *nadie más lo sabe* | Minas, al decirlo |
+| Cuántas víctimas hubo | **Policía**: menos | **Alcalde**: más | Defensa, si verificó — y solo cuenta con protocolo común |
+| Cuánto tiempo queda | **Agricultura**: exacto | *nadie más lo sabe* | Agricultura, al decirlo |
 
 **Ninguno miente.** Cada uno mira desde donde está parado, con la cobertura y los
 incentivos de su institución. Y esa es la lección: la guerra de cifras del caso
@@ -723,8 +728,9 @@ real no fue —solo— mala fe; fue cinco instituciones con cinco coberturas.
 > **La segunda fila es incómoda a propósito.** En el campo la estructura armada
 > real es baja y **el que se equivoca de largo es el frente de seguridad**. El
 > Ministro de Agricultura lo sabe porque trata con esas organizaciones, y no
-> tiene con qué demostrarlo: la única lectura sin sesgo es la de una dupla, y
-> hay tres por jornada. Su exposición no es equivocarse en general — es el punto
+> tiene con qué demostrarlo: **ya no existe una lectura sin sesgo.** La de
+> terreno, que antes arbitraba, la despliega hoy el mismo ministerio que la
+> contradice. Su exposición no es equivocarse en general — es el punto
 > concreto donde sí se equivoca, y sentarse ahí le reconoce interlocución a
 > quien sostiene el cierre con otra cosa.
 
@@ -738,13 +744,12 @@ real no fue —solo— mala fe; fue cinco instituciones con cinco coberturas.
 
 ### 5.1 Cuántas, y por qué no son iguales
 
-**Treinta y nueve acciones, entre cuatro y cinco por rol.** El Presidente tiene
+**Treinta y siete acciones, entre cuatro y seis por rol.** El Presidente tiene
 cinco porque decide más: es el único con instrumentos excepcionales y con
-potestad sobre la propia mesa. La Defensoría también, porque es el único rol que
-cruza dos ejes —el estándar de empleo de la fuerza y el protocolo de
-información— sin mandar sobre nadie. Y el Ministro de Agricultura, por la razón
-contraria: **ninguna de las suyas se ejecuta sin la concurrencia de otro**, así
-que necesita margen para elegir por dónde entrar.
+potestad sobre la propia mesa. El Interior y Transporte tienen seis porque
+heredaron las carteras que salieron del ejercicio. Y el Ministro de Agricultura,
+por la razón contraria: **ninguna de las suyas se ejecuta sin la concurrencia de
+otro**, así que necesita margen para elegir por dónde entrar.
 
 | Tipo | Qué cambia | Se ve en el tablero |
 |---|---|---|
@@ -755,14 +760,12 @@ que necesita margen para elegir por dónde entrar.
 | Rol | Acciones | Protocolo | Operación | Información |
 | --- | ---: | :---: | :---: | :---: |
 | Presidente | **5** | 2 | 2 | 1 |
-| Ministro del Interior | **4** | 1 | 2 | 1 |
+| Ministro del Interior | **6** | 1 | **4** | 1 |
 | Alcalde de la ciudad epicentro | **4** | 1 | 2 | 1 |
-| Ministro de Defensa | **4** | 1 | 2 | 1 |
-| Director de Policía | **4** | 1 | **3** | **—** |
-| Delegado de la Defensoría | **5** | 2 | 2 | 1 |
-| Ministro de Transporte | **4** | 1 | 2 | 1 |
-| Ministro de Minas | **4** | 1 | 2 | 1 |
-| Ministro de Agricultura | **5** | 1 | **3** | 1 |
+| Ministro de Defensa | **5** | 1 | **3** | 1 |
+| Director de Policía | **5** | 2 | **3** | **—** |
+| Ministro de Transporte | **6** | 2 | **3** | 1 |
+| Ministro de Agricultura | **6** | 1 | **3** | 2 |
 
 > **La Policía es la excepción, y está anotada como pendiente de decisión.** Es
 > el único rol sin acción informativa. O se corrige la regla —«cada rol tiene al
@@ -773,7 +776,7 @@ que necesita margen para elegir por dónde entrar.
 > **Las treinta y nueve, en lenguaje corriente y sin una sola cifra, están en
 > [`GUIA_DE_ACCIONES.md`](GUIA_DE_ACCIONES.md)** — cómo se llama cada una, qué
 > hace, qué hace falta antes y la frase que la pide. Es la misma guía que cada
-> titular tiene en su tablero, con las nueve carteras a la vez, y se genera desde
+> titular tiene en su tablero, con las siete carteras a la vez, y se genera desde
 > el código.
 >
 > **Las mismas treinta y nueve con los números —qué escribe cada una en el
@@ -791,9 +794,10 @@ seis, y cada omisión tiene su razón:
 | Defensa A5 · proyección aérea al epicentro | Es una modalidad del redespliegue, no una decisión distinta. Entra como opción dentro de él |
 | Interior A5 · convocar alcaldes no representados | Se solapa con la convocatoria del Presidente a los alcaldes de ciudades críticas |
 | Alcalde A5 · exigir prioridad con atribución escrita | Es lo que hace hablando en la deliberación. No necesita ser una acción |
-| Defensoría A5 · pronunciamiento público | **Sí entra**, reformulada: es su acción de manifestar que su permanencia está en cuestión |
+| Defensoría A5 · pronunciamiento público | Entró y **volvió a salir** con el rol. Sin un tercero que no responda ante el Gobierno, poner en duda la propia permanencia no lo dice nadie |
 | Transporte A4 · instancia técnica única | Se solapa con su criterio de priorización |
 | Minas A5 · acuerdo de continuidad con las empresas | No tiene efecto dentro de cinco turnos |
+| Defensoría A1 · estándar de empleo de la fuerza | **Sí entra**, pero como acción de **Defensa**: sin un tercero que lo exija, el estándar lo adopta el sector que tiene que cumplirlo |
 
 ### 5.3 Quién habilita a quién
 
@@ -804,8 +808,8 @@ Cinco dependencias duras. Cuando falta el requisito, el sistema no rechaza:
 Transporte quiere mover carga          → necesita ESCOLTA de la Policía
 Interior quiere pactar en el epicentro → necesita al ALCALDE
 Defensa quiere usar militares          → necesita la FIRMA del Presidente
-Minas quiere proteger instalaciones    → CONSUME los escuadrones del desbloqueo
-La Defensoría acompaña una operación   → esa dupla NO verifica nada más ese turno
+Interior quiere proteger instalaciones → CONSUME los escuadrones del desbloqueo
+Defensa quiere verificar un punto      → ese equipo NO mira ninguna denuncia
 Agricultura quiere despachar comida    → necesita una ESCOLTA ya puesta, y que
                                          el corredor lleve CLASE ALIMENTARIA
 ```
@@ -819,7 +823,7 @@ Y cuatro sumas cero, cada una enfrentando dos criterios legítimos:
 
 | Recurso escaso | Un criterio | El otro |
 |---|---|---|
-| **Escuadrones** | Minas: evitar el daño irreversible | Defensa: abrir caminos |
+| **Escuadrones** | Interior: evitar el daño irreversible | Defensa: abrir caminos |
 | **Corredores** | Transporte: el criterio técnico | Alcalde: la urgencia de su ciudad |
 | **Duplas** | verificar lo que pasó | acompañar lo que va a pasar |
 | **Combustible** | misión médica y fuerza pública | alimentos y consumo general |
@@ -836,7 +840,7 @@ personas que pierden algo — y eso es lo que se está entrenando.
 ### 6.1 Quién opera la consola
 
 **No hay moderador como figura aparte del ejercicio.** Hay una **consola** —una
-superficie más, junto al tablero y las nueve vistas— y alguien la opera.
+superficie más, junto al tablero y las siete vistas— y alguien la opera.
 
 **Quién la opera queda abierto**, y las dos formas funcionan:
 
@@ -853,7 +857,7 @@ demás no sepan**.
 Tres consecuencias de diseño, y las tres mejoran el ejercicio:
 
 **La información reservada la reparte el sistema, no una persona.** Es
-precisamente lo que hacen las nueve vistas privadas. Sin ellas haría falta alguien
+precisamente lo que hacen las siete vistas privadas. Sin ellas haría falta alguien
 repartiendo sobres — y ese alguien sabría lo que hay en todos.
 
 **El ritmo lo lleva el sistema.** El reloj de cada tramo es visible para toda la
@@ -943,15 +947,20 @@ tomó.
 nombre de ciudad.** El criterio técnico de Transporte y la urgencia del Alcalde
 no pueden satisfacerse a la vez.
 
-**D3 · La verdad es un recurso escaso: tres duplas para diez puntos.** Verificar
-aquí es no verificar allá, y el error tiene dos direcciones, ambas caras.
+**D3 · La verdad es un recurso escaso: tres equipos para diez puntos, y los
+manda una de las partes.** Mirar aquí es no mirar allá, el error tiene dos
+direcciones y las dos son caras — y desde que los despliega el mismo ministerio
+que opera, hay una tercera pregunta encima: **cuánto vale lo que dice de sí
+mismo quien está señalado.** La respuesta del diseño no es prohibirlo: es que
+solo cuente si hay un protocolo común pactado antes.
 
 **D4 · El estándar de derechos es la única palanca que baja el riesgo sin
-consumir capacidad.** Es el dilema *positivo*: el rol sin voto y sin fuerza es el
-que más reduce la probabilidad del peor resultado.
+consumir capacidad.** Es el dilema *positivo*, y cambió de manos: lo pedía un
+tercero y ahora lo adopta el sector que tiene que cumplirlo. **O se autolimita,
+o no lo hace nadie.**
 
-**D5 · Entregar el reloj cambia el reloj.** El calendario de Minas es a la vez lo
-que obliga a la mesa a decidir y lo que acelera aquello que mide.
+**D5 · Entregar el reloj cambia el reloj.** El calendario de Agricultura es a la
+vez lo que obliga a la mesa a decidir y lo que acelera aquello que mide.
 
 **D6 · Concentrar hace responsable de cada error; delegar deja sin control sobre
 la coherencia.** Sin decisión escrita con responsable nominado, el costo de cada
@@ -963,9 +972,9 @@ superior que las ordene: hay una mesa que tiene que elegir.
 
 **D8 · Dos personas honestas, el mismo hecho, dos números.** Desde dentro de
 ninguna de las dos vistas se puede saber cuál es correcto. La salida es hablar, y
-si no basta, gastar una dupla que entonces no hace otra cosa.
+si no basta, gastar un equipo que entonces no hace otra cosa.
 
-> **La forma general del caso:** las nueve posiciones son defendibles y ninguna es
+> **La forma general del caso:** las siete posiciones son defendibles y ninguna es
 > suficiente. **Si en el debriefing una opción resulta haber sido obviamente
 > correcta desde el turno 1, el ejercicio está mal calibrado.**
 
@@ -980,23 +989,30 @@ si no basta, gastar una dupla que entonces no hace otra cosa.
 | **V1** | ¿La vista privada es un dispositivo por persona o papel impreso? | **Un dispositivo por rol**, desde su propio computador. Sujeto a las cinco reglas de §6.3 |
 | **V3** | ¿Se puede afirmar un dato distinto del que se ve? | **No.** Con agendas reservadas ya hay tensión suficiente, y permitir el dato falso convierte esto en un juego de engaño en vez de uno de criterios en conflicto |
 | **V4** | ¿El detalle de las vistas puede pasar al tablero general? | **No.** Las cifras se comparten hablando y los jugadores pueden anotarlas donde quieran, pero **el dato vive en la vista de su rol y no migra** |
-| **V5** | ¿Cuántas acciones? | **39**, entre cuatro y cinco por rol |
-| **V6** | ¿Las duplas de verificación y el acompañamiento salen del mismo presupuesto? | **Sí, un solo bolsillo de tres.** Cada dupla hace una sola cosa por turno. Es lo que convierte la asignación de la Defensoría en una decisión real |
+| **V5** | ¿Cuántas acciones? | **37**, entre cuatro y seis por rol |
+| **V6** | ¿Verificar un punto y verificar una denuncia salen del mismo presupuesto? | **Sí, un solo bolsillo de tres.** Cada equipo hace una sola cosa por turno. Es lo que convierte el despliegue en una decisión real. Eran tres usos: el tercero, acompañar una operación, se fue con el tercero que lo hacía |
 | **A1** | ¿Nombres reales o ficticios? | **Ficticios.** El país entero: Valcanto, sus dos mares, sus cuatro regiones y sus diez puntos. Protege de convertir el ejercicio en un juicio sobre hechos con responsabilidad judicial viva, y permite dibujar un mapa de verdad (§3.2) |
 | **A2** | ¿Se puntúa? ¿Las agendas suman? | **No hay marcador.** Las agendas reservadas se revelan al final, no se puntúan |
-| **A3** | ¿La Defensoría puede retirarse? | **No se retira** — pero puede **manifestar públicamente que su permanencia está en cuestión**, y eso cuesta legitimidad y respaldo internacional |
+| **A3** | ¿La Defensoría puede retirarse? | **Se retiró del ejercicio entero**, y con ella el Ministerio de Minas y Energía. Siete de sus nueve acciones encontraron heredero; «exigirle al Gobierno» y «poner en duda mi permanencia» no, porque son actos de quien no responde ante él |
 | **A5** | ¿Los hechos que abren el turno 1 son fijos o se sortean? | **Fijos, siempre.** Permite comparar salas entre sí |
 | **A6** | ¿Se acepta el azar? | **Sí, con semilla fija.** La semilla no es un elemento visible de la interfaz |
 
-**A3 merece una nota, porque tiene consecuencia de diseño.** La acción A1 de la
-ficha de la Defensoría es literalmente *«condicionar su permanencia»*, y una
-amenaza que el diseño nunca deja consumar no sería una palanca. La sustitución
-—**decir en voz alta que se lo está pensando**— es mejor que el retiro por tres
-razones: **se puede usar varias veces** a lo largo del ejercicio en vez de una
-sola; **es graduada**, así que la mesa puede responder y él puede escalar; y
-**nunca saca sus mitigadores del juego**, que era el problema de dejarlo marchar
-de verdad. Además es lo que hacen los defensores del pueblo reales: no se van,
-emiten pronunciamientos.
+**A3 merece una nota, porque tiene consecuencia de diseño, y hoy la tiene al
+revés.** La versión anterior sostenía que el Delegado nunca abandona la mesa y
+que su palanca era decir en voz alta que se lo estaba pensando. Ese rol ya no
+está sentado, y lo que se perdió con él no es una acción: es **el único par de
+ojos que no respondía ante nadie de la mesa.** Lo que ocupa su sitio no es otro
+rol, es una regla —el protocolo común de verificación, que adopta la Policía— y
+la diferencia se nota: una regla hay que pactarla antes, y puede no pactarse.
+
+> Se conserva el razonamiento original porque explica qué se perdió. La
+> sustitución que describía —**decir en voz alta que se lo está pensando**— era
+> mejor que el retiro por tres razones: **se puede usar varias veces** a lo largo
+> del ejercicio en vez de una
+> sola; **es graduada**, así que la mesa puede responder y él puede escalar; y
+> **nunca saca sus mitigadores del juego**, que era el problema de dejarlo
+> marchar de verdad. Además es lo que hacen los defensores del pueblo reales: no
+> se van, emiten pronunciamientos.
 
 ### 8.2 Lo que sigue abierto
 
@@ -1080,15 +1096,19 @@ capacidad militar en orden público interno. **Requiere la firma del Presidente*
 y su costo depende enteramente de si se firma con límites —territorio, plazo,
 reglas escritas, criterio de terminación— o sin ellos.
 
-**Dupla.** Una pareja de funcionarios de la Defensoría del Pueblo que va al
-terreno a constatar qué está pasando. Van de a dos porque protege a los
-verificadores y porque dos testigos producen una constancia difícil de
-desestimar. **Hay tres**, y con ellas hay que cubrir diez puntos.
+**Equipo de terreno.** Una pareja de funcionarios que va al sitio a constatar
+qué está pasando. Van de a dos porque protege a quien verifica y porque dos
+testigos producen una constancia difícil de desestimar. **Hay tres**, y con ellos
+hay que cubrir diez puntos. Los desplegaba la Defensoría del Pueblo; ahora los
+despliega el Ministerio de Defensa, que es también quien ordena las operaciones
+sobre las que se denuncia.
 
 **Mitigador.** Una decisión que baja la probabilidad de que una operación termine
 mal **sin consumir capacidad**: reglas de empleo escritas, identificación de los
-agentes, registro audiovisual, una dupla presente, concertación con la alcaldía,
-unidades descansadas. Los seis juntos dividen el riesgo por casi cinco.
+agentes, registro audiovisual, concertación con la alcaldía, unidades
+descansadas. Los cinco juntos dividen el riesgo por tres y medio. **Eran seis**:
+el que falta era el acompañamiento por una dupla de la Defensoría, y descontaba
+porque miraba alguien de fuera.
 
 **Banda de riesgo.** Cómo se le muestra a la sala la probabilidad de que una
 operación termine mal, **antes de ordenarla**: baja, media, alta o crítica. Sirve

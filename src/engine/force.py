@@ -6,13 +6,20 @@ instrumento de reducción de riesgo en vez de un discurso: los seis mitigadores
 son decisiones que alguien en la sala tiene que tomar, y multiplican la
 probabilidad de que una operación termine mal.
 
-    El Delegado de la Defensoría no está en la sala para moralizar:
+    El estándar de derechos no está en el motor para moralizar:
     está para bajar una probabilidad.
+
+QUEDAN CINCO Y ERAN SEIS. El sexto era «va acompañada por una dupla de la
+Defensoría del Pueblo», y mitigaba porque miraba alguien de fuera. Desde que los
+equipos de terreno son del mismo ministerio que ordena la operación, que sus
+propios funcionarios la acompañen no cambia la probabilidad de que una imagen
+circule: cambia quién la graba. **El acompañamiento no se prohíbe, deja de
+descontar** — y esa es la parte del estándar que se fue con el tercero.
 
 Y desde la v2, el módulo hace algo más: **le da consecuencia a la mezcla real de
 un punto**. Operar sobre población mayoritariamente civil cuesta más que operar
 donde hay estructura organizada — aunque la sala no pueda saber cuál es cuál sin
-gastar una dupla. Es la mitad del error doble.
+gastar un equipo. Es la mitad del error doble.
 """
 
 from __future__ import annotations
@@ -58,7 +65,6 @@ def evaluar_riesgo(
     nodo: Nodo,
     tipo_unidad: TipoUnidad,
     *,
-    dupla_presente: bool = False,
     concertado_con_alcaldia: bool = False,
 ) -> EvaluacionRiesgo:
     """
@@ -94,7 +100,6 @@ def evaluar_riesgo(
         "reglas_escritas": b.reglas_escritas,
         "identificacion_agentes": b.identificacion_agentes,
         "registro_av": b.registro_av,
-        "dupla_presente": dupla_presente and b.defensoria_presente,
         "concertado_con_alcaldia": concertado_con_alcaldia,
         "unidades_descansadas": fatiga < P.UMBRAL_FATIGA_DESCANSADA,
     }
@@ -129,8 +134,8 @@ def multiplicador_costo_civil(nodo: Nodo) -> float:
     protesta legítima cuesta casi el doble que uno donde la mitad es otra cosa:
     es fuerza sobre población civil, y se paga como tal.
 
-    La sala no puede saber esto antes de operar. Puede *averiguarlo* gastando una
-    dupla — y esa es exactamente la decisión que el ejercicio quiere producir.
+    La sala no puede saber esto antes de operar. Puede *averiguarlo* gastando un
+    equipo — y esa es exactamente la decisión que el ejercicio quiere producir.
     """
     legit = nodo.composicion_real.normalizada().protesta_legitima
     exceso = max(0.0, legit - P.UMBRAL_PROTESTA_CIVIL)
@@ -157,7 +162,6 @@ def ejecutar_operacion(
     unidades: list[Unidad],
     rng: random.Random,
     *,
-    dupla_presente: bool = False,
     concertado_con_alcaldia: bool = False,
     responsable_nominado: str | None = None,
 ) -> ResultadoOperacion:
@@ -170,7 +174,6 @@ def ejecutar_operacion(
     """
     ev = evaluar_riesgo(
         estado, nodo, tipo_unidad,
-        dupla_presente=dupla_presente,
         concertado_con_alcaldia=concertado_con_alcaldia,
     )
 
@@ -267,7 +270,7 @@ def escoltar(
     Acompañar una caravana de carga, un carrotanque o una misión médica.
 
     **Es la condición material de todo el frente logístico**: sin escolta no hay
-    caravana ni carrotanque, por más que Transporte priorice y Minas asigne. La
+    caravana ni carrotanque, por más que Transporte priorice y asigne. La
     Matriz lo dice con esas palabras, y hasta ahora no existía en el motor.
 
     Una escolta lograda repone autonomía en las regiones que el corredor sirve.
@@ -346,7 +349,7 @@ def capacidad_inmovilizada_por_custodia(estado: Estado) -> int:
     """
     Cada instalación declarada crítica inmoviliza fuerza.
 
-    Es la aritmética que enfrenta a Minas con Defensa: la protección permanente
+    Es la aritmética que enfrenta al Interior con Defensa: la protección permanente
     resta exactamente de la capacidad de desbloqueo.
     """
     return len(estado.instalaciones_criticas) * P.CUSTODIA_POLICIAS_POR_INSTALACION

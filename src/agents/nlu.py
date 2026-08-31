@@ -4,7 +4,7 @@ nlu.py — CAPA 4 · el canal de órdenes en lenguaje natural.
     El LLM traduce. El motor decide, valida, ejecuta y reporta.
 
 Alguien escribe en la consola *«concentrar el ESMAD en el anillo hospitalario,
-con dupla de la Defensoría, responsable el Ministro de Defensa»* y el sistema
+responsable el Ministro de Defensa»* y el sistema
 devuelve un **plan tipado** —acciones, requisitos que faltan, banda de riesgo—
 para que **la sala lo lea junta antes de ejecutarlo**.
 
@@ -58,7 +58,6 @@ TOPE_ACCIONES = 12
 # ruido, y lo que hace falta señalar —los mitigadores que faltan— ya lo dice la
 # banda de riesgo con su lista.
 ARGUMENTOS_EN_CLARO: dict = {
-    "dupla_presente": lambda v: "con dupla de la Defensoría" if v else "",
     "concertado_con_alcaldia": lambda v: "concertado con la Alcaldía" if v else "",
     "de_noche": lambda v: "de noche" if v else "",
     "responsable_nominado": lambda v: f"responsable: {v}" if v else "",
@@ -335,7 +334,7 @@ multiplica por cinco el riesgo y requiere una firma que puede no existir, así
 que no se infiere: se dice o no se dice.
 
 LO QUE CONCEDE ALGO NO SE INFIERE NUNCA. `con_alcaldia`,
-`concertado_con_alcaldia`, `dupla_presente` y `delimitada` no describen la orden:
+`concertado_con_alcaldia` y `delimitada` no describen la orden:
 conceden un requisito o rebajan un riesgo. Que la Alcaldía esté en la mesa es lo
 que hace viable concertar en el epicentro; que la firma vaya delimitada cuesta la
 cuarta parte en respaldo internacional. Ponlos SOLO si el texto los dice con sus
@@ -716,7 +715,6 @@ def _a_accion_plan(estado: Estado, llamada: dict, texto: str = "") -> AccionPlan
         ev = force.evaluar_riesgo(
             estado, estado.nodos[nodo_id],
             args.get("tipo_unidad", "esmad"),
-            dupla_presente=bool(args.get("dupla_presente")),
             concertado_con_alcaldia=bool(args.get("concertado_con_alcaldia")),
         )
         ap.riesgo = {
@@ -775,7 +773,7 @@ def hoja_de_datos(estado: Estado, tema: str) -> dict:
     if tema == "abastecimiento":
         return {
             "ambito": "las cuatro regiones",
-            "aviso": "los días exactos son dato del Ministro de Minas",
+            "aviso": "los días exactos son dato del Ministro de Agricultura",
             "regiones": [
                 {"nombre": r.nombre, "semaforo": r.semaforo,
                  "muertes_evitables": r.muertes_evitables}

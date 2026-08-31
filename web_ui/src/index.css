@@ -925,6 +925,11 @@ tr.aviso > td:first-child { padding-left: 0.65rem; }
    frente —estrategia, seguridad, logística—. La rejilla dibuja la arquitectura
    del ejercicio sin necesidad de rotularla. Con cuatro columnas salían 4+4+1 y
    la última fila era un huérfano. */
+/* SIETE Y NO NUEVE. Con nueve eran tres filas de tres y la rejilla era
+   cuadrada; con siete la última fila queda coja se pongan como se pongan. Se
+   deja en tres columnas —3 · 3 · 1— porque agrupa por frente igual que la
+   lista de `views.ROLES`, y una fila corta al final se lee como lo que es:
+   dos carteras que ya no están. */
 .rejilla-roles {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

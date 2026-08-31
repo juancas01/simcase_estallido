@@ -40,7 +40,7 @@ from src.engine.actions import (                            # noqa: E402
     CondicionarEmpleoFuerza, InstalarMesaConVoceros, EsquemaHumanitarioMunicipal,
     FijarReglasEmpleoSector, OperarNodo, RedesplegarMilitares,
     ClasificarParteOperacional, DisponerESMAD, Escoltar, SolicitarRelevo,
-    ExigirEstandaresEmpleo, AdoptarProtocoloVerificacion, AsignarDuplas,
+    FijarReglasEmpleoSector, AdoptarProtocoloVerificacion, DesplegarEquiposTerreno,
     RequerirCorredoresHumanitarios,
     AdoptarCriterioPriorizacion, OrganizarCaravana, NegociarConGremios,
     FijarPrioridadCombustible, DeclararInfraestructuraCritica,
@@ -100,10 +100,10 @@ def plan_constituida(motor, turno: int) -> None:
     e = motor.estado
     if turno == 1:
         motor.encolar(FijarRegistroEscrito())
-        motor.encolar(ExigirEstandaresEmpleo())
+        motor.encolar(FijarReglasEmpleoSector())
         motor.encolar(AdoptarCriterioPriorizacion())
         motor.encolar(ExigirProtocoloVoceria())
-        motor.encolar(AsignarDuplas(nodos=["N003", "N013", "N022"]))
+        motor.encolar(DesplegarEquiposTerreno(nodos=["N003", "N013", "N022"]))
         return
     if turno == 2:
         motor.encolar(ClasificarParteOperacional())
@@ -125,7 +125,7 @@ def plan_constituida(motor, turno: int) -> None:
     if duros:
         motor.encolar(OperarNodo(
             nodo_id=duros[0].nodo_id, tipo_unidad="esmad",
-            dupla_presente=True, concertado_con_alcaldia=True,
+            concertado_con_alcaldia=True,
             responsable_nominado="Ministro de Defensa",
         ))
 
@@ -140,7 +140,7 @@ def plan_humanitaria(motor, turno: int) -> None:
     """
     e = motor.estado
     if turno == 1:
-        motor.encolar(ExigirEstandaresEmpleo())
+        motor.encolar(FijarReglasEmpleoSector())
         motor.encolar(RequerirCorredoresHumanitarios())
         motor.encolar(FijarPrioridadCombustible())
 
@@ -404,11 +404,9 @@ ABREVIA = {
     "DisponerESMAD": "concentra ESMAD",
     "Escoltar": "ESCOLTA",
     "SolicitarRelevo": "relevo",
-    "ExigirEstandaresEmpleo": "estándares de empleo",
     "AdoptarProtocoloVerificacion": "protocolo de verificación",
-    "AsignarDuplas": "duplas",
+    "DesplegarEquiposTerreno": "equipos al terreno",
     "RequerirCorredoresHumanitarios": "requiere corredor humanitario",
-    "ManifestarDudaPermanencia": "duda su permanencia",
     "AdoptarCriterioPriorizacion": "criterio de priorización",
     "OrganizarCaravana": "caravana",
     "NegociarConGremios": "negocia gremios",

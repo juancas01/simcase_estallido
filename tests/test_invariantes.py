@@ -23,9 +23,9 @@ from src.engine.simulation import MotorCrisis
 from src.engine.state import Composicion
 from src.engine.actions import (
     catalogo_por_rol,
-    OperarNodo, AbrirMesaLocal, AsignarDuplas, ExigirEstandaresEmpleo,
+    OperarNodo, AbrirMesaLocal, DesplegarEquiposTerreno, FijarReglasEmpleoSector,
     ExigirProtocoloVoceria, AdoptarCriterioPriorizacion, Escoltar,
-    FijarPrioridadCombustible, ConvocarMesaNacional, ManifestarDudaPermanencia,
+    FijarPrioridadCombustible, ConvocarMesaNacional,
     InstalarMesaConVoceros, DisponerESMAD, OfrecerContraprestacion,
     DesplazarseAlEpicentro, PresentarEvidenciaInteligencia,
 )
@@ -52,7 +52,7 @@ def _rng():
 def test_la_vista_publica_jamas_expone_la_mezcla_real(estado):
     """
     Si la verdad se proyecta en la pared, las cuatro fuentes con sesgo sobran, el
-    error doble desaparece y la Defensoría se queda sin oficio.
+    error doble desaparece y los equipos de terreno se quedan sin oficio.
     """
     texto = repr(estado.vista_publica())
     assert "composicion_real" not in texto
@@ -71,7 +71,7 @@ def test_las_nueve_vistas_privadas_tampoco_la_exponen(estado):
 def test_ninguna_vista_revela_la_veracidad_de_una_denuncia(estado):
     """
     Nada distingue una denuncia cierta de una falsa. Si el campo `veraz` se
-    filtrara, la decisión de gastar una dupla dejaría de existir.
+    filtrara, la decisión de gastar un equipo dejaría de existir.
     """
     assert "veraz" not in repr(estado.vista_publica())
     for rol in views.ROLES:
@@ -107,7 +107,7 @@ def test_operar_sobre_protesta_legitima_cuesta_mas(estado):
 def test_concertar_donde_hay_estructura_produce_acuerdos_que_se_rompen(estado):
     """
     SEGUNDA vía. Quien firmó no manda sobre quien sostiene el cierre — y la sala
-    no puede saberlo sin haber gastado una dupla ahí.
+    no puede saberlo sin haber gastado un equipo ahí.
     """
     rng = random.Random(7)
     fragiles = 0
@@ -205,7 +205,7 @@ def test_un_corredor_abierto_repone_mas_de_lo_que_la_region_gasta():
 def test_la_prioridad_de_combustible_es_un_criterio_permanente(estado):
     """
     Fijarla una vez debe aplicarse en CADA paso. Si fuera un empujón de un solo
-    turno, Minas no tendría ninguna palanca continua sobre el reloj.
+    turno, Transporte no tendría ninguna palanca continua sobre el reloj.
     """
     m = MotorCrisis(estado, semilla=P.SEMILLA_POR_DEFECTO)
     m.encolar(FijarPrioridadCombustible())
@@ -246,7 +246,7 @@ def test_los_mitigadores_reducen_el_riesgo(estado):
     for b in ("reglas_escritas", "identificacion_agentes", "registro_av"):
         estado.banderas.activar(b, 1)
     con = force.evaluar_riesgo(
-        estado, nodo, "esmad", dupla_presente=True, concertado_con_alcaldia=True
+        estado, nodo, "esmad", concertado_con_alcaldia=True
     ).p_incidente
     assert con < sin * 0.6
 
@@ -263,7 +263,7 @@ def test_el_estandar_no_rescata_a_quien_opera_sin_cuidado(estado):
     for b in ("reglas_escritas", "identificacion_agentes", "registro_av"):
         estado.banderas.activar(b, 1)
     ev = force.evaluar_riesgo(
-        estado, nodo, "militar", dupla_presente=True, concertado_con_alcaldia=True
+        estado, nodo, "militar", concertado_con_alcaldia=True
     )
     assert ev.p_incidente > 0.55
 
@@ -276,43 +276,55 @@ def test_la_banda_de_riesgo_se_puede_leer_antes_de_decidir(estado):
 
 
 # ===========================================================================
-# LAS DUPLAS SALEN DE UN SOLO BOLSILLO
+# LOS EQUIPOS DE TERRENO SALEN DE UN SOLO BOLSILLO
 # ===========================================================================
 
-def test_las_duplas_son_tres_y_se_reponen_cada_turno(motor):
+def test_los_equipos_son_tres_y_se_reponen_cada_turno(motor):
     e = motor.estado
     motor.paso(franja="dia")
-    assert e.duplas_disponibles == P.DUPLAS_TOTALES
-    information.consumir_dupla(e, "prueba")
-    assert e.duplas_disponibles == P.DUPLAS_TOTALES - 1
+    assert e.equipos_disponibles == P.EQUIPOS_TERRENO_TOTALES
+    information.consumir_equipo(e, "prueba")
+    assert e.equipos_disponibles == P.EQUIPOS_TERRENO_TOTALES - 1
     motor.paso(franja="noche")
-    assert e.duplas_disponibles == P.DUPLAS_TOTALES - 1, "de noche no se reponen"
+    assert e.equipos_disponibles == P.EQUIPOS_TERRENO_TOTALES - 1, (
+        "de noche no se reponen")
     motor.paso(franja="dia")
-    assert e.duplas_disponibles == P.DUPLAS_TOTALES
+    assert e.equipos_disponibles == P.EQUIPOS_TERRENO_TOTALES
 
 
-def test_acompanar_una_operacion_gasta_una_dupla(motor):
+def test_acompanar_una_operacion_ya_no_gasta_ni_descuenta(motor):
     """
-    LA FUGA QUE ANTES EXISTÍA. Acompañar era una casilla gratis: la sala podía
-    marcarla en todas las operaciones mientras la Defensoría verificaba aparte.
+    **El sexto mitigador se fue con el tercero que lo justificaba.**
+
+    Acompañar descontaba riesgo porque miraba una dupla de la Defensoría del
+    Pueblo, que no respondía ante quien operaba. Con los equipos en manos del
+    mismo ministerio que ordena la operación, que sus propios funcionarios la
+    acompañen no cambia la probabilidad de que una imagen circule — así que ni
+    gasta bolsillo ni lo ahorra, y el campo no existe.
     """
+    import dataclasses
+    campos = {f.name for f in dataclasses.fields(OperarNodo)}
+    assert "dupla_presente" not in campos
+    assert "dupla_presente" not in P.MITIGADORES
+    assert len(P.MITIGADORES) == 5
+
     e = motor.estado
-    antes = e.duplas_disponibles
-    motor.encolar(OperarNodo(nodo_id="N010", tipo_unidad="esmad", dupla_presente=True))
+    antes = e.equipos_disponibles
+    motor.encolar(OperarNodo(nodo_id="N010", tipo_unidad="esmad"))
     motor.paso(franja="dia")
-    assert e.duplas_disponibles < antes
+    assert e.equipos_disponibles == antes
 
 
-def test_verificar_aqui_es_no_verificar_alla(motor):
-    """Tres duplas, diez puntos. Lo que no alcanza se informa."""
+def test_mirar_aqui_es_no_mirar_alla(motor):
+    """Tres equipos, cinco puntos. Lo que no alcanza se informa."""
     e = motor.estado
-    motor.encolar(AsignarDuplas(
+    motor.encolar(DesplegarEquiposTerreno(
         nodos=["N001", "N010", "N003", "N004", "N005"]
     ))
     r = motor.paso(franja="dia")
     _, res = r.resultados[0]
     assert res.ok
-    assert len(res.datos["verificados"]) == P.DUPLAS_TOTALES
+    assert len(res.datos["verificados"]) == P.EQUIPOS_TERRENO_TOTALES
     assert len(res.datos["no_alcanzados"]) == 2
 
 
@@ -496,7 +508,7 @@ def test_una_accion_devuelve_quien_puede_habilitarla(estado):
 def test_una_accion_invalida_no_tumba_el_resto(motor):
     """PROHIBIDO `break` al primer problema."""
     motor.cola_inmediata.append(OperarNodo(nodo_id="NO-EXISTE"))
-    motor.cola_inmediata.append(ExigirEstandaresEmpleo())
+    motor.cola_inmediata.append(FijarReglasEmpleoSector())
     r = motor.paso(franja="dia")
     assert len(r.resultados) == 2
     assert not r.resultados[0][1].ok
@@ -520,7 +532,7 @@ def test_no_decidir_cuesta(motor):
 
 def test_las_condicionales_caducan(motor):
     motor.encolar_condicional(
-        ExigirEstandaresEmpleo(), lambda e: False, "nunca se cumple"
+        FijarReglasEmpleoSector(), lambda e: False, "nunca se cumple"
     )
     for _ in range(P.CADUCIDAD_ORDEN_CONDICIONAL + 2):
         motor.paso()
@@ -531,7 +543,7 @@ def test_una_condicion_que_revienta_no_tumba_el_turno(motor):
     def explota(estado):
         raise RuntimeError("condición rota")
 
-    motor.encolar_condicional(ExigirEstandaresEmpleo(), explota, "revienta")
+    motor.encolar_condicional(FijarReglasEmpleoSector(), explota, "revienta")
     r = motor.paso(franja="dia")
     assert any(e.get("tipo") == "condicional_descartada" for e in r.eventos)
 
@@ -551,11 +563,11 @@ def test_la_misma_semilla_da_la_misma_corrida():
 
 
 # ===========================================================================
-# LAS NUEVE VISTAS
+# LAS SIETE VISTAS
 # ===========================================================================
 
-def test_los_nueve_roles_tienen_vista(estado):
-    assert len(views.ROLES) == 9
+def test_los_siete_roles_tienen_vista(estado):
+    assert len(views.ROLES) == 7
     for rol in views.ROLES:
         v = views.vista(estado, rol)
         assert v["detalle"], rol
@@ -564,12 +576,19 @@ def test_los_nueve_roles_tienen_vista(estado):
 
 def test_cada_vista_cabe_en_una_pantalla(estado):
     """
-    Dos bloques y nada más. Si hay que hacer scroll, está mal diseñada — y la
-    gente mirará la pantalla en vez de a las otras siete personas.
+    Si hay que hacer scroll, está mal diseñada — y la gente mirará la pantalla
+    en vez de a las otras seis personas.
+
+    EL TOPE SUBIÓ DE SIETE A ONCE, y no es una rebaja de la regla: es la cuenta
+    de que dos carteras se repartieron entre cinco. El Interior heredó el
+    registro de infraestructura y Defensa los equipos de terreno, así que sus
+    pantallas llevan hoy lo que antes se repartía en cuatro. Si esto sigue
+    subiendo, lo que hay que revisar no es el número: es si el reparto de
+    `docs/historial/resueltos.md` dejó a alguien con dos oficios.
     """
     for rol in views.ROLES:
         v = views.vista(estado, rol)
-        assert len(v["detalle"]) <= 7, f"{rol} tiene {len(v['detalle'])} bloques"
+        assert len(v["detalle"]) <= 11, f"{rol} tiene {len(v['detalle'])} bloques"
         assert len(v["alerta"]) < 260, rol
 
 
@@ -616,29 +635,29 @@ def test_la_lectura_es_un_hecho_del_turno_en_que_se_hizo(estado):
     vuelve a mirar.
     """
     n = next(iter(estado.nodos.values()))
-    a = information.estimar_nodo(n, "dupla_defensoria", 2, estado.semilla)
-    b = information.estimar_nodo(n, "dupla_defensoria", 2, estado.semilla)
-    c = information.estimar_nodo(n, "dupla_defensoria", 5, estado.semilla)
+    a = information.estimar_nodo(n, "equipo_terreno", 2, estado.semilla)
+    b = information.estimar_nodo(n, "equipo_terreno", 2, estado.semilla)
+    c = information.estimar_nodo(n, "equipo_terreno", 5, estado.semilla)
 
     assert a.estructura_organizada == b.estructura_organizada
     assert a.estructura_organizada != c.estructura_organizada
 
 
-def test_lo_constatado_por_la_defensoria_se_queda_quieto(estado, motor):
+def test_lo_constatado_en_terreno_se_queda_quieto(estado, motor):
     """
-    Lo que una dupla constató en el turno 0 tiene que seguir diciendo lo mismo en
+    Lo que un equipo constató en el turno 0 tiene que seguir diciendo lo mismo en
     el turno 3. Si se recalcula con el turno actual, «constatado» no significa
-    nada — y la Defensoría deja de ser la fuente que casi no se equivoca.
+    nada.
 
     Ojo con el turno 0: es un turno, no un `None`. La primera versión del guardia
     usaba `or` y el turno 0 caía por falsy, que es justo el caso de un punto
     verificado antes de empezar.
     """
     nodo = next(iter(estado.nodos.values()))
-    information.marcar_verificado(estado, nodo, "dupla_defensoria", estado.turno)
+    information.marcar_verificado(estado, nodo, "equipo_terreno", estado.turno)
 
     def constatado():
-        v = views.vista(estado, "Defensoría")
+        v = views.vista(estado, "Defensa")
         return v["detalle"]["lo_que_han_constatado"]
 
     primero = constatado()
@@ -651,18 +670,19 @@ def test_lo_constatado_por_la_defensoria_se_queda_quieto(estado, motor):
     assert constatado() == primero
 
 
-def test_solo_minas_ve_los_dias_exactos(estado):
+def test_solo_agricultura_ve_los_dias_exactos(estado):
     """
-    El tablero muestra un semáforo; los días son de Minas. Si el dato estuviera en
-    los dos sitios, el rol se consultaría una vez y después sobraría.
+    El tablero muestra un semáforo; los días son de Agricultura desde que el
+    Ministerio de Minas salió del ejercicio. Si el dato estuviera en los dos
+    sitios, el rol se consultaría una vez y después sobraría.
     """
     publico = estado.vista_publica()
     for r in publico["regiones"]:
         assert "semaforo" in r
         assert "dias_oxigeno" not in r
 
-    minas = views.vista(estado, "Minas")
-    assert minas["detalle"]["calendario_por_region"][0]["oxigeno_dias"] is not None
+    agro = views.vista(estado, "Agricultura")
+    assert agro["detalle"]["calendario_por_region"][0]["oxigeno_dias"] is not None
 
 
 def test_solo_transporte_ve_que_punto_bloquea_cada_corredor(estado):
@@ -677,7 +697,12 @@ def test_los_sesgos_van_en_direcciones_opuestas(estado):
     """
     assert P.SESGO_FUENTE["inteligencia_defensa"] > 0
     assert P.SESGO_FUENTE["parte_municipal"] < 0
-    assert abs(P.SESGO_FUENTE["dupla_defensoria"]) < 0.05
+
+    # Y LA TERCERA YA NO ES LIMPIA. Cuando la lectura de terreno la hacía la
+    # Defensoría del Pueblo su sesgo era 0,02 y arbitraba entre las otras dos.
+    # Ahora es del mismo ministerio que ordena las operaciones: corrige más de la
+    # mitad del sesgo de escritorio y sigue tirando hacia el mismo lado.
+    assert 0 < P.SESGO_FUENTE["equipo_terreno"] < P.SESGO_FUENTE["inteligencia_defensa"] / 2
 
 
 # ===========================================================================
@@ -807,39 +832,84 @@ def test_la_mesa_local_de_voceria_fuerte_vuelve_con_el_comite(estado, motor):
 
 
 # ===========================================================================
-# LA DEFENSORÍA NO SE RETIRA
+# SIN TERCERO, EL QUE MIRA ES PARTE
+#
+# Lo que sustituye a la Defensoría del Pueblo no es otro rol: es una regla. El
+# protocolo común de verificación —que adopta el Director de la Policía— es lo
+# único que hace que la palabra del que verifica valga, ahora que el que
+# verifica es el sector del que se denuncia.
 # ===========================================================================
 
-def test_la_defensoria_no_se_retira_pero_puede_dudar(motor):
+def test_ninguna_fuente_concede_ya_el_grado_confirmado(estado):
     """
-    Decisión A3. Su palanca no es irse: es decir en voz alta que se lo está
-    pensando — y eso cuesta legitimidad y respaldo internacional.
+    **La invariante de esta versión.** El grado «confirmado» lo otorgaba la dupla
+    de la Defensoría, que era la única que miraba sin ser parte. Sin ese rol no
+    hay quién lo conceda, y un grado que nadie puede otorgar es una promesa que
+    el ejercicio no puede cumplir.
+
+    Si esta prueba se cae es porque alguien le devolvió a una parte la potestad
+    de declarar algo confirmado sobre su propia conducta.
+    """
+    nodo = next(iter(estado.nodos.values()))
+    for fuente in information.FUENTES:
+        est = information.estimar_nodo(nodo, fuente, 1, estado.semilla)
+        assert est.grado == "estimado", (fuente, est.grado)
+
+
+def test_desmentir_la_denuncia_propia_sin_protocolo_no_da_credibilidad(estado):
+    """
+    **La sustitución funcional del tercero.**
+
+    Los equipos que verifican son del mismo ministerio que ordena las
+    operaciones, y las denuncias son sobre conducta de la fuerza. Sin una regla
+    pactada ANTES de saber qué iba a decir, la mesa está oyendo a una parte
+    hablar de sí misma — y el desmentido no puede valer lo mismo.
+    """
+    import copy
+
+    falsa = next(d for d in estado.denuncias if not d.veraz)
+
+    sin = copy.deepcopy(estado)
+    information.verificar_denuncia(sin, falsa.denuncia_id)
+
+    con = copy.deepcopy(estado)
+    con.banderas.activar("protocolo_verificacion", 0)
+    information.verificar_denuncia(con, falsa.denuncia_id)
+
+    assert con.reservas.legitimidad > sin.reservas.legitimidad
+    assert con.reservas.credibilidad_mesa > sin.reservas.credibilidad_mesa
+
+
+def test_confirmar_la_denuncia_propia_sin_protocolo_cuesta_mas(estado):
+    """La otra mitad: documentar la propia falta fuera del protocolo no ahorra."""
+    import copy
+
+    veraz = next(d for d in estado.denuncias if d.veraz)
+
+    sin = copy.deepcopy(estado)
+    information.verificar_denuncia(sin, veraz.denuncia_id)
+
+    con = copy.deepcopy(estado)
+    con.banderas.activar("protocolo_verificacion", 0)
+    information.verificar_denuncia(con, veraz.denuncia_id)
+
+    assert sin.reservas.respaldo_internacional < con.reservas.respaldo_internacional
+    assert sin.reservas.legitimidad < con.reservas.legitimidad
+
+
+def test_el_estandar_completo_lo_adopta_ahora_el_propio_sector(motor):
+    """
+    **Los tres mitigadores en una sola acción, y es del que tiene que cumplirlos.**
+
+    Los encendía una acción del Delegado de la Defensoría, que se los EXIGÍA al
+    Gobierno; sin ese rol no hay quién los exija. La lección cambia y no se
+    pierde: era «un tercero pide más de lo que el sector concede», y es «el
+    sector se autolimita, o no lo hace nadie».
     """
     e = motor.estado
-    antes = (e.reservas.legitimidad, e.reservas.respaldo_internacional)
-    motor.encolar(ManifestarDudaPermanencia())
+    motor.encolar(FijarReglasEmpleoSector())
     motor.paso(franja="dia")
-    assert e.banderas.defensoria_presente, "la Defensoría no puede retirarse"
-    assert e.reservas.legitimidad < antes[0]
-    assert e.reservas.respaldo_internacional < antes[1]
-
-
-def test_la_duda_de_permanencia_se_gasta_con_el_uso(estado):
-    """
-    La primera vez pesa, la tercera es ruido. Su credibilidad ante ambas partes
-    es un activo que se consume con cada uso.
-
-    Se mide la acción aislada, sin avanzar el turno: si se midiera dentro de un
-    paso, los demás eventos moverían la misma reserva y la comparación no diría
-    nada sobre la acción.
-    """
-    caidas = []
-    for _ in range(3):
-        antes = estado.reservas.respaldo_internacional
-        ManifestarDudaPermanencia().ejecutar(estado, _rng())
-        caidas.append(antes - estado.reservas.respaldo_internacional)
-    assert caidas[0] > caidas[1] > caidas[2]
-    assert estado.dudas_permanencia == 3
+    assert all(e.banderas.mitigadores_activos().values())
 
 
 # ===========================================================================
@@ -853,8 +923,10 @@ def test_el_estado_inicial_cumple_sus_invariantes():
     assert len(e.regiones) == 4
     assert len(e.esmad_en_reserva()) == P.ESMAD_ESCUADRONES_TOTALES - P.ESMAD_DESPLEGADOS_T0
     assert e.region_epicentro in e.regiones
-    assert not any(v for k, v in vars(e.banderas).items()
-                   if isinstance(v, bool) and k != "defensoria_presente")
+    # NINGUNA, sin excepción. Había una —`defensoria_presente`— que empezaba en
+    # verdadero porque el Delegado ya estaba sentado; sin ese rol, la mesa
+    # empieza sin haber constituido absolutamente nada.
+    assert not any(v for k, v in vars(e.banderas).items() if isinstance(v, bool))
 
 
 def test_la_mitad_larga_del_tablero_esta_en_la_ciudad_epicentro():
@@ -987,22 +1059,22 @@ def test_la_jornada_que_se_delibera_va_por_delante_de_la_resuelta():
     assert e.reloj()["fecha"] == "12 de mayo"
 
 
-def test_abrir_la_jornada_repone_las_duplas_antes_de_decidir():
+def test_abrir_la_jornada_repone_los_equipos_antes_de_decidir():
     """
-    La Defensoría tiene que ver sus tres duplas MIENTRAS decide a dónde
+    El Ministro de Defensa tiene que ver sus tres equipos MIENTRAS decide a dónde
     mandarlas. Reponerlas al resolver le decía durante los trece minutos que no
     le quedaba ninguna.
     """
     e = cargar_estado()
     m = MotorCrisis(e)
     m.abrir_jornada()
-    information.consumir_dupla(e, "prueba")
-    information.consumir_dupla(e, "prueba")
-    assert e.duplas_disponibles == P.DUPLAS_TOTALES - 2
+    information.consumir_equipo(e, "prueba")
+    information.consumir_equipo(e, "prueba")
+    assert e.equipos_disponibles == P.EQUIPOS_TERRENO_TOTALES - 2
 
     m.cerrar_jornada()
     m.abrir_jornada()
-    assert e.duplas_disponibles == P.DUPLAS_TOTALES
+    assert e.equipos_disponibles == P.EQUIPOS_TERRENO_TOTALES
 
 
 def test_cerrar_la_jornada_resuelve_el_dia_y_pasa_la_noche():
@@ -1116,7 +1188,7 @@ def test_el_mapa_cuenta_lo_que_se_hizo_y_no_donde_esta_la_fuerza():
 
     nid = next(iter(e.nodos))
     m.cola_inmediata = [OperarNodo(
-        nodo_id=nid, tipo_unidad="esmad", dupla_presente=True,
+        nodo_id=nid, tipo_unidad="esmad",
         responsable_nominado="Ministro de Defensa")]
     m.paso("dia")
 
@@ -1874,7 +1946,7 @@ def test_el_interior_y_el_alcalde_reciben_la_pregunta_al_abrir_el_dia(motor):
     La notificación del comienzo del día, y **solo para quien puede convocar**.
 
     El Alcalde ve las de su jurisdicción; el Ministro del Interior, todas. Los
-    otros seis no reciben nada: una notificación que le llega a quien no puede
+    otros cuatro no reciben nada: una notificación que le llega a quien no puede
     hacer nada con ella es ruido en una pantalla que cabe sin desplazamiento.
     """
     e = motor.estado
@@ -1895,8 +1967,7 @@ def test_el_interior_y_el_alcalde_reciben_la_pregunta_al_abrir_el_dia(motor):
         assert epicentro.nombre in n["pregunta"]
         assert "cada jornada" in n["porque"]
 
-    for rol in ("Presidente", "Defensa", "Policía", "Defensoría",
-                "Transporte", "Minas"):
+    for rol in ("Presidente", "Defensa", "Policía", "Transporte"):
         assert views.vista(e, rol)["notificacion"] is None, rol
 
 
@@ -2020,11 +2091,13 @@ def test_las_metricas_del_cierre_siempre_son_serializables(motor):
 #   · el riesgo sanitario que asume no cuesta nada hoy y se cobra al cierre.
 # ===========================================================================
 
-def test_agricultura_tiene_vista_alerta_y_cinco_acciones(estado):
+def test_agricultura_tiene_vista_alerta_y_seis_acciones(estado):
     v = views.vista(estado, "Agricultura")
     assert v["detalle"] and v["alerta"]
     fichas = actions.catalogo_por_rol(estado)["Agricultura"]
-    assert len(fichas) == 5
+    # Cinco propias más el calendario de agotamiento, que era del Ministerio de
+    # Minas y Energía y se quedó en la cartera cuyo daño ya ocurrió.
+    assert len(fichas) == 6
     clases = {f["clase"] for f in fichas}
     assert clases == {"constitutiva", "operativa", "informativa"}, clases
 
@@ -2035,7 +2108,7 @@ def test_la_mesa_tecnica_no_entra_en_la_jurisdiccion_del_epicentro(estado):
     Dentro del epicentro la mesa la instala la Alcaldía, o el Interior con ella.
     Sin esta comprobación, el Ministro de Agricultura acaba pactando cierres
     urbanos, que es exactamente el desborde de competencia que la reasignación
-    de ocho a nueve roles existe para impedir.
+    del reparto de carteras existe para impedir.
     """
     dentro = next(n for n in estado.nodos.values()
                   if n.region_id == estado.region_epicentro and not n.abierto)
@@ -2052,7 +2125,7 @@ def test_la_mesa_rural_sobrevive_a_la_salida_del_comite(estado):
     vocería —los que responden a él— y el frente de estrategia se queda sin
     canal. La interlocución rural no pasa por el Comité y sigue en pie.
 
-    Si esto se rompiera, el noveno rol sería un décimo modo de hacer lo mismo.
+    Si esto se rompiera, Agricultura sería otro modo de hacer lo mismo.
     """
     estado.comite_disponible = False
     rural = max(
@@ -2072,7 +2145,7 @@ def test_la_mesa_rural_sobrevive_a_la_salida_del_comite(estado):
 def test_agricultura_y_defensa_leen_el_campo_al_reves(estado):
     """
     Dos personas honestas, el mismo punto rural, y una distancia que no se cierra
-    hablando: hay que gastar una dupla. Medido sobre el escenario, la estructura
+    hablando: hay que gastar un equipo. Medido sobre el escenario, la estructura
     real de los puntos rurales es baja y **la que se equivoca de largo ahí es la
     inteligencia**, no ella — y ella no tiene con qué demostrarlo.
     """
@@ -2450,9 +2523,15 @@ def test_las_ocho_llaves_nuevas_no_le_roban_la_orden_a_su_vecina(estado):
     el modo de falla que ya se cobró dos veces en este archivo.
 
     Las tres que importan, porque en las tres cambia el ROL que firma:
-    adoptar el protocolo de verificación no manda duplas al terreno; fijar las
-    reglas del sector es de Defensa y no el estándar que exige la Defensoría; e
-    ir al epicentro acompañando la operación no ordena ninguna operación.
+    adoptar el protocolo de verificación no despliega equipos al terreno;
+    acordar pasos seguros no es el acopio agroalimentario; e ir al epicentro
+    acompañando la operación no ordena ninguna operación.
+
+    LA CUARTA SE RESOLVIÓ SOLA AL IRSE LA DEFENSORÍA. «Reglas de empleo» tenía
+    dos dueños —el sector que las adoptaba y el tercero que las exigía— y la
+    regla de la raíz más larga era lo que los separaba. Con la acción del
+    tercero retirada, las dos frases van a la misma y única acción, que es
+    justo lo que tiene que pasar.
     """
     from src.agents import herramientas
 
@@ -2473,12 +2552,15 @@ def test_las_ocho_llaves_nuevas_no_le_roban_la_orden_a_su_vecina(estado):
 
     # Y al revés: la vecina sigue siendo alcanzable, que es lo que una exclusión
     # de texto entero habría roto en cuanto se pidieran las dos en un mensaje.
-    assert nombres("asignar duplas de verificacion en el Puente Amarillo") == [
-        "asignar_duplas"]
+    assert nombres("desplegar equipos de terreno en el Puente Amarillo") == [
+        "desplegar_equipos"]
+
+    # Las dos formas de pedir el estándar llegan ahora a la misma acción: la
+    # adopta el sector y ya no se la exige nadie.
     assert nombres("exigir los estandares de empleo de la fuerza") == [
-        "exigir_estandares"]
-    dos = nombres("exigir los estandares y fijar las reglas del sector")
-    assert dos == ["exigir_estandares", "fijar_reglas_sector"], dos
+        "fijar_reglas_sector"]
+    assert nombres("que los agentes vayan con identificacion de agentes") == [
+        "fijar_reglas_sector"]
 
 
 def test_lo_que_la_sala_oye_de_las_ocho_acciones_nuevas(estado):
@@ -2530,7 +2612,7 @@ def test_validar_no_muta_el_estado(estado):
             tuple(round(getattr(e.reservas, k), 6) for k in
                   ("legitimidad", "credibilidad_mesa",
                    "respaldo_internacional", "cohesion_mesa")),
-            e.duplas_disponibles, len(e.eventos_turno), len(e.acuerdos),
+            e.equipos_disponibles, len(e.eventos_turno), len(e.acuerdos),
             sorted((c.corredor_id, tuple(sorted(c.clases_prioridad)))
                    for c in e.corredores.values()),
             {k: v for k, v in vars(e.banderas).items() if isinstance(v, bool)},

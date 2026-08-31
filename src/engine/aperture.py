@@ -127,7 +127,7 @@ def avanzar_concertacion(
     Y hay una segunda trampa, invisible: si el punto tiene estructura organizada
     alta, **el acuerdo se rompe aunque la vocería fuera buena** — porque quien
     firmó no manda sobre quien sostiene el cierre. La sala no puede saberlo sin
-    haber gastado una dupla ahí.
+    haber gastado un equipo de terreno ahí.
     """
     nodo.turnos_en_negociacion += 1
     if nodo.turnos_en_negociacion < P.TURNOS_APERTURA["concertacion"]:

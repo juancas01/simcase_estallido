@@ -73,6 +73,8 @@ en el mapa del tablero general.
 | **Sentar al Comité del Paro** | Operación | Sienta al Gobierno con el Comité del Paro. Es la vía más rápida para bajar la tensión, y operar por la fuerza ese mismo día es lo que más caro le sale a la mesa. | Que el Comité del Paro siga sentado a la mesa. | `convocar la mesa nacional con el Comite del Paro` |
 | **Abrir una mesa en un punto** | Operación | Negocia un punto concreto para que lo desbloqueen sus propios voceros. Tarda dos turnos, y lo que se abre así aguanta mientras se cumpla lo pactado. | Un punto todavía cerrado, con vocería con quien hablar. En la jurisdicción del epicentro, además, la Alcaldía en la mesa. HAY QUE INSTALARLA CADA JORNADA: la mesa que no sesiona no avanza. | `concertar en el Puente Amarillo con la Alcaldia` |
 | **Ofrecer algo a cambio** | Información | Ofrece algo concreto a cambio de levantar los cierres. Funciona donde hay con quién negociar; no donde nadie manda. | Ninguno, pero sin líneas rojas fijadas lo ofrecido se renegocia en la sala. | `ofrecer una contraprestacion legislativa` |
+| **Exigir un paso humanitario permanente** | Operación | Exige que haya un paso permanente para lo humanitario. Negarlo es lo que más caro cuesta de cara al exterior. | Ninguno. | `requerir un corredor humanitario permanente` |
+| **Poner custodia a una instalación** | Operación | Pone bajo custodia una instalación del registro de infraestructura relevante. Queda protegida, e inmoviliza fuerza que hace falta en otra parte. | Decir CUÁL, de las del registro de infraestructura relevante, y que quede capacidad libre para custodiarla: lo que se protege sale de lo que desbloquea. | `declarar infraestructura critica el Acopio de combustible de Puerto Espejo` |
 
 ## 03 · Alcalde de la ciudad epicentro
 
@@ -88,48 +90,33 @@ en el mapa del tablero general.
 | Acción | Tipo | Qué hace | Qué hace falta antes | Cómo pedirla en la consola |
 |---|---|---|---|---|
 | **Poner reglas a sus unidades** | Protocolo | Ordena que sus unidades vayan identificadas, con reglas escritas y grabando. Baja mucho la probabilidad de que una operación termine mal. | Ninguno. | `fijar las reglas de empleo del sector` |
-| **Desbloquear un punto por la fuerza** | Operación | Manda a la fuerza pública a abrir un punto. Es lo más rápido que existe y lo más caro: el punto suele volver a cerrarse esa misma noche. | Un punto todavía cerrado y unidades disponibles del tipo que se pida. Con tropa, la asistencia militar firmada; en el epicentro, la concertación con la Alcaldía si la Alcaldía la exigió. | `operar el Puente Amarillo con ESMAD, con dupla de la Defensoria` |
+| **Desbloquear un punto por la fuerza** | Operación | Manda a la fuerza pública a abrir un punto. Es lo más rápido que existe y lo más caro: el punto suele volver a cerrarse esa misma noche. | Un punto todavía cerrado y unidades disponibles del tipo que se pida. Con tropa, la asistencia militar firmada; en el epicentro, la concertación con la Alcaldía si la Alcaldía la exigió. | `operar el Puente Amarillo con ESMAD, responsable el Ministro de Defensa` |
 | **Mover tropa a donde haga falta** | Operación | Mueve tropa a proteger instalaciones críticas. Libera policía para otras tareas e inmoviliza esas unidades donde las puso. | Unidades militares en reserva. | `redesplegar militares a infraestructura` |
 | **Mostrar quién financia los cierres** | Información | Presenta lo que Inteligencia tiene sobre quién financia los cierres. Vale según lo sólido que sea; si no se sostiene, se vuelve en contra. | Ninguno. | `presentar la evidencia de inteligencia` |
+| **Mandar equipos al terreno** | Operación | Manda equipos suyos a constatar en el sitio qué pasa en un punto o si una denuncia es cierta. Solo tiene tres por turno, y son los mismos para las dos cosas. | Equipos libres esta jornada, y decir qué mirar. Son los mismos para los puntos y para las denuncias: mirar aquí es no mirar allá. | `verificar el Puente Amarillo y el Peaje del Puerto` |
 
 ## 05 · Director General de la Policía
 
 | Acción | Tipo | Qué hace | Qué hace falta antes | Cómo pedirla en la consola |
 |---|---|---|---|---|
 | **Separar lo confirmado de lo estimado** | Protocolo | Separa en su parte lo confirmado, lo estimado y lo que está en verificación. Evita que una estimación se lea en la mesa como un hecho. | Ninguno. | `clasificar el parte operacional` |
+| **Acordar una sola forma de verificar** | Protocolo | Establece una sola manera de verificar cifras y denuncias, igual para todos. Evita que cada cartera traiga su propio número. | Ninguno. | `adoptar el protocolo unico de verificacion` |
 | **Concentrar el ESMAD** | Operación | Concentra escuadrones en los puntos que decida. Gana fuerza donde la lleva y deja descubierto lo que abandona. | Escuadrones todavía en contención estática de donde traerlos. | `concentrar el ESMAD` |
 | **Escoltar una caravana o misión médica** | Operación | Escolta una caravana, un carrotanque o una misión médica. Hace llegar el suministro sin abrir el punto, y ocupa escuadrones todo el turno. | Escuadrones sin comprometer. Si el corredor sigue bloqueado la escolta sale, pero la carga no pasa. | `escoltar una mision medica por el Corredor hospitalario` |
 | **Relevar a las unidades cansadas** | Operación | Releva a las unidades más agotadas. Un escuadrón cansado es el principal factor de que una operación salga mal. | Unidades desplegadas con fatiga que relevar. | `relevar las unidades agotadas` |
 
-## 06 · Delegado de la Defensoría del Pueblo
-
-| Acción | Tipo | Qué hace | Qué hace falta antes | Cómo pedirla en la consola |
-|---|---|---|---|---|
-| **Exigir reglas, identificación y cámaras** | Protocolo | Exige que la fuerza actúe con reglas escritas, identificada y grabando. Es lo que hace que después se pueda saber qué pasó de verdad. | Ninguno. Es la de mayor rendimiento del ejercicio y no cuesta un escuadrón. | `exigir los estandares de empleo de la fuerza` |
-| **Acordar una sola forma de verificar** | Protocolo | Establece una sola manera de verificar cifras y denuncias, igual para todos. Evita que cada cartera traiga su propio número. | Ninguno. | `adoptar el protocolo unico de verificacion` |
-| **Mandar a sus verificadores** | Operación | Manda a sus verificadores a mirar puntos concretos. Solo tiene tres por turno, y también hacen falta para comprobar denuncias y acompañar operaciones. | Duplas libres esta jornada, y decir qué mirar. Salen del mismo bolsillo que el acompañamiento de operaciones. | `verificar el Puente Amarillo y el Peaje del Puerto` |
-| **Exigir un paso humanitario permanente** | Operación | Exige que haya un paso permanente para lo humanitario. Negarlo es lo que más caro cuesta de cara al exterior. | Ninguno. | `requerir un corredor humanitario permanente` |
-| **Poner en duda su permanencia** | Información | Dice en público que se está planteando si tiene sentido seguir en la mesa. Es su palanca más fuerte y se gasta: la segunda vez pesa menos que la primera. | Ninguno, pero se gasta: cada pronunciamiento pesa menos que el anterior. | `manifestar duda sobre la permanencia en la mesa` |
-
-## 07 · Ministro de Transporte
+## 06 · Ministro de Transporte
 
 | Acción | Tipo | Qué hace | Qué hace falta antes | Cómo pedirla en la consola |
 |---|---|---|---|---|
 | **Fijar el orden de los corredores** | Protocolo | Fija en qué orden se atienden los corredores y por qué. Sin criterio, cada turno se discute lo mismo desde cero. | Ninguno. | `adoptar el criterio de priorizacion de corredores` |
+| **Decidir a qué va el combustible** | Protocolo | Decide a qué va primero el combustible que queda: hospitales, transporte o industria. Es un criterio permanente, no una entrega puntual. | Ordenar los cuatro usos, todos y sin repetir. | `fijar la prioridad de combustible` |
 | **Organizar una caravana** | Operación | Junta la carga en una caravana por un corredor prioritario. Necesita escolta para poder pasar. | Escolta ya dispuesta por la Policía, y el corredor sin ningún punto que lo bloquee. | `organizar una caravana por el Corredor del Sur` |
 | **Hablar con los camioneros** | Operación | Habla con los camioneros antes de que decidan sumarse al paro. Si se suman, se cierra lo que hoy todavía circula. | Que los gremios no se hayan sumado ya al paro. | `negociar con los gremios camioneros` |
+| **Acordar ventanas de paso** | Operación | Acuerda ventanas horarias para que pasen carrotanques por un punto. Pasa el suministro sin abrir el bloqueo. | Un punto donde la vocería reconocida controle algo. Donde no manda nadie no hay con quién acordar. | `acordar pasos seguros en la Porteria de la refineria` |
 | **Publicar el mapa de cierres** | Información | Publica dónde está cerrado y qué se ha abierto. Anunciar una apertura que no se sostiene cuesta credibilidad. | Ninguno. Anunciar abierto lo que no deja pasar se desmiente solo. | `publicar el mapa de cierres` |
 
-## 08 · Ministro de Minas y Energía
-
-| Acción | Tipo | Qué hace | Qué hace falta antes | Cómo pedirla en la consola |
-|---|---|---|---|---|
-| **Decidir a qué va el combustible** | Protocolo | Decide a qué va primero el combustible que queda: hospitales, transporte o industria. Es un criterio permanente, no una entrega puntual. | Ordenar los cuatro usos, todos y sin repetir. | `fijar la prioridad de combustible` |
-| **Poner custodia a una instalación** | Operación | Pone bajo custodia una instalación del registro de infraestructura relevante. Queda protegida, e inmoviliza fuerza que hace falta en otra parte. | Decir CUÁL, de las del registro de infraestructura relevante, y que quede capacidad libre para custodiarla: lo que se protege sale de lo que desbloquea. | `declarar infraestructura critica el Acopio de combustible de Puerto Espejo` |
-| **Acordar ventanas de paso** | Operación | Acuerda ventanas horarias para que pasen carrotanques por un punto. Pasa el suministro sin abrir el bloqueo. | Un punto donde la vocería reconocida controle algo. Donde no manda nadie no hay con quién acordar. | `acordar pasos seguros en la Porteria de la refineria` |
-| **Decir cuántos días quedan** | Información | Dice cuántos días de oxígeno, combustible y comida le quedan a cada región. Es el dato que solo usted tiene, y difundirlo también genera pánico. | Ninguno. Difundirlo acelera lo que mide. | `entregar el calendario de agotamiento` |
-
-## 09 · Ministro de Agricultura y Desarrollo Rural
+## 07 · Ministro de Agricultura y Desarrollo Rural
 
 | Acción | Tipo | Qué hace | Qué hace falta antes | Cómo pedirla en la consola |
 |---|---|---|---|---|
@@ -138,6 +125,7 @@ en el mapa del tablero general.
 | **Aliviar a los productores** | Operación | Da crédito y alivios a los productores con pérdida, y autoriza mover animales y su alimento por rutas alternas. Alivia sin resolver, y la excepción sanitaria deja un riesgo que se paga después. | Ninguno, y es la única suya que no depende de nadie. Cada paquete en la misma región rinde menos que el anterior. | `activar los instrumentos sectoriales en Las Cumbres` |
 | **Publicar lo que se está perdiendo** | Información | Publica con los gremios cuántos animales se están sacrificando y cuánto ha subido la comida. Le quita respaldo ciudadano al cierre, y le entrega el argumento de la urgencia a quien pide mano dura. | Ninguno, pero sin protocolo común de verificación la cifra se disputa. | `publicar el balance de perdida del eslabon pecuario` |
 | **Concentrar el despacho de alimentos** | Operación | Junta la producción en pocos despachos grandes y los manda por la ventana escoltada que ya existe. Llega mucha más comida con la misma escolta, y quien queda fuera del cupo lo nota. | Escolta ya dispuesta por la Policía, y un corredor de clase alimentaria sin ningún punto que lo bloquee. | `acordar el esquema de acopio por el Corredor del Sur` |
+| **Decir cuántos días quedan** | Información | Dice cuántos días de oxígeno, combustible y comida le quedan a cada región. Es el dato que solo usted tiene, y difundirlo también genera pánico. | Ninguno. Difundirlo acelera lo que mide. | `entregar el calendario de agotamiento` |
 
 ---
 
@@ -160,6 +148,8 @@ el código, para quien tenga que buscarlo en
 | Sentar al Comité del Paro | Sesión de la mesa nacional con el Comité del Paro | `ConvocarMesaNacional` |
 | Abrir una mesa en un punto | Mesa local de concertación, corredor por corredor | `AbrirMesaLocal` |
 | Ofrecer algo a cambio | Contraprestación legislativa por el levantamiento de cierres | `OfrecerContraprestacion` |
+| Exigir un paso humanitario permanente | Requerimiento de corredores humanitarios permanentes | `RequerirCorredoresHumanitarios` |
+| Poner custodia a una instalación | Declaratoria de infraestructura crítica | `DeclararInfraestructuraCritica` |
 | Exigir que le consulten la fuerza | Concertación previa del empleo de la fuerza en su jurisdicción | `CondicionarEmpleoFuerza` |
 | Sentarse con los voceros del punto | Mesa local de desbloqueo con voceros del punto | `InstalarMesaConVoceros` |
 | Abrir paso a lo humanitario | Esquema humanitario municipal | `EsquemaHumanitarioMunicipal` |
@@ -168,25 +158,21 @@ el código, para quien tenga que buscarlo en
 | Desbloquear un punto por la fuerza | Operación de desbloqueo sobre un punto | `OperarNodo` |
 | Mover tropa a donde haga falta | Redespliegue militar a infraestructura o proyección aérea | `RedesplegarMilitares` |
 | Mostrar quién financia los cierres | Evidencia de financiación de cierres y su solidez judicial | `PresentarEvidenciaInteligencia` |
+| Mandar equipos al terreno | Despliegue de equipos de verificación en terreno | `DesplegarEquiposTerreno` |
 | Separar lo confirmado de lo estimado | Parte operacional clasificado en confirmado, estimado y en verificación | `ClasificarParteOperacional` |
+| Acordar una sola forma de verificar | Protocolo único de verificación de cifras y denuncias | `AdoptarProtocoloVerificacion` |
 | Concentrar el ESMAD | Concentración del ESMAD en puntos priorizados | `DisponerESMAD` |
 | Escoltar una caravana o misión médica | Escolta de caravana, carrotanque o misión médica | `Escoltar` |
 | Relevar a las unidades cansadas | Relevo y rotación de unidades agotadas | `SolicitarRelevo` |
-| Exigir reglas, identificación y cámaras | Estándar de empleo de la fuerza: reglas, identificación, registro | `ExigirEstandaresEmpleo` |
-| Acordar una sola forma de verificar | Protocolo único de verificación de cifras y denuncias | `AdoptarProtocoloVerificacion` |
-| Mandar a sus verificadores | Asignación de las duplas de verificación | `AsignarDuplas` |
-| Exigir un paso humanitario permanente | Requerimiento de corredores humanitarios permanentes | `RequerirCorredoresHumanitarios` |
-| Poner en duda su permanencia | Manifestación pública de duda sobre su permanencia | `ManifestarDudaPermanencia` |
 | Fijar el orden de los corredores | Criterio único de priorización de corredores | `AdoptarCriterioPriorizacion` |
+| Decidir a qué va el combustible | Orden de prioridad del combustible entre usos | `FijarPrioridadCombustible` |
 | Organizar una caravana | Caravana escoltada en un corredor priorizado | `OrganizarCaravana` |
 | Hablar con los camioneros | Negociación con los gremios camioneros | `NegociarConGremios` |
-| Publicar el mapa de cierres | Mapa de cierres y anuncio verificado de aperturas | `PublicarMapaCierres` |
-| Decidir a qué va el combustible | Orden de prioridad del combustible entre usos | `FijarPrioridadCombustible` |
-| Poner custodia a una instalación | Declaratoria de infraestructura crítica | `DeclararInfraestructuraCritica` |
 | Acordar ventanas de paso | Pasos seguros y ventanas de despacho concertadas | `AcordarPasosSeguros` |
-| Decir cuántos días quedan | Calendario de agotamiento por región | `EntregarCalendarioAgotamiento` |
+| Publicar el mapa de cierres | Mapa de cierres y anuncio verificado de aperturas | `PublicarMapaCierres` |
 | Poner los alimentos en la prioridad | Clase de prioridad agroalimentaria con ventana crítica en horas | `FijarClasePrioridadAlimentaria` |
 | Sentarse con el campo | Mesa técnica agropecuaria de tránsito de carga, corredor por corredor | `InstalarMesaTecnicaAgropecuaria` |
 | Aliviar a los productores | Instrumentos financieros y autorización sanitaria excepcional | `ActivarInstrumentosSectoriales` |
 | Publicar lo que se está perdiendo | Balance público de la pérdida pecuaria y del deterioro de precios | `PublicarBalancePerdida` |
 | Concentrar el despacho de alimentos | Acopio, cupos y despacho concentrado en ventanas escoltadas | `AcordarAcopioYVentanas` |
+| Decir cuántos días quedan | Calendario de agotamiento por región | `EntregarCalendarioAgotamiento` |

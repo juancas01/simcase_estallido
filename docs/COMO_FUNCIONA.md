@@ -42,7 +42,7 @@ el diagnóstico del que salió esta versión, en
 **C · Lo que la sala puede hacer**
 
 10. [Las treinta y nueve acciones](#10-las-treinta-y-nueve-acciones)
-11. [Las nueve vistas privadas, por dentro](#11-las-nueve-vistas-privadas-por-dentro)
+11. [Las siete vistas privadas, por dentro](#11-las-nueve-vistas-privadas-por-dentro)
 12. [Los siete arreglos, medidos](#12-los-siete-arreglos-medidos)
 13. [Cómo comprobarlo uno mismo](#13-cómo-comprobarlo-uno-mismo)
 
@@ -68,7 +68,7 @@ De ahí salen las tres tensiones que el motor está construido para sostener:
 |---|---|---|
 | **1** | abrir el país **o** salvar a la gente | los caminos y el oxígeno se piden fuerza mutuamente |
 | **2** | actuar rápido **o** actuar bien | la fuerza abre en un turno y reabre esa noche; concertar tarda dos y aguanta |
-| **3** | decidir con lo que se sabe **o** gastar en saber | verificar cuesta una dupla que hace falta en otro sitio |
+| **3** | decidir con lo que se sabe **o** gastar en saber | verificar cuesta un equipo de terreno que hace falta en otro sitio |
 
 **Ninguna se resuelve. Se administran**, y el debriefing trata de cómo cada sala
 las administró.
@@ -194,7 +194,7 @@ reproducible.**
 0 · CALENDARIO     lo que ocurre sin que nadie lo decida
                    (la jornada nacional del turno 3)
 
-1 · CONDICIONALES  «en cuanto la Defensoría verifique ese punto, opérenlo»
+1 · CONDICIONALES  «en cuanto un equipo verifique ese punto, opérenlo»
                    caducan a los 3 turnos; una condición que revienta descarta
                    esa orden y NO tumba el turno
 
@@ -269,9 +269,9 @@ LA VISTA DE MINAS dice: Las Cumbres · oxígeno 1,8 d  ↓ 0,4 sin ingreso maña
 
 Esto está garantizado por construcción: `vista_publica()` devuelve
 `region.semaforo` —un texto de tres valores— y **nunca los días**. Los días solo
-existen en la vista de Minas.
+existen en la vista de Agricultura.
 
-**Y el detalle no migra.** Aunque Minas diga el número en voz alta, el número
+**Y el detalle no migra.** Aunque Agricultura diga el número en voz alta, el número
 sigue viviendo en su vista. Si se fijara en el tablero, el rol se consultaría una
 vez y después sobraría; al quedarse ahí, **cada turno vuelve a ser necesario**,
 porque el número cambió y solo él tiene el nuevo.
@@ -286,8 +286,8 @@ porque el número cambió y solo él tiene el nuevo.
 | Consola | `POST /api/consola/*` | [`api/main.py`](../src/api/main.py) |
 
 **Tres cosas están garantizadas por construcción y no por disciplina:** la vista
-pública jamás expone la mezcla real de un punto, las nueve vistas privadas tampoco
-la exponen, y **solo Minas ve los días exactos**.
+pública jamás expone la mezcla real de un punto, las siete vistas privadas tampoco
+la exponen, y **solo Agricultura ve los días exactos**.
 
 ### Cómo el tablero señala un problema sin decir qué hacer
 
@@ -378,7 +378,7 @@ punto rojo con anillo dice que se cerró anoche, que es otra conversación.*
 > la sala necesita verlo para saber si su decisión surtió efecto. La
 > **ubicación, la asignación y la fatiga** de cada escuadrón existen en el motor
 > y viven en la vista de la Dirección General de la Policía. Si aparecieran en
-> el tablero, uno de los nueve roles dejaría de hacer falta.
+> el tablero, uno de los siete roles dejaría de hacer falta.
 
 Las dos reglas —que el mapa no diga dónde está la fuerza, y que el anillo no se
 acumule de una ventana a la siguiente— son invariantes del motor, no del
@@ -504,18 +504,24 @@ P(incidente) = min(0,98 ; 1 − e^(−riesgo))
 **Base por tipo de unidad:** ESMAD 0,08 · Policía 0,22 · Militar 0,45. La tropa
 de combate en una multitud es cinco veces más peligrosa que la unidad entrenada.
 
-**Los seis mitigadores, y quién los habilita:**
+**Los cinco mitigadores, y quién los habilita:**
 
 | Mitigador | Factor | Quién |
 |---|---:|---|
-| reglas de empleo escritas | ×0,70 | Defensoría, Defensa, o el Presidente al firmar con límites |
-| identificación de agentes | ×0,85 | Defensoría |
-| registro audiovisual | ×0,80 | Defensoría o Defensa |
-| **dupla presente** | ×0,75 | Defensoría — **y gasta una de sus tres** |
+| reglas de empleo escritas | ×0,70 | Defensa, o el Presidente al firmar con límites |
+| identificación de agentes | ×0,85 | Defensa |
+| registro audiovisual | ×0,80 | Defensa |
 | concertado con la alcaldía | ×0,80 | Alcalde |
 | unidades con fatiga < 0,30 | ×0,75 | Policía (relevo) |
 
-Producto de los seis: **×0,214**. Dividen el riesgo por casi cinco.
+Producto de los cinco: **×0,286**. Dividen el riesgo por tres y medio.
+
+> **Eran seis, y el sexto era el acompañamiento por una dupla de la Defensoría
+> del Pueblo** (×0,75). Descontaba porque miraba alguien de fuera; desde que los
+> equipos de terreno son del mismo ministerio que ordena la operación,
+> acompañarse a sí mismo no cambia la probabilidad de que una imagen circule.
+> **Se fue el mitigador con el rol que lo justificaba**, y con él los tres
+> primeros pasaron a depender de una sola firma: la de Defensa.
 
 **Por qué la saturación exponencial y no el producto directo.** El producto crudo
 no está acotado: militares fatigados, de noche, en un punto duro y concurrido dan
@@ -609,7 +615,7 @@ manda sobre quien sostiene el cierre:
 P(el acuerdo es frágil) = estructura_organizada × 1,5
 ```
 
-La sala no puede saberlo sin haber gastado una dupla ahí. **Es la segunda de las
+La sala no puede saberlo sin haber gastado un equipo ahí. **Es la segunda de las
 dos vías por las que la mezcla real de un punto tiene consecuencia.**
 
 **El desgaste es lento a propósito**: exige `apoyo_local < 0,25` sostenido **3
@@ -740,7 +746,7 @@ Esto es lo que v2 arregló, y es la corrección más importante del motor:
 |---|---|
 | **1 · abrir un corredor** que sirva a esa región | Interior, Defensa, el Alcalde |
 | **2 · escoltar** un carrotanque o una misión médica hasta allá | **Policía** |
-| **3 · la prioridad de combustible**, aplicada cada paso | **Minas** |
+| **3 · la prioridad de combustible**, aplicada cada paso | **Transporte** |
 
 La tercera es un **criterio permanente**: mientras esté fijado se aplica en cada
 paso, no una sola vez. Fijarlo es exactamente lo que significa «no pelearlo cada
@@ -780,13 +786,13 @@ media.
 
 > **No hay ninguna acción en contra de esta infraestructura, y es deliberado.**
 > El ejercicio no simula un ataque a la refinería. Simula la decisión de
-> **inmovilizar fuerza para custodiarla**, que es la que enfrenta a Minas con
+> **inmovilizar fuerza para custodiarla**, que es la que enfrenta al Interior con
 > Defensa: lo que se protege sale exactamente de lo que desbloquea.
 
 Antes existía la acción y no existía el objeto: `DeclararInfraestructuraCritica`
 recibía una cadena de texto libre que nadie comprobaba contra nada. Se podía
 declarar crítica una instalación inventada, la orden salía ejecutada con éxito, e
-inmovilizaba fuerza igual. Y el Ministro de Minas no tenía en ninguna pantalla la
+inmovilizaba fuerza igual. Y quien la declaraba no tenía en ninguna pantalla la
 lista de lo que le toca proteger, así que declaraba a ciegas.
 
 ### En el motor
@@ -822,7 +828,7 @@ conversación; lo que la abre es la lista de nombres.
 [`loader.py`](../src/engine/loader.py) · carga y exige que cada una caiga dentro de su región
 [`actions.py`](../src/engine/actions.py) · `DeclararInfraestructuraCritica.resolver()`
 [`simulation.py`](../src/engine/simulation.py) · `_acumular_riesgo_infraestructura()` · `riesgo_infraestructura()`
-[`views.py`](../src/engine/views.py) · la cartera de Minas, con nombre y estado de custodia
+[`views.py`](../src/engine/views.py) · la cartera del Interior, con nombre y estado de custodia
 
 ---
 
@@ -842,9 +848,13 @@ opuestas a propósito**:
 | Inteligencia de Defensa | **+0,28** sobreestima la estructura | media |
 | Parte operacional de la Policía | +0,10 · subestima víctimas civiles | todos los puntos |
 | Parte municipal del Alcalde | **−0,22** subestima la estructura | solo su jurisdicción |
-| Duplas de la Defensoría | +0,02 · casi no se equivoca | **3 puntos por turno** |
+| Equipos de terreno de Defensa | **+0,12** sobreestima, menos que desde el escritorio | **3 puntos por turno** |
 
-**La fuente más precisa es la que menos alcanza a ver.**
+**La fuente más precisa es la que menos alcanza a ver — y ya no es limpia.**
+Cuando esto lo hacía el Delegado de la Defensoría del Pueblo su sesgo era +0,02 y
+arbitraba entre las otras dos. Ahora la lectura que contradice a la inteligencia
+y la que la arbitraría vienen de la misma casa. **Ninguna fuente concede ya el
+grado `confirmado`**: era el único que otorgaba quien no era parte.
 
 ### En el motor: la mezcla real ahora TIENE consecuencia
 
@@ -860,28 +870,31 @@ multiplicador = 1,0 + max(0 ; protesta_legítima − 0,50) × 2,0
 
 Un punto que es 95 % protesta legítima multiplica el costo del incidente por
 **1,9**. Uno mitad y mitad, por 1,0. La sala no puede saberlo antes de operar —
-puede *averiguarlo* gastando una dupla, y esa es la decisión que el ejercicio
+puede *averiguarlo* gastando un equipo, y esa es la decisión que el ejercicio
 quiere producir.
 
 **2 · Pactar donde hay estructura produce un acuerdo que se rompe** (§6).
 
 Nada más. **La verdad sigue sin salir jamás del motor.**
 
-### Las duplas: un solo bolsillo de tres
+### Los equipos de terreno: un solo bolsillo de tres
 
-Una **dupla** es una pareja de funcionarios de la Defensoría que va al terreno a
-constatar qué pasa. Van de a dos porque protege a los verificadores y porque dos
+Un **equipo de terreno** es una pareja de funcionarios que va al sitio a
+constatar qué pasa. Van de a dos porque protege a quien verifica y porque dos
 testigos producen una constancia difícil de desestimar.
 
-**Hay tres, y cada una hace UNA sola cosa por turno:**
+**Hay tres, y cada uno hace UNA sola cosa por turno:**
 
 - verificar un punto — medir qué hay realmente ahí
 - verificar una denuncia — establecer si un hecho grave ocurrió
-- **acompañar una operación** — baja el riesgo un 25 %
 
-Antes acompañar era una casilla gratis: la sala podía marcarla en todas las
-operaciones mientras la Defensoría verificaba aparte. **Ahora compiten**, y por eso
-la asignación de la Defensoría es una decisión y no un trámite.
+**Y los despliega el Ministerio de Defensa.** Eran las tres duplas del Delegado
+de la Defensoría del Pueblo, que miraba sin responder ante nadie de la mesa. La
+capacidad de mirar no se perdió; se perdió que quien mira no responda ante quien
+operó, y de ahí salen las dos reglas de más abajo.
+
+> Eran tres usos y son dos. El tercero era acompañar una operación, y solo tenía
+> sentido mientras lo hacía un tercero.
 
 ### Las denuncias: nunca una sola
 
@@ -907,15 +920,23 @@ veracidad distinta, y falla ruidosamente si no.
 | Verificar una | acierta a medias — **es el resultado realista** |
 | Verificar una y **declarar la otra en verificación** | el mejor disponible: el estallido cuesta la mitad |
 
-La cuarta no gasta dupla. Es la mejor conducta disponible, y **no es acertar: es
-no afirmar lo que no se sabe.**
+La cuarta no gasta equipo. Es la mejor conducta disponible, y **no es acertar:
+es no afirmar lo que no se sabe.**
+
+> **Y desde que quien verifica es el sector del que se denuncia, el resultado
+> solo cuenta con `protocolo_verificacion` adoptado.** Sin él, confirmar la
+> propia falta no ahorra nada —el hecho es cierto y además parece administrado— y
+> el desmentido no da credibilidad, porque se lee como una parte absolviéndose.
+> El protocolo lo adopta el Director General de la Policía, y es una regla que la
+> sala pacta antes de saber qué va a decir: por eso vale después. **Es la
+> sustitución funcional del tercero que se fue.**
 
 Las denuncias sin mirar **estallan** a los dos turnos, con o sin razón.
 
 ### En el código
 
 [`information.py:71`](../src/engine/information.py) · `estimar_nodo()` — las lecturas sesgadas
-[`information.py:109`](../src/engine/information.py) · `consumir_dupla()` — el bolsillo único
+[`information.py:109`](../src/engine/information.py) · `consumir_equipo()` — el bolsillo único
 [`information.py:165`](../src/engine/information.py) · `verificar_denuncia()`
 [`information.py:202`](../src/engine/information.py) · `declarar_en_verificacion()`
 [`information.py:221`](../src/engine/information.py) · `paso_denuncias()` — las que estallan
@@ -1053,7 +1074,7 @@ jurisdicción**.
 podía asignarlo: los escuadrones se movían solos cuando alguien ordenaba una
 operación.
 
-**Minas puede asignar el combustible.** La función existía escrita y desconectada:
+**Transporte puede asignar el combustible.** La función existía escrita y desconectada:
 ningún rol podía invocarla, y por eso el reloj tenía una sola entrada.
 
 ### En el código
@@ -1064,7 +1085,7 @@ desde el código, no se escribe a mano en ningún prompt
 
 ---
 
-## 11. Las nueve vistas privadas, por dentro
+## 11. Las siete vistas privadas, por dentro
 
 ### En la sala
 
@@ -1279,7 +1300,7 @@ Todo lo de este documento se puede verificar en un rato, sin montar la sala y
 # Un ejercicio completo, turno a turno, con la cadena causal
 uv run python scripts/correr_ejercicio.py --detalle
 
-# Las nueve vistas privadas de un turno real — el diseño en una pantalla
+# Las siete vistas privadas de un turno real — el diseño en una pantalla
 uv run python scripts/correr_ejercicio.py --vistas
 
 # Las seis estrategias: el criterio es que NINGUNA domine
@@ -1303,7 +1324,7 @@ que conviene saber al terminar de leer este documento es que lo que falta se
 parte en dos, y que la segunda mitad no la puede cerrar ninguna línea de código:
 
 - **Sin convocar a nadie** — el archivo de la corrida (**B1**), el debriefing que
-  depende de él (**B7**), la identidad de los nueve roles en datos (**B2**) y la
+  depende de él (**B7**), la identidad de los siete roles en datos (**B2**) y la
   medida de si la asimetría produjo conversación (**B3**).
 - **Con personas en una sala** — las tres corridas (**P2–P4**) y las cuatro
   calibraciones (**C1–C4**). *El motor puede estar perfecto y el ejercicio no

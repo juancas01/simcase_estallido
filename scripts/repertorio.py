@@ -33,7 +33,6 @@ sys.path.insert(0, RAIZ)
 from src.engine import actions          # noqa: E402
 from src.engine.views import ROLES      # noqa: E402
 
-
 # El título con el que cada rol se presenta en la sala. Es el mismo de
 # `web_ui/src/comun.jsx`; el motor solo conoce el identificador corto, porque
 # para él un rol es una clave y no una persona.
@@ -43,9 +42,7 @@ TITULOS = {
     "Alcalde": "Alcalde de la ciudad epicentro",
     "Defensa": "Ministro de Defensa",
     "Policía": "Director General de la Policía",
-    "Defensoría": "Delegado de la Defensoría del Pueblo",
     "Transporte": "Ministro de Transporte",
-    "Minas": "Ministro de Minas y Energía",
     "Agricultura": "Ministro de Agricultura y Desarrollo Rural",
 }
 
@@ -61,7 +58,6 @@ TIPOS = {
 def celda(texto: str) -> str:
     """Un párrafo del código metido en una celda de tabla, sin romperla."""
     return re.sub(r"\s+", " ", texto or "").strip().replace("|", "\\|")
-
 
 def documento() -> str:
     cat = actions.catalogo_por_rol()
@@ -165,7 +161,6 @@ def documento() -> str:
                 celda(f["nombre"]), celda(f["descripcion"]), f["accion"]))
     w("")
     return "\n".join(L)
-
 
 if __name__ == "__main__":
     destino = os.path.join(RAIZ, "docs", "GUIA_DE_ACCIONES.md")

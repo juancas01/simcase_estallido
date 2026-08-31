@@ -58,7 +58,6 @@ HERRAMIENTAS: dict[str, dict] = {
         "construir": lambda a: A.OperarNodo(
             nodo_id=a.get("nodo_id", ""),
             tipo_unidad=a.get("tipo_unidad", "esmad"),
-            dupla_presente=bool(a.get("dupla_presente")),
             concertado_con_alcaldia=bool(a.get("concertado_con_alcaldia")),
             responsable_nominado=a.get("responsable_nominado"),
             de_noche=bool(a.get("de_noche")),
@@ -67,7 +66,6 @@ HERRAMIENTAS: dict[str, dict] = {
         "esquema": {
             "nodo_id": ("string", "El punto de cierre, TAL CUAL lo dijo la persona"),
             "tipo_unidad": ("string", "esmad, policia o militar"),
-            "dupla_presente": ("boolean", "si acompaña una dupla de la Defensoría (gasta una de las tres)"),
             "concertado_con_alcaldia": ("boolean", "si se concertó con la Alcaldía"),
             "responsable_nominado": ("string", "quién firma la orden"),
             "de_noche": ("boolean", "si se ordena operar de noche"),
@@ -273,12 +271,15 @@ HERRAMIENTAS: dict[str, dict] = {
         "requeridos": [],
     },
     # --- Defensoría ---
-    "asignar_duplas": {
-        "rol": "Defensoría",
-        "descripcion": "Asignar las tres duplas de verificación",
+    "desplegar_equipos": {
+        "rol": "Ministro de Defensa",
+        "descripcion": "Despliegue de equipos de verificación en terreno",
+        "para_el_modelo": ("Manda equipos SUYOS a constatar en el sitio. Solo "
+                           "hay tres por turno y sirven para las dos cosas: "
+                           "mirar un punto o comprobar una denuncia."),
         "entidades": {},
         "entidades_lista": {"puntos": "punto"},
-        "construir": lambda a: A.AsignarDuplas(
+        "construir": lambda a: A.DesplegarEquiposTerreno(
             nodos=list(a.get("puntos") or []),
             denuncias=list(a.get("denuncias") or [])),
         "esquema": {
@@ -287,29 +288,13 @@ HERRAMIENTAS: dict[str, dict] = {
         },
         "requeridos": [],
     },
-    "exigir_estandares": {
-        "rol": "Defensoría",
-        "descripcion": "Estándar de empleo: reglas escritas, identificación, registro",
-        "entidades": {},
-        "construir": lambda a: A.ExigirEstandaresEmpleo(),
-        "esquema": {},
-        "requeridos": [],
-    },
     "requerir_corredor_humanitario": {
-        "rol": "Defensoría",
+        "rol": "Ministro del Interior",
         "descripcion": "Requerimiento de paso humanitario permanente",
         "entidades": {"corredor_id": "corredor"},
         "construir": lambda a: A.RequerirCorredoresHumanitarios(
             corredor_id=a.get("corredor_id", "")),
         "esquema": {"corredor_id": ("string", "El corredor, o vacío para el más cerrado")},
-        "requeridos": [],
-    },
-    "manifestar_duda_permanencia": {
-        "rol": "Defensoría",
-        "descripcion": "Manifestar públicamente que su permanencia está en cuestión",
-        "entidades": {},
-        "construir": lambda a: A.ManifestarDudaPermanencia(),
-        "esquema": {},
         "requeridos": [],
     },
     # --- Logística ---
@@ -335,7 +320,7 @@ HERRAMIENTAS: dict[str, dict] = {
         "requeridos": [],
     },
     "declarar_infraestructura_critica": {
-        "rol": "Ministro de Minas",
+        "rol": "Ministro del Interior",
         "descripcion": "Declaratoria de infraestructura crítica",
         "entidades": {},
         "para_el_modelo": ("Pone bajo custodia una instalacion del registro de "
@@ -361,7 +346,7 @@ HERRAMIENTAS: dict[str, dict] = {
         "requeridos": [],
     },
     "fijar_prioridad_combustible": {
-        "rol": "Ministro de Minas",
+        "rol": "Ministro de Transporte",
         "descripcion": "Orden de prioridad del combustible entre usos",
         "entidades": {},
         "construir": lambda a: A.FijarPrioridadCombustible(
@@ -372,7 +357,7 @@ HERRAMIENTAS: dict[str, dict] = {
         "requeridos": [],
     },
     "entregar_calendario": {
-        "rol": "Ministro de Minas",
+        "rol": "Ministro de Agricultura",
         "descripcion": "Entregar el calendario de agotamiento a la mesa",
         "entidades": {},
         "construir": lambda a: A.EntregarCalendarioAgotamiento(),
@@ -450,12 +435,12 @@ HERRAMIENTAS: dict[str, dict] = {
         "requeridos": [],
     },
     "acordar_pasos_seguros": {
-        "rol": "Ministro de Minas",
+        "rol": "Ministro de Transporte",
         "descripcion": "Pasos seguros y ventanas de despacho concertadas",
         "para_el_modelo": ("Ventanas horarias para que pase el suministro por un "
                            "PUNTO cerrado, sin abrirlo y sin gastar escolta. No "
                            "es escoltar, ni organizar una caravana, ni el acopio "
-                           "agroalimentario."),
+                           "agroalimentario, que va por un CORREDOR."),
         "entidades": {"nodo_id": "punto"},
         "construir": lambda a: A.AcordarPasosSeguros(nodo_id=a.get("nodo_id", "")),
         "esquema": {"nodo_id": ("string", "El punto, TAL CUAL lo dijo la persona")},
@@ -517,7 +502,7 @@ HERRAMIENTAS: dict[str, dict] = {
         "descripcion": "Clase de prioridad agroalimentaria en el reparto de corredores",
         "para_el_modelo": ("Da turno propio a alimentos e insumos pecuarios en "
                            "la priorización de corredores. NO es la prioridad "
-                           "del combustible entre usos, que es de Minas."),
+                           "del combustible entre usos, que es de Transporte."),
         "entidades": {},
         "construir": lambda a: A.FijarClasePrioridadAlimentaria(),
         "esquema": {},
@@ -535,10 +520,10 @@ HERRAMIENTAS: dict[str, dict] = {
         "requeridos": [],
     },
     "adoptar_protocolo_verificacion": {
-        "rol": "Defensoría",
+        "rol": "Director de Policía",
         "descripcion": "Protocolo único de verificación de cifras y denuncias",
         "para_el_modelo": ("UNA sola forma de verificar, igual para todos. No es "
-                           "mandar duplas al terreno —eso es asignar_duplas— ni "
+                           "mandar equipos al terreno —eso es desplegar_equipos— ni "
                            "el protocolo de vocería, que es del Interior."),
         "entidades": {},
         "construir": lambda a: A.AdoptarProtocoloVerificacion(),
@@ -666,7 +651,7 @@ MARCAS_ALCALDIA = ("con la alcaldia", "con el alcalde", "con la alcaldesa",
 # Hay booleanos que no describen la orden: **conceden un requisito o un
 # mitigador**. Que la Alcaldía esté en la mesa es lo que hace viable concertar
 # en el epicentro; que la firma vaya delimitada cuesta −8 de respaldo en vez de
-# −22; que haya dupla divide el riesgo. Ninguno se deduce de que la orden suene
+# −22. Ninguno se deduce de que la orden suene
 # razonable: se dice o no se dice.
 #
 # El sistema ya se lo pide al modelo, y aun así lo hace: medido, «concertar en
@@ -682,7 +667,6 @@ NO_SE_INFIERE: dict[str, tuple[str, ...]] = {
     "con_alcaldia": MARCAS_ALCALDIA + ("alcaldia", "alcalde", "alcaldesa"),
     "concertado_con_alcaldia": MARCAS_ALCALDIA + ("alcaldia", "alcalde",
                                                   "alcaldesa"),
-    "dupla_presente": ("dupla", "defensoria acompan", "acompanamiento"),
     "delimitada": ("delimit", "con limites", "con reglas escritas", "acotad"),
     # Ceder prioridad de fuerza al epicentro es lo que compra el acuerdo con los
     # alcaldes, y compromete el reparto del resto del país. Se dice o no se dice.
@@ -820,8 +804,8 @@ def catalogo_compacto(estado: Estado) -> dict:
 # misma orden. Con palabras completas, «Operen el Puente Amarillo» no disparaba
 # nada — y eso es exactamente el fallo silencioso que hay que evitar.
 #
-# `excluye` evita que una raíz secundaria robe la orden: «con dupla de la
-# Defensoría» dentro de una operación es un PARÁMETRO, no una acción aparte.
+# `excluye` evita que una raíz secundaria robe la orden: una raíz que aparece
+# dentro del complemento de otra orden no abre una acción nueva.
 DISPARADORES: list[tuple[str, list[str], list[str]]] = [
     ("operar_punto", ["oper", "desbloque", "despej", "intervenir", "esmad en"], []),
     ("escoltar", ["escolt", "carrotanque", "mision medica", "misión medica"], []),
@@ -854,21 +838,19 @@ DISPARADORES: list[tuple[str, list[str], list[str]]] = [
     ("esquema_humanitario", ["esquema humanitario", "ollas comunitarias",
                              "barrios aislados"], []),
     # `verific` está dentro de «protocolo de verificación», que es la acción
-    # CONSTITUTIVA de la Defensoría y no el envío de sus tres duplas al terreno.
-    # Adoptar el protocolo mandaba además unas duplas que nadie pidió, y con
-    # ellas se iba el recurso más escaso que tiene el rol. Lo separa
-    # `FRASES_OPACAS`, no una exclusión: «asignar duplas de verificación» tiene
-    # que seguir siendo una orden de duplas.
-    ("asignar_duplas", ["dupla", "verific"], ["oper", "acompan", "acompañ"]),
+    # CONSTITUTIVA que adopta el Director de Policía, y no el envío de los tres
+    # equipos al terreno. Adoptar el protocolo mandaba además unos equipos que
+    # nadie pidió, y con ellos se iba el recurso más escaso del turno. Lo separa
+    # `FRASES_OPACAS`, no una exclusión: «desplegar equipos de verificación»
+    # tiene que seguir siendo una orden de equipos.
+    ("desplegar_equipos", ["equipo de terreno", "equipos de terreno", "dupla",
+                           "verific"], ["oper", "acompan", "acompañ"]),
     # `reglas de empleo` está dentro de «reglas de empleo DEL SECTOR», que es la
     # del Ministro de Defensa. La Defensoría EXIGE el estándar; Defensa lo ADOPTA
     # para sus propias unidades. Son dos roles y dos acciones, y las separa la
     # regla de la raíz más larga en `_clausulas` — no una exclusión, que dejaría
     # muda a la Defensoría cada vez que alguien pidiera las dos en un mensaje.
-    ("exigir_estandares", ["estandar", "reglas de empleo",
-                           "identificacion de agentes"], []),
     ("requerir_corredor_humanitario", ["corredor humanitario", "paso humanitario"], []),
-    ("manifestar_duda_permanencia", ["retirarme", "permanencia", "no puedo avalar"], []),
     ("organizar_caravana", ["caravana", "conductores"], ["escolt"]),
     ("negociar_con_gremios", ["gremio", "camionero"], []),
     ("declarar_infraestructura_critica", ["infraestructura critica",
@@ -926,8 +908,13 @@ DISPARADORES: list[tuple[str, list[str], list[str]]] = [
                          "ir en persona"], []),
     ("publicar_parte_municipal", ["parte municipal", "conteo de la ciudad",
                                   "cifra municipal"], []),
-    ("fijar_reglas_sector", ["reglas de empleo del sector", "reglas del sector",
-                             "registro audiovisual"], []),
+    # ABSORBE LAS RAÍCES DEL ESTÁNDAR QUE EXIGÍA LA DEFENSORÍA. Esa acción se
+    # retiró y sus tres mitigadores viven aquí, así que «adoptar el estándar de
+    # empleo» o «que los agentes vayan identificados» tienen que llegar a esta.
+    # Sin esto el canal negaría tener una acción que tiene.
+    ("fijar_reglas_sector", ["reglas de empleo", "reglas del sector", "estandar",
+                             "registro audiovisual",
+                             "identificacion de agentes"], []),
     ("presentar_evidencia", ["inteligencia", "quien financia",
                              "financiacion de los cierres"], []),
     ("adoptar_protocolo_verificacion", ["protocolo de verificacion",
@@ -1029,8 +1016,6 @@ def interpretar_sin_modelo(estado: Estado, texto: str) -> list[dict]:
         # una cifra en lugar de una unidad.
         args.update(_numeros_de_la_clausula(spec, t_clausula))
 
-        if "dupla" in t_clausula and nombre == "operar_punto":
-            args["dupla_presente"] = True
         if "de noche" in t_clausula or "nocturn" in t_clausula:
             args["de_noche"] = True
         if "delimit" in t or "con limites" in t:
@@ -1172,7 +1157,7 @@ FRASES_PARAMETRO = (
 FRASES_OPACAS = (
     "parte operacional",
     # «Protocolo de verificación» es la constitutiva de la Defensoría, no el
-    # envío de sus tres duplas al terreno. La raíz `verific` vive dentro.
+    # envío de los tres equipos al terreno. La raíz `verific` vive dentro.
     "de verificacion", "de verificar",
 )
 

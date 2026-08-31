@@ -16,9 +16,7 @@ export const ROLES = [
   { id: 'Alcalde', nombre: 'Alcalde de la ciudad epicentro', frente: 'Estrategia' },
   { id: 'Defensa', nombre: 'Ministro de Defensa', frente: 'Seguridad' },
   { id: 'Policía', nombre: 'Director General de la Policía', frente: 'Seguridad' },
-  { id: 'Defensoría', nombre: 'Delegado de la Defensoría del Pueblo', frente: 'Seguridad' },
   { id: 'Transporte', nombre: 'Ministro de Transporte', frente: 'Logística' },
-  { id: 'Minas', nombre: 'Ministro de Minas y Energía', frente: 'Logística' },
   { id: 'Agricultura', nombre: 'Ministro de Agricultura y Desarrollo Rural', frente: 'Logística' },
 ]
 

@@ -76,11 +76,11 @@ simcase_estallido/
 │   ├── force.py            367 l   riesgo, mitigadores, incidentes, ESMAD, escolta
 │   ├── aperture.py         293 l   las tres vías de abrir · LAS MESAS · acuerdos
 │   ├── supply.py           227 l   el reloj, el oxígeno, la prioridad de combustible
-│   ├── information.py      342 l   verdad, estimaciones sesgadas, duplas, denuncias
+│   ├── information.py      342 l   verdad, estimaciones sesgadas, equipos, denuncias
 │   ├── territory.py        473 l   lecturas del mapa · INTERVENCIÓN · geometría
 │   │
 │   ├── views.py            860 l   LAS NUEVE VISTAS PRIVADAS
-│   ├── actions.py        2 744 l   las 39 acciones + la GUÍA de cada una
+│   ├── actions.py        2 744 l   las 37 acciones + la GUÍA de cada una
 │   └── simulation.py       692 l   el bucle · paso() es la única puerta
 │
 ├── src/api/main.py     880 l   capa delgada · endpoints y catch-all del SPA
@@ -127,12 +127,12 @@ el corte natural sería por superficie.
 ### El estado
 
 Todo el mundo vive en un objeto `Estado` ([`state.py`](../src/engine/state.py)),
-con **tres niveles espaciales** porque los nueve roles no deciden sobre lo mismo:
+con **tres niveles espaciales** porque los siete roles no deciden sobre lo mismo:
 
 ```
 Nodo       un punto de cierre          11    Policía · Interior · Alcalde
 Corredor   una secuencia de puntos      4    Transporte · Defensa
-Region     un área con su reloj         4    Minas · Interior
+Region     un área con su reloj         4    Agricultura · Interior
 ```
 
 Más `Reservas`, `Banderas`, `Unidad`, `Denuncia`, `Acuerdo` y el registro de
@@ -175,7 +175,7 @@ Dos datos, y son los que sostienen el ejercicio entero:
 | `Denuncia.veraz` | capa 1, `state.py` | verificar dejaría de costar algo |
 
 **Están custodiados en las cuatro superficies**, no solo en `vista_publica()`:
-también en las nueve vistas privadas, en los deltas y en los hechos del mapa. Cada
+también en las siete vistas privadas, en los deltas y en los hechos del mapa. Cada
 vez que se añade una superficie hay que preguntarse si abre una puerta trasera a
 estos dos.
 
@@ -254,9 +254,9 @@ lógica vive en el motor, que no sabe que esta capa existe.**
 ```
 GET  /api/tablero              el tablero + deltas + hechos del mapa
 GET  /api/vista/{rol}          la vista privada de un rol
-GET  /api/vistas               las nueve, para el corredor sin interfaz
+GET  /api/vistas               las siete, para el corredor sin interfaz
 GET  /api/esfera               lo que se dice
-GET  /api/catalogo             las 39 acciones, con su `en_claro`
+GET  /api/catalogo             las 37 acciones, con su `en_claro`
 GET  /api/config               si hay llave de API, y cuál es el archivo .env
 GET  /api/metricas             las métricas de cierre
 GET  /api/proyeccion           el país a 72 horas
@@ -438,7 +438,7 @@ Se agrupan en dos frentes, porque custodian dos cosas muy distintas.
 | **La mesa y el tiempo** | que la cohesión no vuelva a ser una rampa determinista |
 | **Aperturas** | que un corredor valga lo que su peor punto |
 | **Jurisdicción y validación** | que una acción inválida no tumbe el resto de la orden |
-| **Las nueve vistas** | que quepan en una pantalla y que los sesgos vayan en direcciones opuestas |
+| **Las siete vistas** | que quepan en una pantalla y que los sesgos vayan en direcciones opuestas |
 | **El escenario** | las invariantes del cargador, el territorio ficticio, las posiciones del mapa |
 | **Reloj, deltas y hechos** | que el delta mida el último paso y no abra puertas traseras |
 | **La documentación** | que cada `PENDIENTE(Xn)` del código apunte a una entrada real |
@@ -466,7 +466,7 @@ sentidos de `PENDIENTES.md` ya se había roto en silencio.**
 
 > **Este frente llegó tarde, y conviene recordar por qué.** Durante varias
 > versiones todo lo verificado custodiaba el motor —que nadie toca durante el
-> ejercicio— y **nada** custodiaba el canal por el que entran las órdenes de nueve
+> ejercicio— y **nada** custodiaba el canal por el que entran las órdenes de siete
 > personas en dos horas. Al sondearlo aparecieron dieciocho fallos, nueve de
 > ellos silenciosos. Están contados en
 > [`docs/historial/resueltos.md`](historial/resueltos.md#4--primera-revisión-del-canal-de-órdenes).
@@ -484,7 +484,7 @@ llave: si algo dejara de pasar al quitar el modelo, la degradación sería
 decorativa.
 
 > **Lo que hoy no se verifica es la interfaz.** Ninguna comprobación mira lo que
-> la pantalla dibuja, y un fallo de una línea llegó a vaciar las nueve vistas
+> la pantalla dibuja, y un fallo de una línea llegó a vaciar las siete vistas
 > privadas con todo lo demás en verde. Es el pendiente **B9** de
 > [`PENDIENTES.md`](../PENDIENTES.md).
 
@@ -498,7 +498,7 @@ decorativa.
 class MiAccion(Accion):
     """Qué hace, y por qué existe en el ejercicio."""
     codigo = "X1"
-    rol = "Minas"
+    rol = "Transporte"
     clase: Clase = "operativa"          # constitutiva | operativa | informativa
                                         # en pantalla: Protocolo | Operación |
                                         # Información  (etiquetas.jsx)
@@ -519,8 +519,13 @@ class MiAccion(Accion):
 ### Un rol nuevo
 
 Tocaría `views.py` (su vista), `actions.py` (su repertorio), `comun.jsx` (su
-título) y la ficha impresa. Es el cambio más caro del repositorio: **nueve es un
+título) y la ficha impresa. Es el cambio más caro del repositorio: **siete es un
 número de diseño**, no una constante.
+
+Y quitar uno cuesta más que añadirlo, porque hay que decidir qué pasa con la
+mecánica que sostenía. Está medido: la salida del Delegado de la Defensoría del
+Pueblo y del Ministro de Minas y Energía está contada en
+[`historial/resueltos.md`](historial/resueltos.md).
 
 ### Un punto, un corredor, una región
 

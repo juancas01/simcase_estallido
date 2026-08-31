@@ -1,10 +1,17 @@
 """
-actions.py — Las acciones de los nueve roles.
+actions.py — Las acciones de los siete roles.
 
-Treinta y nueve acciones, entre cuatro y cinco por rol. El Presidente tiene
-cinco porque decide más; la Defensoría también, porque cruza dos ejes sin mandar
-sobre nadie; y el Ministro de Agricultura, porque ninguna de las suyas se
-ejecuta sin la concurrencia de otro y necesita margen para elegir por dónde.
+Treinta y siete acciones, entre cuatro y seis por rol. El Alcalde tiene cuatro
+porque su mandato acaba en el borde de su ciudad; el Interior y Transporte
+tienen seis porque heredaron las carteras que se fueron; y el de Agricultura,
+porque ninguna de las suyas se ejecuta sin la concurrencia de otro y necesita
+margen para elegir por dónde.
+
+ERAN NUEVE ROLES Y TREINTA Y NUEVE ACCIONES. Salieron el Delegado de la
+Defensoría del Pueblo y el Ministro de Minas y Energía; siete de sus acciones
+encontraron heredero y dos se retiraron, porque «exigirle al Gobierno» y «poner
+en duda mi permanencia» son actos de quien no responde ante él. La historia
+completa está en `docs/historial/resueltos.md`.
 
     constitutiva   cambia cómo funciona la mesa. Activa una bandera persistente.
                    Casi no cuesta y modifica TODO lo posterior.
@@ -386,7 +393,7 @@ class DesplazarseAlEpicentro(Accion):
 
 
 # ===========================================================================
-# 02 · MINISTRO DEL INTERIOR — 4
+# 02 · MINISTRO DEL INTERIOR — 6
 # ===========================================================================
 
 @dataclass
@@ -622,6 +629,195 @@ class OfrecerContraprestacion(Accion):
         ), {"tramitada": False})
 
 
+@dataclass
+class RequerirCorredoresHumanitarios(Accion):
+    """
+    Corredores humanitarios permanentes, exigibles **tanto al Estado como a
+    quienes sostienen los cierres**.
+
+    Sin oxígeno modelado sería una declaración de principios. Con él, negarlo
+    tiene contador de víctimas — y obliga a elegir entre abrirlo por la fuerza,
+    que es el peor escenario posible, o aceptar públicamente el incumplimiento.
+    """
+    codigo = "A4"
+    rol = "Interior"
+    clase: Clase = "operativa"
+    descripcion = "Requerimiento de corredores humanitarios permanentes"
+    en_claro = (
+        "Exige que haya un paso permanente para lo humanitario. Negarlo es lo "
+        "que más caro cuesta de cara al exterior.")
+    corredor_id: str = ""
+
+    def validar(self, estado: Estado) -> Validacion:
+        if self.corredor_id and self.corredor_id not in estado.corredores:
+            return Validacion(False, f"No existe el corredor {self.corredor_id}.")
+        return Validacion(True)
+
+    def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
+        humanitarios = [c for c in estado.corredores.values()
+                        if "humanitario" in c.clases_prioridad]
+        objetivo = (estado.corredores[self.corredor_id] if self.corredor_id
+                    else min(humanitarios,
+                             key=lambda c: c.caudal_efectivo(estado.nodos)))
+
+        # Requerir baja el apoyo al cierre en sus puntos: la misión médica se
+        # vuelve línea roja también para quienes sostienen el bloqueo.
+        for nid in objetivo.nodos:
+            n = estado.nodos.get(nid)
+            if n:
+                n.apoyo_local = max(0.0, n.apoyo_local - 0.06)
+
+        estado.reservas.aplicar({"respaldo_internacional": 5.0})
+        estado.eventos_turno.append({"tipo": "corredor_humanitario_requerido",
+                                     "corredor": objetivo.corredor_id})
+        return Resultado(True, (
+            f"Requerimiento formal de paso humanitario permanente por "
+            f"{objetivo.nombre}, exigible al Estado y a quienes sostienen los "
+            f"cierres. Si se niega, el incumplimiento queda con fecha."
+        ), {"corredor": objetivo.corredor_id})
+
+
+@dataclass
+class DeclararInfraestructuraCritica(Accion):
+    """
+    Protección permanente, con la inmovilización de fuerza que implica.
+
+    **Es la aritmética que enfrenta al Interior con Defensa**: la protección
+    permanente resta exactamente de la capacidad de desbloqueo.
+
+    APUNTA AL REGISTRO, NO A UNA CADENA DE TEXTO. Hasta ahora recibía una lista
+    de nombres libres —«refineria»— que nadie comprobaba contra nada: se podía
+    declarar crítica una instalación que no existe, la orden salía ejecutada con
+    éxito, e inmovilizaba fuerza igual. Ahora se resuelve contra
+    `estado.infraestructura`, que es la base de infraestructura relevante del
+    escenario, y lo que no está ahí se rechaza diciendo qué sí está.
+    """
+    codigo = "A1"
+    rol = "Interior"
+    clase: Clase = "operativa"
+    descripcion = "Declaratoria de infraestructura crítica"
+    en_claro = (
+        "Pone bajo custodia una instalación del registro de infraestructura "
+        "relevante. Queda protegida, e inmoviliza fuerza que hace falta en "
+        "otra parte.")
+    instalaciones: list[str] = field(default_factory=list)
+
+
+    @classmethod
+    def sonda(cls, estado: Estado) -> "Accion | None":
+        """Una sola instalación de las que aún no están protegidas: lo que se
+        comprueba es si queda fuerza libre para custodiarla."""
+        libres = [i for i in estado.infraestructura.values() if not i.protegida]
+        if not libres:
+            return cls(instalaciones=[])
+        return cls(instalaciones=[libres[0].infra_id])
+
+    # ------------------------------------------------------------------
+    # LA RESOLUCIÓN, que es determinista y vive en el motor
+    #
+    # Por identificador, por nombre exacto, y por nombre contenido. NO hay
+    # coincidencia difusa: acertar mal en silencio aquí pone la custodia en la
+    # instalación equivocada y deja sin proteger la que se quiso proteger, que
+    # es el mismo modo de falla que el resolutor de entidades evita en el canal.
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _normalizar(t: str) -> str:
+        import unicodedata
+        return "".join(c for c in unicodedata.normalize("NFD", t.lower())
+                       if unicodedata.category(c) != "Mn").strip()
+
+    def resolver(self, estado: Estado) -> tuple[list, list[str]]:
+        """Devuelve `(instalaciones, lo_que_no_se_reconocio)`."""
+        halladas, perdidas = [], []
+        for crudo in self.instalaciones:
+            n = self._normalizar(str(crudo))
+            exacta = [i for i in estado.infraestructura.values()
+                      if i.infra_id.lower() == n or self._normalizar(i.nombre) == n]
+            if len(exacta) == 1:
+                halladas.append(exacta[0])
+                continue
+            parciales = [i for i in estado.infraestructura.values()
+                         if n and n in self._normalizar(i.nombre)]
+            if len(parciales) == 1:
+                halladas.append(parciales[0])
+            else:
+                perdidas.append(str(crudo))
+        return halladas, perdidas
+
+    def validar(self, estado: Estado) -> Validacion:
+        if not self.instalaciones:
+            return Validacion(False, (
+                "No se dijo qué instalación proteger. El registro de "
+                "infraestructura relevante las tiene todas, con su región."
+            ))
+        halladas, perdidas = self.resolver(estado)
+        if perdidas:
+            nombres = ", ".join(sorted(
+                i.nombre for i in estado.infraestructura.values() if not i.protegida))
+            return Validacion(False, (
+                f"No está en el registro de infraestructura: "
+                f"{', '.join(perdidas)}. Sin custodiar quedan: {nombres}."
+            ))
+        nuevas = [i for i in halladas if not i.protegida]
+        if not nuevas:
+            return Validacion(False, (
+                "Esa instalación ya está bajo custodia. Volver a declararla no "
+                "añade protección y sí inmovilizaría más fuerza."
+            ))
+        cupo = len(estado.esmad_disponible())
+        necesita = len(nuevas) * P.CUSTODIA_POLICIAS_POR_INSTALACION
+        if necesita > cupo:
+            return Validacion(True, parcial=True, motivo=(
+                "La capacidad libre no alcanza para custodiarlas todas. Se "
+                "protegerá lo que se pueda."
+            ), habilitada_por=["Ministro de Defensa (redesplegar militares)"])
+        return Validacion(True)
+
+    def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
+        halladas, _ = self.resolver(estado)
+        nuevas = [i for i in halladas if not i.protegida]
+
+        for i in nuevas:
+            i.protegida = True
+            i.protegida_desde_turno = estado.turno_decision
+            estado.instalaciones_criticas.append(i.nombre)
+
+        for u in estado.esmad_disponible()[: len(nuevas)]:
+            u.asignacion = "custodia"
+            u.ubicacion = "infraestructura"
+        inmovilizadas = force.capacidad_inmovilizada_por_custodia(estado)
+
+        # Los puntos contiguos a lo que se acaba de proteger. Es exactamente lo
+        # que se está comprando, y ahora se puede nombrar: el registro dice qué
+        # bloqueo tiene al lado cada instalación.
+        protegidos = sorted({n for i in nuevas for n in i.nodos_contiguos})
+        for nid in protegidos:
+            nodo = estado.nodos.get(nid)
+            if nodo:
+                nodo.proximidad_infra_critica = True
+
+        sin_proteger = [i for i in estado.infraestructura.values() if not i.protegida]
+        vitales = [i for i in sin_proteger if i.criticidad == "vital"]
+        aviso = ""
+        if vitales:
+            aviso = (f" Quedan sin custodia {len(vitales)} instalación(es) de "
+                     f"criticidad vital: {', '.join(i.nombre for i in vitales)}.")
+
+        estado.eventos_turno.append({
+            "tipo": "infraestructura_protegida",
+            "instalaciones": [i.infra_id for i in nuevas],
+        })
+        return Resultado(True, (
+            f"{', '.join(i.nombre for i in nuevas)} bajo protección permanente. "
+            f"Inmoviliza {inmovilizadas} unidades que Seguridad necesitaba para "
+            f"desbloquear: la mesa tendrá que aplazar corredores, y el "
+            f"aplazamiento tiene nombre de ciudad." + aviso
+        ), {"inmovilizadas": inmovilizadas, "puntos_protegidos": protegidos,
+            "protegidas": [i.infra_id for i in nuevas],
+            "sin_proteger": [i.infra_id for i in sin_proteger]})
+
+
 # ===========================================================================
 # 03 · ALCALDE DE LA CIUDAD EPICENTRO — 4
 # ===========================================================================
@@ -789,12 +985,25 @@ class PublicarParteMunicipal(Accion):
 
 
 # ===========================================================================
-# 04 · MINISTRO DE DEFENSA — 4
+# 04 · MINISTRO DE DEFENSA — 5
 # ===========================================================================
 
 @dataclass
 class FijarReglasEmpleoSector(Accion):
-    """Reglas de empleo de la fuerza del sector, con registro audiovisual."""
+    """
+    El estándar de empleo de la fuerza, completo, adoptado por el propio sector.
+
+    ENCIENDE LOS TRES MITIGADORES PERSISTENTES. Antes encendía dos y el tercero
+    —la identificación de agentes— lo traía una acción del Delegado de la
+    Defensoría del Pueblo, que se lo EXIGÍA al Gobierno. Sin ese rol no hay quien
+    lo exija: dárselo al Presidente o al Interior sería el Gobierno exigiéndose a
+    sí mismo, y eso no es una exigencia, es una decisión.
+
+    Así que la lección cambia y no se pierde. Era «un tercero pide más de lo que
+    el sector concede»; ahora es **«el sector se autolimita, o no lo hace
+    nadie»** — y con la puerta abierta a que no lo haga, porque ninguna
+    constitutiva es obligatoria.
+    """
     codigo = "A1"
     rol = "Defensa"
     clase: Clase = "constitutiva"
@@ -807,13 +1016,17 @@ class FijarReglasEmpleoSector(Accion):
     bandera_que_activa = "reglas_escritas"
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
-        estado.banderas.activar("reglas_escritas", estado.turno)
-        estado.banderas.activar("registro_av", estado.turno)
+        for b in ("reglas_escritas", "identificacion_agentes", "registro_av"):
+            estado.banderas.activar(b, estado.turno)
+        estado.reservas.aplicar(P.COSTO_RESERVAS["estandar_autoimpuesto"])
         return Resultado(True, (
-            "Reglas de empleo escritas y registro audiovisual obligatorio. Dos "
-            "mitigadores activos, y la probabilidad de que una imagen circule "
-            "baja del 55 % al 25 %."
-        ), {"mitigadores": ["reglas_escritas", "registro_av"]})
+            "Estándar de empleo adoptado por el propio sector: reglas escritas, "
+            "identificación obligatoria y registro audiovisual. Los tres "
+            "mitigadores activos dividen por casi cinco la probabilidad de "
+            "incidente y no consumen un solo escuadrón. Atarse las manos delante "
+            "de la mesa cuesta margen frente a quien pide mano dura."
+        ), {"mitigadores": ["reglas_escritas", "identificacion_agentes",
+                            "registro_av"]})
 
 
 @dataclass
@@ -836,7 +1049,6 @@ class OperarNodo(Accion):
 
     nodo_id: str = ""
     tipo_unidad: str = "esmad"
-    dupla_presente: bool = False
     concertado_con_alcaldia: bool = False
     responsable_nominado: str | None = None
     de_noche: bool = False
@@ -895,18 +1107,16 @@ class OperarNodo(Accion):
         from src.engine import mobilization
         nodo = estado.nodos[self.nodo_id]
 
-        # Acompañar con una dupla GASTA una dupla del bolsillo de tres. Antes era
-        # una casilla gratis y la asignación de la Defensoría no era una decisión.
-        dupla_real = False
-        if self.dupla_presente:
-            dupla_real = information.consumir_dupla(estado, f"acompanar:{self.nodo_id}")
-
+        # EL ACOMPAÑAMIENTO YA NO DESCUENTA NADA y por eso ya no está aquí.
+        # Mitigaba mientras lo hacía una dupla de la Defensoría del Pueblo, que
+        # miraba sin ser parte; con los equipos de terreno en manos del mismo
+        # ministerio que ordena la operación, que sus funcionarios la acompañen
+        # no cambia la probabilidad de que una imagen circule.
         unidades = (estado.esmad_disponible()[:2] if self.tipo_unidad == "esmad"
                     else [u for u in estado.unidades if u.tipo == self.tipo_unidad][:2])
 
         res = force.ejecutar_operacion(
             estado, nodo, self.tipo_unidad, unidades, rng,
-            dupla_presente=dupla_real,
             concertado_con_alcaldia=self.concertado_con_alcaldia,
             responsable_nominado=self.responsable_nominado,
         )
@@ -918,12 +1128,11 @@ class OperarNodo(Accion):
         #
         # Lo que NO se registra aquí es dónde está la fuerza AHORA. Eso es de la
         # Dirección General de la Policía, y si se filtrara al tablero uno de los
-        # nueve roles dejaría de hacer falta.
+        # siete roles dejaría de hacer falta.
         estado.eventos_turno.append({
             "tipo": "operacion",
             "nodo": nodo.nodo_id,
             "unidad": self.tipo_unidad,
-            "dupla": dupla_real,
             "incidente": res.hubo_incidente,
         })
 
@@ -982,7 +1191,6 @@ class OperarNodo(Accion):
             "victimas": res.victimas,
             "viral": res.imagen_viral,
             "atribuible": res.atribuible,
-            "dupla_presente": dupla_real,
         })
 
 
@@ -1103,8 +1311,100 @@ class PresentarEvidenciaInteligencia(Accion):
         ), {"nodos": objetivo, "solidez_declarada": False})
 
 
+@dataclass
+class DesplegarEquiposTerreno(Accion):
+    """
+    Los tres equipos de terreno del turno.
+
+    Un **equipo de terreno** es una pareja de funcionarios del sector defensa que
+    va al sitio a constatar qué pasa en un punto. Van de a dos porque protege a
+    quien verifica y porque dos testigos producen una constancia difícil de
+    desestimar.
+
+    **Hay tres y cada uno hace UNA sola cosa por turno**: verificar un punto o
+    verificar una denuncia. Mirar aquí es no mirar allá, y esa elección es suya.
+
+    ERA LA VEEDURÍA DE UN TERCERO Y ES INTELIGENCIA DE UNA PARTE. Cuando esto lo
+    hacía la Defensoría del Pueblo, su lectura era la única del ejercicio sin
+    sesgo apreciable y la única que producía el grado «confirmado». Ahora lo hace
+    el mismo ministerio que ordena las operaciones:
+
+      · **ir al terreno corrige, no limpia.** El sesgo baja de `+0,28` —lo que
+        sobreestima la inteligencia desde el escritorio— a `+0,12`, y sigue
+        siendo hacia arriba, que es la dirección que justifica escalar;
+      · **ninguna lectura vuelve a ser «confirmada»**, porque ya no hay nadie a
+        quien la mesa pueda creerle sin descontar de qué lado está;
+      · **verificar la denuncia propia solo vale si hay protocolo común**
+        adoptado (ver `information.verificar_denuncia`). Sin él, la fuerza se
+        está absolviendo a sí misma.
+
+    Nada de eso lo dice la pantalla como reproche: lo dice la aritmética.
+    """
+    codigo = "A5"
+    rol = "Defensa"
+    clase: Clase = "operativa"
+    descripcion = "Despliegue de equipos de verificación en terreno"
+    en_claro = (
+        "Manda equipos suyos a constatar en el sitio qué pasa en un punto o si "
+        "una denuncia es cierta. Solo tiene tres por turno, y son los mismos "
+        "para las dos cosas.")
+    nodos: list[str] = field(default_factory=list)
+    denuncias: list[str] = field(default_factory=list)
+
+
+    @classmethod
+    def sonda(cls, estado: Estado) -> "Accion | None":
+        """Un punto sin mirar, o cualquiera: lo que se comprueba aquí es si
+        queda algún equipo, no a dónde se manda."""
+        sin_mirar = [n for n in estado.nodos.values()
+                     if n.ultima_verificacion_turno is None]
+        objetivo = (sin_mirar or list(estado.nodos.values()))
+        if not objetivo:
+            return None
+        return cls(nodos=[objetivo[0].nodo_id])
+
+    def validar(self, estado: Estado) -> Validacion:
+        if information.equipos_libres(estado) == 0:
+            return Validacion(False, (
+                "No quedan equipos este turno. Mirar aquí era no mirar allá."
+            ))
+        # Sin punto ni denuncia no se verifica nada, y antes esto se ejecutaba y
+        # se reportaba como correcto: la sala ordenaba verificar, no se
+        # verificaba nada, y nadie se enteraba hasta el debriefing.
+        if not self.nodos and not self.denuncias:
+            return Validacion(False, (
+                "No se dijo qué verificar. Nombre los puntos, o diga un criterio: "
+                "«los cerrados», «sin verificar»."
+            ))
+        return Validacion(True)
+
+    def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
+        partes, datos = [], {}
+
+        for did in self.denuncias:
+            r = information.verificar_denuncia(estado, did)
+            partes.append(r.get("mensaje") or r.get("motivo", ""))
+            datos.setdefault("denuncias", []).append(
+                {"id": did, "ok": r["ok"], "veraz": r.get("veraz")}
+            )
+
+        if self.nodos:
+            r = information.verificar_puntos(estado, self.nodos, estado.turno)
+            if r["ok"]:
+                partes.append(f"Verificados {len(r['verificados'])} punto(s).")
+                if r.get("aviso"):
+                    partes.append(r["aviso"])
+                datos["verificados"] = [e.nodo_id for e in r["verificados"]]
+                datos["no_alcanzados"] = r["no_alcanzados"]
+
+        if not partes:
+            return Resultado(False, "No se desplegó ningún equipo.")
+        datos["equipos_restantes"] = information.equipos_libres(estado)
+        return Resultado(True, " ".join(partes), datos)
+
+
 # ===========================================================================
-# 05 · DIRECTOR GENERAL DE LA POLICÍA — 4
+# 05 · DIRECTOR GENERAL DE LA POLICÍA — 5
 # ===========================================================================
 
 @dataclass
@@ -1132,6 +1432,27 @@ class ClasificarParteOperacional(Accion):
             "Parte operacional clasificado y sostenido públicamente. La mesa pasa "
             "a tener una sola cifra oficial con su grado, y el desmentido deja de "
             "costar legitimidad cada vez."
+        ))
+
+
+@dataclass
+class AdoptarProtocoloVerificacion(Accion):
+    """Protocolo único de verificación de cifras y denuncias."""
+    codigo = "A2"
+    rol = "Policía"
+    clase: Clase = "constitutiva"
+    descripcion = "Protocolo único de verificación de cifras y denuncias"
+    en_claro = (
+        "Establece una sola manera de verificar cifras y denuncias, igual "
+        "para todos. Evita que cada cartera traiga su propio número.")
+
+    bandera_que_activa = "protocolo_verificacion"
+
+    def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
+        estado.banderas.activar("protocolo_verificacion", estado.turno)
+        return Resultado(True, (
+            "Protocolo único de verificación vigente. Una sola cifra oficial, "
+            "clasificada — y el Gobierno acepta que un tercero la fije."
         ))
 
 
@@ -1185,7 +1506,7 @@ class Escoltar(Accion):
     Acompañar una caravana de carga, un carrotanque o una misión médica.
 
     **Es la condición material de todo el frente logístico.** Sin escolta no hay
-    caravana ni carrotanque, por más que Transporte priorice y Minas asigne.
+    caravana ni carrotanque, por más que Transporte priorice y asigne.
     """
     codigo = "A2"
     rol = "Policía"
@@ -1294,258 +1615,7 @@ class SolicitarRelevo(Accion):
 
 
 # ===========================================================================
-# 06 · DELEGADO DE LA DEFENSORÍA DEL PUEBLO — 5
-# ===========================================================================
-
-@dataclass
-class ExigirEstandaresEmpleo(Accion):
-    """
-    Reglas escritas, identificación de agentes, registro audiovisual y ruta de
-    atención a víctimas.
-
-    Enciende TRES mitigadores de golpe. Es la acción de mayor rendimiento del
-    ejercicio y la que menos se parece a una acción.
-    """
-    codigo = "A1"
-    rol = "Defensoría"
-    clase: Clase = "constitutiva"
-    descripcion = "Estándar de empleo de la fuerza: reglas, identificación, registro"
-    en_claro = (
-        "Exige que la fuerza actúe con reglas escritas, identificada y "
-        "grabando. Es lo que hace que después se pueda saber qué pasó de "
-        "verdad.")
-    exigencias: int = 3     # >3 simultáneas y la mesa lo aísla
-
-    bandera_que_activa = "identificacion_agentes"
-
-    def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
-        if self.exigencias > 3:
-            estado.eventos_turno.append({"tipo": "defensoria_aislada"})
-            return Resultado(False, (
-                "Condicionó sin priorizar: la mesa lo aísla. Pierde acceso y su "
-                "palanca desaparece justo cuando se decide el escalamiento."
-            ))
-        for b in ("reglas_escritas", "identificacion_agentes", "registro_av"):
-            estado.banderas.activar(b, estado.turno)
-        estado.reservas.aplicar({"respaldo_internacional": 10.0})
-        return Resultado(True, (
-            "Estándar adoptado. Tres mitigadores activos: la probabilidad de "
-            "incidente en toda operación futura cae a poco más de la mitad, sin "
-            "consumir un solo escuadrón."
-        ), {"mitigadores": ["reglas_escritas", "identificacion_agentes", "registro_av"]})
-
-
-@dataclass
-class AdoptarProtocoloVerificacion(Accion):
-    """Protocolo único de verificación de cifras y denuncias."""
-    codigo = "A2"
-    rol = "Defensoría"
-    clase: Clase = "constitutiva"
-    descripcion = "Protocolo único de verificación de cifras y denuncias"
-    en_claro = (
-        "Establece una sola manera de verificar cifras y denuncias, igual "
-        "para todos. Evita que cada cartera traiga su propio número.")
-
-    bandera_que_activa = "protocolo_verificacion"
-
-    def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
-        estado.banderas.activar("protocolo_verificacion", estado.turno)
-        return Resultado(True, (
-            "Protocolo único de verificación vigente. Una sola cifra oficial, "
-            "clasificada — y el Gobierno acepta que un tercero la fije."
-        ))
-
-
-@dataclass
-class AsignarDuplas(Accion):
-    """
-    Las tres duplas del turno.
-
-    Una **dupla** es una pareja de funcionarios de la Defensoría que va al terreno
-    a constatar qué pasa en un punto, un hospital o un sitio de detención. Van de
-    a dos porque protege a los verificadores y porque dos testigos producen una
-    constancia difícil de desestimar.
-
-    **Hay tres, y salen del mismo bolsillo que el acompañamiento de operaciones.**
-    Cada una hace UNA sola cosa por turno: verificar un punto, verificar una
-    denuncia, o acompañar una operación. No puede hacer las tres.
-    """
-    codigo = "A3"
-    rol = "Defensoría"
-    clase: Clase = "operativa"
-    descripcion = "Asignación de las duplas de verificación"
-    en_claro = (
-        "Manda a sus verificadores a mirar puntos concretos. Solo tiene tres "
-        "por turno, y también hacen falta para comprobar denuncias y "
-        "acompañar operaciones.")
-    nodos: list[str] = field(default_factory=list)
-    denuncias: list[str] = field(default_factory=list)
-
-
-    @classmethod
-    def sonda(cls, estado: Estado) -> "Accion | None":
-        """Un punto sin mirar, o cualquiera: lo que se comprueba aquí es si
-        queda alguna dupla, no a dónde se manda."""
-        sin_mirar = [n for n in estado.nodos.values()
-                     if n.ultima_verificacion_turno is None]
-        objetivo = (sin_mirar or list(estado.nodos.values()))
-        if not objetivo:
-            return None
-        return cls(nodos=[objetivo[0].nodo_id])
-
-    def validar(self, estado: Estado) -> Validacion:
-        if not estado.banderas.defensoria_presente:
-            return Validacion(False, "La Defensoría no está en la mesa.")
-        if information.duplas_libres(estado) == 0:
-            return Validacion(False, (
-                "No quedan duplas este turno. Verificar aquí era no verificar allá."
-            ))
-        # Sin punto ni denuncia no se verifica nada, y antes esto se ejecutaba y
-        # se reportaba como correcto: la sala ordenaba verificar, no se
-        # verificaba nada, y nadie se enteraba hasta el debriefing.
-        if not self.nodos and not self.denuncias:
-            return Validacion(False, (
-                "No se dijo qué verificar. Nombre los puntos, o diga un criterio: "
-                "«los cerrados», «sin verificar»."
-            ))
-        return Validacion(True)
-
-    def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
-        partes, datos = [], {}
-
-        for did in self.denuncias:
-            r = information.verificar_denuncia(estado, did)
-            partes.append(r.get("mensaje") or r.get("motivo", ""))
-            datos.setdefault("denuncias", []).append(
-                {"id": did, "ok": r["ok"], "veraz": r.get("veraz")}
-            )
-
-        if self.nodos:
-            r = information.verificar_puntos(estado, self.nodos, estado.turno)
-            if r["ok"]:
-                partes.append(f"Verificados {len(r['verificados'])} punto(s).")
-                if r.get("aviso"):
-                    partes.append(r["aviso"])
-                datos["verificados"] = [e.nodo_id for e in r["verificados"]]
-                datos["no_alcanzados"] = r["no_alcanzados"]
-
-        if not partes:
-            return Resultado(False, "No se asignó ninguna dupla.")
-        datos["duplas_restantes"] = information.duplas_libres(estado)
-        return Resultado(True, " ".join(partes), datos)
-
-
-@dataclass
-class RequerirCorredoresHumanitarios(Accion):
-    """
-    Corredores humanitarios permanentes, exigibles **tanto al Estado como a
-    quienes sostienen los cierres**.
-
-    Sin oxígeno modelado sería una declaración de principios. Con él, negarlo
-    tiene contador de víctimas — y obliga a elegir entre abrirlo por la fuerza,
-    que es el peor escenario posible, o aceptar públicamente el incumplimiento.
-    """
-    codigo = "A4"
-    rol = "Defensoría"
-    clase: Clase = "operativa"
-    descripcion = "Requerimiento de corredores humanitarios permanentes"
-    en_claro = (
-        "Exige que haya un paso permanente para lo humanitario. Negarlo es lo "
-        "que más caro cuesta de cara al exterior.")
-    corredor_id: str = ""
-
-    def validar(self, estado: Estado) -> Validacion:
-        if self.corredor_id and self.corredor_id not in estado.corredores:
-            return Validacion(False, f"No existe el corredor {self.corredor_id}.")
-        return Validacion(True)
-
-    def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
-        humanitarios = [c for c in estado.corredores.values()
-                        if "humanitario" in c.clases_prioridad]
-        objetivo = (estado.corredores[self.corredor_id] if self.corredor_id
-                    else min(humanitarios,
-                             key=lambda c: c.caudal_efectivo(estado.nodos)))
-
-        # Requerir baja el apoyo al cierre en sus puntos: la misión médica se
-        # vuelve línea roja también para quienes sostienen el bloqueo.
-        for nid in objetivo.nodos:
-            n = estado.nodos.get(nid)
-            if n:
-                n.apoyo_local = max(0.0, n.apoyo_local - 0.06)
-
-        estado.reservas.aplicar({"respaldo_internacional": 5.0})
-        estado.eventos_turno.append({"tipo": "corredor_humanitario_requerido",
-                                     "corredor": objetivo.corredor_id})
-        return Resultado(True, (
-            f"Requerimiento formal de paso humanitario permanente por "
-            f"{objetivo.nombre}, exigible al Estado y a quienes sostienen los "
-            f"cierres. Si se niega, el incumplimiento queda con fecha."
-        ), {"corredor": objetivo.corredor_id})
-
-
-@dataclass
-class ManifestarDudaPermanencia(Accion):
-    """
-    Decir en voz alta que su permanencia está en cuestión.
-
-    **No se retira** —el Delegado nunca abandona la mesa— pero puede poner en duda
-    públicamente si puede seguir avalando con su presencia lo que la mesa decide.
-
-    Es mejor que la amenaza de irse por tres razones: se puede usar varias veces,
-    es graduada, y **nunca saca sus mitigadores del juego**. Y es lo que hacen los
-    defensores del pueblo reales: no se van, emiten pronunciamientos.
-
-    Su credibilidad ante ambas partes es un activo que se consume: **la primera
-    vez pesa, la tercera es ruido.**
-    """
-    codigo = "A5"
-    rol = "Defensoría"
-    clase: Clase = "informativa"
-    descripcion = "Manifestación pública de duda sobre su permanencia"
-    en_claro = (
-        "Dice en público que se está planteando si tiene sentido seguir en la "
-        "mesa. Es su palanca más fuerte y se gasta: la segunda vez pesa menos "
-        "que la primera.")
-
-
-    @classmethod
-    def disponibilidad(cls, estado: Estado) -> Disponibilidad:
-        """Su credibilidad es un activo que se consume: la primera vez pesa, la
-        tercera es ruido. No se bloquea nunca — se avisa."""
-        if estado.dudas_permanencia >= 1:
-            return Disponibilidad("condicionada", (
-                f"Ya se ha manifestado {estado.dudas_permanencia} vez(ces). "
-                f"Cada nueva pesa menos que la anterior."))
-        return Disponibilidad()
-
-    def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
-        n = estado.dudas_permanencia
-        estado.dudas_permanencia += 1
-        escala = P.DECAIMIENTO_DUDA_PERMANENCIA ** n
-
-        estado.reservas.aplicar(P.COSTO_RESERVAS["defensoria_duda_permanencia"], escala)
-        estado.eventos_turno.append({"tipo": "duda_permanencia", "n": n + 1})
-
-        if n == 0:
-            msg = ("El Delegado manifiesta públicamente que no está seguro de "
-                   "poder seguir avalando con su presencia lo que aquí se decide. "
-                   "La señal se lee de inmediato dentro y fuera del país.")
-        elif n == 1:
-            msg = ("Segundo pronunciamiento sobre su permanencia. Sigue pesando, "
-                   "pero menos: la mesa empieza a leerlo como una posición y no "
-                   "como una advertencia.")
-        else:
-            msg = ("Otro pronunciamiento más. A esta altura se lee como denuncia "
-                   "general: el Gobierno restringe su acceso y la advertencia "
-                   "pierde la única medida de su utilidad, que es la oportunidad.")
-            estado.reservas.aplicar({"credibilidad_mesa": -3.0})
-
-        return Resultado(True, msg, {"pronunciamiento_n": n + 1,
-                                     "escala_aplicada": round(escala, 2)})
-
-
-# ===========================================================================
-# 07 · MINISTRO DE TRANSPORTE — 4
+# 06 · MINISTRO DE TRANSPORTE — 6
 # ===========================================================================
 
 @dataclass
@@ -1589,6 +1659,48 @@ class AdoptarCriterioPriorizacion(Accion):
             "Criterio único de priorización adoptado. La asignación de fuerza "
             "deja de pelearse políticamente cada turno."
         ), {"orden": [c.nombre for c in orden]})
+
+
+@dataclass
+class FijarPrioridadCombustible(Accion):
+    """
+    El orden de prioridad del combustible como criterio permanente.
+
+    **No hay orden correcto.** Hay un orden que se defiende ante siete personas
+    que pierden algo — y fijarlo como criterio evita pelearlo cada turno.
+    """
+    codigo = "A2"
+    rol = "Transporte"
+    clase: Clase = "constitutiva"
+    descripcion = "Orden de prioridad del combustible entre usos"
+    en_claro = (
+        "Decide a qué va primero el combustible que queda: hospitales, "
+        "transporte o industria. Es un criterio permanente, no una entrega "
+        "puntual.")
+    orden: list[str] = field(default_factory=lambda: list(P.ORDEN_PRIORIDAD_COMBUSTIBLE))
+
+    def validar(self, estado: Estado) -> Validacion:
+        if set(self.orden) != set(P.ORDEN_PRIORIDAD_COMBUSTIBLE):
+            return Validacion(False, (
+                f"La asignación debe ordenar exactamente: "
+                f"{', '.join(sorted(P.ORDEN_PRIORIDAD_COMBUSTIBLE))}."
+            ))
+        return Validacion(True)
+
+    def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
+        r = supply.asignar_combustible(estado, self.orden)
+        if not r["ok"]:
+            return Resultado(False, r["motivo"])
+        estado.banderas.activar("prioridad_combustible_fijada", estado.turno)
+        aviso = ""
+        if r["escolta_degradada"]:
+            aviso = (" La fuerza pública queda por debajo del segundo lugar: la "
+                     "escolta se degrada y la crisis logística empieza a volverse "
+                     "crisis de contención.")
+        return Resultado(True, (
+            f"Prioridad de combustible fijada: {' > '.join(self.orden)}."
+            + aviso
+        ), r)
 
 
 @dataclass
@@ -1707,6 +1819,64 @@ class NegociarConGremios(Accion):
 
 
 @dataclass
+class AcordarPasosSeguros(Accion):
+    """
+    Pasos seguros y ventanas de despacho concertadas con transportadores.
+
+    Permite despachos sin operación de fuerza — pero **supone reconocer de hecho
+    una contraparte en el cierre**, lo que puede contradecir la línea roja fijada
+    por el Presidente.
+    """
+    codigo = "A3"
+    rol = "Transporte"
+    clase: Clase = "operativa"
+    descripcion = "Pasos seguros y ventanas de despacho concertadas"
+    en_claro = (
+        "Acuerda ventanas horarias para que pasen carrotanques por un punto. "
+        "Pasa el suministro sin abrir el bloqueo.")
+    nodo_id: str = ""
+
+
+    @classmethod
+    def sonda(cls, estado: Estado) -> "Accion | None":
+        """El punto donde más se controla la vocería: si ahí no hay con quién
+        acordar, no lo hay en ninguno."""
+        if not estado.nodos:
+            return None
+        mejor = max(estado.nodos.values(), key=lambda n: n.control_voceria)
+        return cls(nodo_id=mejor.nodo_id)
+
+    def validar(self, estado: Estado) -> Validacion:
+        nodo = estado.nodos.get(self.nodo_id)
+        if nodo is None:
+            return Validacion(False, f"No existe el punto {self.nodo_id}.")
+        if nodo.control_voceria < 0.25:
+            return Validacion(False, (
+                f"En {nodo.nombre} no hay con quién acordar un paso seguro: la "
+                f"vocería reconocida no controla el punto."
+            ))
+        return Validacion(True)
+
+    def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
+        nodo = estado.nodos[self.nodo_id]
+        # Un paso seguro no abre el punto: abre una ventana de despacho
+        nodo.caudal = max(nodo.caudal, 0.25 * nodo.control_voceria)
+        nodo.modo_apertura = "concertacion" if nodo.abierto else nodo.modo_apertura
+
+        aviso = ""
+        if estado.banderas.lineas_rojas_fijadas:
+            estado.reservas.aplicar({"cohesion_mesa": -4.0})
+            aviso = (" Contradice la línea roja fijada por el Presidente: se leerá "
+                     "como negociación paralela por fuera de la mesa.")
+        estado.eventos_turno.append({"tipo": "paso_seguro", "nodo": nodo.nodo_id})
+        return Resultado(True, (
+            f"Ventana de despacho concertada en {nodo.nombre} "
+            f"({nodo.caudal:.0%} de flujo) sin operación de fuerza."
+            + aviso
+        ), {"caudal": round(nodo.caudal, 2)})
+
+
+@dataclass
 class PublicarMapaCierres(Accion):
     """
     El mapa de cierres, y el anuncio de aperturas **solo como hecho verificado**.
@@ -1765,285 +1935,12 @@ class PublicarMapaCierres(Accion):
 
 
 # ===========================================================================
-# 08 · MINISTRO DE MINAS Y ENERGÍA — 4
-# ===========================================================================
-
-@dataclass
-class FijarPrioridadCombustible(Accion):
-    """
-    El orden de prioridad del combustible como criterio permanente.
-
-    **No hay orden correcto.** Hay un orden que se defiende ante siete personas
-    que pierden algo — y fijarlo como criterio evita pelearlo cada turno.
-    """
-    codigo = "A2"
-    rol = "Minas"
-    clase: Clase = "constitutiva"
-    descripcion = "Orden de prioridad del combustible entre usos"
-    en_claro = (
-        "Decide a qué va primero el combustible que queda: hospitales, "
-        "transporte o industria. Es un criterio permanente, no una entrega "
-        "puntual.")
-    orden: list[str] = field(default_factory=lambda: list(P.ORDEN_PRIORIDAD_COMBUSTIBLE))
-
-    def validar(self, estado: Estado) -> Validacion:
-        if set(self.orden) != set(P.ORDEN_PRIORIDAD_COMBUSTIBLE):
-            return Validacion(False, (
-                f"La asignación debe ordenar exactamente: "
-                f"{', '.join(sorted(P.ORDEN_PRIORIDAD_COMBUSTIBLE))}."
-            ))
-        return Validacion(True)
-
-    def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
-        r = supply.asignar_combustible(estado, self.orden)
-        if not r["ok"]:
-            return Resultado(False, r["motivo"])
-        estado.banderas.activar("prioridad_combustible_fijada", estado.turno)
-        aviso = ""
-        if r["escolta_degradada"]:
-            aviso = (" La fuerza pública queda por debajo del segundo lugar: la "
-                     "escolta se degrada y la crisis logística empieza a volverse "
-                     "crisis de contención.")
-        return Resultado(True, (
-            f"Prioridad de combustible fijada: {' > '.join(self.orden)}."
-            + aviso
-        ), r)
-
-
-@dataclass
-class DeclararInfraestructuraCritica(Accion):
-    """
-    Protección permanente, con la inmovilización de fuerza que implica.
-
-    **Es la aritmética que enfrenta a Minas con Defensa**: la protección
-    permanente resta exactamente de la capacidad de desbloqueo.
-
-    APUNTA AL REGISTRO, NO A UNA CADENA DE TEXTO. Hasta ahora recibía una lista
-    de nombres libres —«refineria»— que nadie comprobaba contra nada: se podía
-    declarar crítica una instalación que no existe, la orden salía ejecutada con
-    éxito, e inmovilizaba fuerza igual. Ahora se resuelve contra
-    `estado.infraestructura`, que es la base de infraestructura relevante del
-    escenario, y lo que no está ahí se rechaza diciendo qué sí está.
-    """
-    codigo = "A1"
-    rol = "Minas"
-    clase: Clase = "operativa"
-    descripcion = "Declaratoria de infraestructura crítica"
-    en_claro = (
-        "Pone bajo custodia una instalación del registro de infraestructura "
-        "relevante. Queda protegida, e inmoviliza fuerza que hace falta en "
-        "otra parte.")
-    instalaciones: list[str] = field(default_factory=list)
-
-
-    @classmethod
-    def sonda(cls, estado: Estado) -> "Accion | None":
-        """Una sola instalación de las que aún no están protegidas: lo que se
-        comprueba es si queda fuerza libre para custodiarla."""
-        libres = [i for i in estado.infraestructura.values() if not i.protegida]
-        if not libres:
-            return cls(instalaciones=[])
-        return cls(instalaciones=[libres[0].infra_id])
-
-    # ------------------------------------------------------------------
-    # LA RESOLUCIÓN, que es determinista y vive en el motor
-    #
-    # Por identificador, por nombre exacto, y por nombre contenido. NO hay
-    # coincidencia difusa: acertar mal en silencio aquí pone la custodia en la
-    # instalación equivocada y deja sin proteger la que se quiso proteger, que
-    # es el mismo modo de falla que el resolutor de entidades evita en el canal.
-    # ------------------------------------------------------------------
-
-    @staticmethod
-    def _normalizar(t: str) -> str:
-        import unicodedata
-        return "".join(c for c in unicodedata.normalize("NFD", t.lower())
-                       if unicodedata.category(c) != "Mn").strip()
-
-    def resolver(self, estado: Estado) -> tuple[list, list[str]]:
-        """Devuelve `(instalaciones, lo_que_no_se_reconocio)`."""
-        halladas, perdidas = [], []
-        for crudo in self.instalaciones:
-            n = self._normalizar(str(crudo))
-            exacta = [i for i in estado.infraestructura.values()
-                      if i.infra_id.lower() == n or self._normalizar(i.nombre) == n]
-            if len(exacta) == 1:
-                halladas.append(exacta[0])
-                continue
-            parciales = [i for i in estado.infraestructura.values()
-                         if n and n in self._normalizar(i.nombre)]
-            if len(parciales) == 1:
-                halladas.append(parciales[0])
-            else:
-                perdidas.append(str(crudo))
-        return halladas, perdidas
-
-    def validar(self, estado: Estado) -> Validacion:
-        if not self.instalaciones:
-            return Validacion(False, (
-                "No se dijo qué instalación proteger. El registro de "
-                "infraestructura relevante las tiene todas, con su región."
-            ))
-        halladas, perdidas = self.resolver(estado)
-        if perdidas:
-            nombres = ", ".join(sorted(
-                i.nombre for i in estado.infraestructura.values() if not i.protegida))
-            return Validacion(False, (
-                f"No está en el registro de infraestructura: "
-                f"{', '.join(perdidas)}. Sin custodiar quedan: {nombres}."
-            ))
-        nuevas = [i for i in halladas if not i.protegida]
-        if not nuevas:
-            return Validacion(False, (
-                "Esa instalación ya está bajo custodia. Volver a declararla no "
-                "añade protección y sí inmovilizaría más fuerza."
-            ))
-        cupo = len(estado.esmad_disponible())
-        necesita = len(nuevas) * P.CUSTODIA_POLICIAS_POR_INSTALACION
-        if necesita > cupo:
-            return Validacion(True, parcial=True, motivo=(
-                "La capacidad libre no alcanza para custodiarlas todas. Se "
-                "protegerá lo que se pueda."
-            ), habilitada_por=["Ministro de Defensa (redesplegar militares)"])
-        return Validacion(True)
-
-    def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
-        halladas, _ = self.resolver(estado)
-        nuevas = [i for i in halladas if not i.protegida]
-
-        for i in nuevas:
-            i.protegida = True
-            i.protegida_desde_turno = estado.turno_decision
-            estado.instalaciones_criticas.append(i.nombre)
-
-        for u in estado.esmad_disponible()[: len(nuevas)]:
-            u.asignacion = "custodia"
-            u.ubicacion = "infraestructura"
-        inmovilizadas = force.capacidad_inmovilizada_por_custodia(estado)
-
-        # Los puntos contiguos a lo que se acaba de proteger. Es exactamente lo
-        # que se está comprando, y ahora se puede nombrar: el registro dice qué
-        # bloqueo tiene al lado cada instalación.
-        protegidos = sorted({n for i in nuevas for n in i.nodos_contiguos})
-        for nid in protegidos:
-            nodo = estado.nodos.get(nid)
-            if nodo:
-                nodo.proximidad_infra_critica = True
-
-        sin_proteger = [i for i in estado.infraestructura.values() if not i.protegida]
-        vitales = [i for i in sin_proteger if i.criticidad == "vital"]
-        aviso = ""
-        if vitales:
-            aviso = (f" Quedan sin custodia {len(vitales)} instalación(es) de "
-                     f"criticidad vital: {', '.join(i.nombre for i in vitales)}.")
-
-        estado.eventos_turno.append({
-            "tipo": "infraestructura_protegida",
-            "instalaciones": [i.infra_id for i in nuevas],
-        })
-        return Resultado(True, (
-            f"{', '.join(i.nombre for i in nuevas)} bajo protección permanente. "
-            f"Inmoviliza {inmovilizadas} unidades que Seguridad necesitaba para "
-            f"desbloquear: la mesa tendrá que aplazar corredores, y el "
-            f"aplazamiento tiene nombre de ciudad." + aviso
-        ), {"inmovilizadas": inmovilizadas, "puntos_protegidos": protegidos,
-            "protegidas": [i.infra_id for i in nuevas],
-            "sin_proteger": [i.infra_id for i in sin_proteger]})
-
-
-@dataclass
-class AcordarPasosSeguros(Accion):
-    """
-    Pasos seguros y ventanas de despacho concertadas con transportadores.
-
-    Permite despachos sin operación de fuerza — pero **supone reconocer de hecho
-    una contraparte en el cierre**, lo que puede contradecir la línea roja fijada
-    por el Presidente.
-    """
-    codigo = "A3"
-    rol = "Minas"
-    clase: Clase = "operativa"
-    descripcion = "Pasos seguros y ventanas de despacho concertadas"
-    en_claro = (
-        "Acuerda ventanas horarias para que pasen carrotanques por un punto. "
-        "Pasa el suministro sin abrir el bloqueo.")
-    nodo_id: str = ""
-
-
-    @classmethod
-    def sonda(cls, estado: Estado) -> "Accion | None":
-        """El punto donde más se controla la vocería: si ahí no hay con quién
-        acordar, no lo hay en ninguno."""
-        if not estado.nodos:
-            return None
-        mejor = max(estado.nodos.values(), key=lambda n: n.control_voceria)
-        return cls(nodo_id=mejor.nodo_id)
-
-    def validar(self, estado: Estado) -> Validacion:
-        nodo = estado.nodos.get(self.nodo_id)
-        if nodo is None:
-            return Validacion(False, f"No existe el punto {self.nodo_id}.")
-        if nodo.control_voceria < 0.25:
-            return Validacion(False, (
-                f"En {nodo.nombre} no hay con quién acordar un paso seguro: la "
-                f"vocería reconocida no controla el punto."
-            ))
-        return Validacion(True)
-
-    def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
-        nodo = estado.nodos[self.nodo_id]
-        # Un paso seguro no abre el punto: abre una ventana de despacho
-        nodo.caudal = max(nodo.caudal, 0.25 * nodo.control_voceria)
-        nodo.modo_apertura = "concertacion" if nodo.abierto else nodo.modo_apertura
-
-        aviso = ""
-        if estado.banderas.lineas_rojas_fijadas:
-            estado.reservas.aplicar({"cohesion_mesa": -4.0})
-            aviso = (" Contradice la línea roja fijada por el Presidente: se leerá "
-                     "como negociación paralela por fuera de la mesa.")
-        estado.eventos_turno.append({"tipo": "paso_seguro", "nodo": nodo.nodo_id})
-        return Resultado(True, (
-            f"Ventana de despacho concertada en {nodo.nombre} "
-            f"({nodo.caudal:.0%} de flujo) sin operación de fuerza."
-            + aviso
-        ), {"caudal": round(nodo.caudal, 2)})
-
-
-@dataclass
-class EntregarCalendarioAgotamiento(Accion):
-    """
-    El reloj de la crisis, con su efecto sobre el reloj.
-
-    Decir «nos quedan como dos días» en la deliberación es gratis. **Entregarlo
-    formalmente** convierte el tiempo en variable dura y obliga a decidir — pero
-    se filtra, hay compra por pánico y el agotamiento llega antes.
-    """
-    codigo = "A4"
-    rol = "Minas"
-    clase: Clase = "informativa"
-    descripcion = "Calendario de agotamiento por región"
-    en_claro = (
-        "Dice cuántos días de oxígeno, combustible y comida le quedan a cada "
-        "región. Es el dato que solo usted tiene, y difundirlo también genera "
-        "pánico.")
-
-    def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
-        r = supply.difundir_calendario(estado)
-        estado.reservas.aplicar({"cohesion_mesa": 3.0})
-        return Resultado(True, (
-            "Calendario entregado a la mesa. La deliberación pasa a tener fecha "
-            "límite — y acelera aquello que mide: el pánico sube y el consumo con "
-            "él. Entregar el reloj cambia el reloj."
-        ), r)
-
-
-# ===========================================================================
-# 09 · MINISTRO DE AGRICULTURA Y DESARROLLO RURAL
+# 07 · MINISTRO DE AGRICULTURA Y DESARROLLO RURAL — 6
 #
 # EL ROL QUE MEJOR MIDE EL EFECTO DEL BLOQUEO SOBRE LA POBLACIÓN Y EL QUE MENOS
 # PUEDE HACER PARA LEVANTARLO. No manda fuerza, no tiene corredores y ninguna de
-# sus cinco acciones se ejecuta sin que la Policía escolte, Transporte priorice
-# o Minas asigne. Lo que sí tiene es lo que a esta mesa le falta:
+# sus seis acciones se ejecuta sin que la Policía escolte o Transporte priorice
+# y asigne. Lo que sí tiene es lo que a esta mesa le falta:
 #
 #   · el único reloj que ya está corriendo — en su frente el día de bloqueo no
 #     es un costo diferido, es una pérdida que ya ocurrió: hay granjas
@@ -2056,7 +1953,6 @@ class EntregarCalendarioAgotamiento(Accion):
 # No puede decir que el campo está a favor ni que está en contra, porque las dos
 # cosas son parcialmente ciertas al mismo tiempo.
 # ===========================================================================
-
 
 @dataclass
 class FijarClasePrioridadAlimentaria(Accion):
@@ -2343,7 +2239,7 @@ class PublicarBalancePerdida(Accion):
     escalamiento y cerrarle la interlocución rural de la que vive todo lo demás.
 
     Si la cifra no está bajo el protocolo único de verificación, se disputa — y
-    alimenta la guerra de números que la Defensoría intenta cerrar.
+    alimenta la guerra de números que el protocolo común intenta cerrar.
     """
     codigo = "A4"
     rol = "Agricultura"
@@ -2472,6 +2368,50 @@ class AcordarAcopioYVentanas(Accion):
         ), {"regiones": regiones, "caudal": round(caudal, 2)})
 
 
+@dataclass
+class EntregarCalendarioAgotamiento(Accion):
+    """
+    El reloj de la crisis, con su efecto sobre el reloj.
+
+    Decir «nos quedan como dos días» en la deliberación es gratis. **Entregarlo
+    formalmente** convierte el tiempo en variable dura y obliga a decidir — pero
+    se filtra, hay compra por pánico y el agotamiento llega antes.
+    """
+    codigo = "A4"
+    rol = "Agricultura"
+    clase: Clase = "informativa"
+    descripcion = "Calendario de agotamiento por región"
+    en_claro = (
+        "Dice cuántos días de oxígeno, combustible y comida le quedan a cada "
+        "región. Es el dato que solo usted tiene, y difundirlo también genera "
+        "pánico.")
+
+    def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
+        r = supply.difundir_calendario(estado)
+        estado.reservas.aplicar({"cohesion_mesa": 3.0})
+        return Resultado(True, (
+            "Calendario entregado a la mesa. La deliberación pasa a tener fecha "
+            "límite — y acelera aquello que mide: el pánico sube y el consumo con "
+            "él. Entregar el reloj cambia el reloj."
+        ), r)
+
+
+# ===========================================================================
+# 09 · MINISTRO DE AGRICULTURA Y DESARROLLO RURAL
+#
+# EL ROL QUE MEJOR MIDE EL EFECTO DEL BLOQUEO SOBRE LA POBLACIÓN Y EL QUE MENOS
+# PUEDE HACER PARA LEVANTARLO. No manda fuerza, no tiene corredores y ninguna de
+# sus cinco acciones se ejecuta sin que la Policía escolte, Transporte priorice
+# priorice. Lo que sí tiene es lo que a esta mesa le falta:
+#
+#   · el único reloj que ya está corriendo — en su frente el día de bloqueo no
+#     es un costo diferido, es una pérdida que ya ocurrió: hay granjas
+#     sacrificando animales mientras la mesa delibera;
+#   · una interlocución rural que NO depende del Comité del Paro, y que por eso
+#     sigue en pie exactamente cuando el canal del Interior se cae.
+#
+
+
 # ===========================================================================
 
 CATALOGO = [
@@ -2480,28 +2420,25 @@ CATALOGO = [
     ConvocarAlcaldes, DesplazarseAlEpicentro,
     # Interior
     ExigirProtocoloVoceria, ConvocarMesaNacional, AbrirMesaLocal,
-    OfrecerContraprestacion,
+    OfrecerContraprestacion, RequerirCorredoresHumanitarios,
+    DeclararInfraestructuraCritica,
     # Alcalde
-    CondicionarEmpleoFuerza, InstalarMesaConVoceros, EsquemaHumanitarioMunicipal,
-    PublicarParteMunicipal,
+    CondicionarEmpleoFuerza, InstalarMesaConVoceros,
+    EsquemaHumanitarioMunicipal, PublicarParteMunicipal,
     # Defensa
     FijarReglasEmpleoSector, OperarNodo, RedesplegarMilitares,
-    PresentarEvidenciaInteligencia,
+    PresentarEvidenciaInteligencia, DesplegarEquiposTerreno,
     # Policía
-    ClasificarParteOperacional, DisponerESMAD, Escoltar, SolicitarRelevo,
-    # Defensoría
-    ExigirEstandaresEmpleo, AdoptarProtocoloVerificacion, AsignarDuplas,
-    RequerirCorredoresHumanitarios, ManifestarDudaPermanencia,
+    ClasificarParteOperacional, AdoptarProtocoloVerificacion, DisponerESMAD,
+    Escoltar, SolicitarRelevo,
     # Transporte
-    AdoptarCriterioPriorizacion, OrganizarCaravana, NegociarConGremios,
+    AdoptarCriterioPriorizacion, FijarPrioridadCombustible,
+    OrganizarCaravana, NegociarConGremios, AcordarPasosSeguros,
     PublicarMapaCierres,
-    # Minas
-    FijarPrioridadCombustible, DeclararInfraestructuraCritica,
-    AcordarPasosSeguros, EntregarCalendarioAgotamiento,
     # Agricultura
     FijarClasePrioridadAlimentaria, InstalarMesaTecnicaAgropecuaria,
     ActivarInstrumentosSectoriales, PublicarBalancePerdida,
-    AcordarAcopioYVentanas,
+    AcordarAcopioYVentanas, EntregarCalendarioAgotamiento,
 ]
 
 
@@ -2549,7 +2486,7 @@ CATALOGO = [
 # puede transcribir es una acción que la sala no tiene.
 
 GUIA: dict[type, tuple[str, str, str]] = {
-    # --- Presidente ---------------------------------------------------------
+    # --- Presidente -------------------------------------------------------------
     FijarRegistroEscrito: (
         "Dejar todo por escrito",
         "Ninguno. Es de las que se adoptan el primer día y abaratan todo lo demás.",
@@ -2570,7 +2507,7 @@ GUIA: dict[type, tuple[str, str, str]] = {
         "Ir al epicentro en persona",
         "Escuadrones sin comprometer para la escolta presidencial.",
         "ir al epicentro en persona"),
-    # --- Interior -----------------------------------------------------------
+    # --- Interior ---------------------------------------------------------------
     ExigirProtocoloVoceria: (
         "Poner un solo vocero",
         "Ninguno.",
@@ -2589,7 +2526,17 @@ GUIA: dict[type, tuple[str, str, str]] = {
         "Ofrecer algo a cambio",
         "Ninguno, pero sin líneas rojas fijadas lo ofrecido se renegocia en la sala.",
         "ofrecer una contraprestacion legislativa"),
-    # --- Alcalde ------------------------------------------------------------
+    RequerirCorredoresHumanitarios: (
+        "Exigir un paso humanitario permanente",
+        "Ninguno.",
+        "requerir un corredor humanitario permanente"),
+    DeclararInfraestructuraCritica: (
+        "Poner custodia a una instalación",
+        "Decir CUÁL, de las del registro de infraestructura relevante, y que "
+        "quede capacidad libre para custodiarla: lo que se protege sale de lo "
+        "que desbloquea.",
+        "declarar infraestructura critica el Acopio de combustible de Puerto Espejo"),
+    # --- Alcalde ----------------------------------------------------------------
     CondicionarEmpleoFuerza: (
         "Exigir que le consulten la fuerza",
         "Ninguno.",
@@ -2607,7 +2554,7 @@ GUIA: dict[type, tuple[str, str, str]] = {
         "Publicar el conteo de la ciudad",
         "Ninguno, pero sin protocolo común de verificación la cifra se disputa.",
         "publicar el parte municipal de la ciudad"),
-    # --- Defensa ------------------------------------------------------------
+    # --- Defensa ----------------------------------------------------------------
     FijarReglasEmpleoSector: (
         "Poner reglas a sus unidades",
         "Ninguno.",
@@ -2617,7 +2564,7 @@ GUIA: dict[type, tuple[str, str, str]] = {
         "Un punto todavía cerrado y unidades disponibles del tipo que se pida. "
         "Con tropa, la asistencia militar firmada; en el epicentro, la "
         "concertación con la Alcaldía si la Alcaldía la exigió.",
-        "operar el Puente Amarillo con ESMAD, con dupla de la Defensoria"),
+        "operar el Puente Amarillo con ESMAD, responsable el Ministro de Defensa"),
     RedesplegarMilitares: (
         "Mover tropa a donde haga falta",
         "Unidades militares en reserva.",
@@ -2626,11 +2573,20 @@ GUIA: dict[type, tuple[str, str, str]] = {
         "Mostrar quién financia los cierres",
         "Ninguno.",
         "presentar la evidencia de inteligencia"),
-    # --- Policía ------------------------------------------------------------
+    DesplegarEquiposTerreno: (
+        "Mandar equipos al terreno",
+        "Equipos libres esta jornada, y decir qué mirar. Son los mismos para los "
+        "puntos y para las denuncias: mirar aquí es no mirar allá.",
+        "verificar el Puente Amarillo y el Peaje del Puerto"),
+    # --- Policía ----------------------------------------------------------------
     ClasificarParteOperacional: (
         "Separar lo confirmado de lo estimado",
         "Ninguno.",
         "clasificar el parte operacional"),
+    AdoptarProtocoloVerificacion: (
+        "Acordar una sola forma de verificar",
+        "Ninguno.",
+        "adoptar el protocolo unico de verificacion"),
     DisponerESMAD: (
         "Concentrar el ESMAD",
         "Escuadrones todavía en contención estática de donde traerlos.",
@@ -2644,33 +2600,15 @@ GUIA: dict[type, tuple[str, str, str]] = {
         "Relevar a las unidades cansadas",
         "Unidades desplegadas con fatiga que relevar.",
         "relevar las unidades agotadas"),
-    # --- Defensoría ---------------------------------------------------------
-    ExigirEstandaresEmpleo: (
-        "Exigir reglas, identificación y cámaras",
-        "Ninguno. Es la de mayor rendimiento del ejercicio y no cuesta un escuadrón.",
-        "exigir los estandares de empleo de la fuerza"),
-    AdoptarProtocoloVerificacion: (
-        "Acordar una sola forma de verificar",
-        "Ninguno.",
-        "adoptar el protocolo unico de verificacion"),
-    AsignarDuplas: (
-        "Mandar a sus verificadores",
-        "Duplas libres esta jornada, y decir qué mirar. Salen del mismo bolsillo "
-        "que el acompañamiento de operaciones.",
-        "verificar el Puente Amarillo y el Peaje del Puerto"),
-    RequerirCorredoresHumanitarios: (
-        "Exigir un paso humanitario permanente",
-        "Ninguno.",
-        "requerir un corredor humanitario permanente"),
-    ManifestarDudaPermanencia: (
-        "Poner en duda su permanencia",
-        "Ninguno, pero se gasta: cada pronunciamiento pesa menos que el anterior.",
-        "manifestar duda sobre la permanencia en la mesa"),
-    # --- Transporte ---------------------------------------------------------
+    # --- Transporte -------------------------------------------------------------
     AdoptarCriterioPriorizacion: (
         "Fijar el orden de los corredores",
         "Ninguno.",
         "adoptar el criterio de priorizacion de corredores"),
+    FijarPrioridadCombustible: (
+        "Decidir a qué va el combustible",
+        "Ordenar los cuatro usos, todos y sin repetir.",
+        "fijar la prioridad de combustible"),
     OrganizarCaravana: (
         "Organizar una caravana",
         "Escolta ya dispuesta por la Policía, y el corredor sin ningún punto "
@@ -2680,31 +2618,16 @@ GUIA: dict[type, tuple[str, str, str]] = {
         "Hablar con los camioneros",
         "Que los gremios no se hayan sumado ya al paro.",
         "negociar con los gremios camioneros"),
-    PublicarMapaCierres: (
-        "Publicar el mapa de cierres",
-        "Ninguno. Anunciar abierto lo que no deja pasar se desmiente solo.",
-        "publicar el mapa de cierres"),
-    # --- Minas --------------------------------------------------------------
-    FijarPrioridadCombustible: (
-        "Decidir a qué va el combustible",
-        "Ordenar los cuatro usos, todos y sin repetir.",
-        "fijar la prioridad de combustible"),
-    DeclararInfraestructuraCritica: (
-        "Poner custodia a una instalación",
-        "Decir CUÁL, de las del registro de infraestructura relevante, y que "
-        "quede capacidad libre para custodiarla: lo que se protege sale de lo "
-        "que desbloquea.",
-        "declarar infraestructura critica el Acopio de combustible de Puerto Espejo"),
     AcordarPasosSeguros: (
         "Acordar ventanas de paso",
         "Un punto donde la vocería reconocida controle algo. Donde no manda "
         "nadie no hay con quién acordar.",
         "acordar pasos seguros en la Porteria de la refineria"),
-    EntregarCalendarioAgotamiento: (
-        "Decir cuántos días quedan",
-        "Ninguno. Difundirlo acelera lo que mide.",
-        "entregar el calendario de agotamiento"),
-    # --- Agricultura --------------------------------------------------------
+    PublicarMapaCierres: (
+        "Publicar el mapa de cierres",
+        "Ninguno. Anunciar abierto lo que no deja pasar se desmiente solo.",
+        "publicar el mapa de cierres"),
+    # --- Agricultura ------------------------------------------------------------
     FijarClasePrioridadAlimentaria: (
         "Poner los alimentos en la prioridad",
         "Ninguno. Si Transporte ya fijó su criterio, esto lo reordena delante "
@@ -2730,6 +2653,10 @@ GUIA: dict[type, tuple[str, str, str]] = {
         "Escolta ya dispuesta por la Policía, y un corredor de clase alimentaria "
         "sin ningún punto que lo bloquee.",
         "acordar el esquema de acopio por el Corredor del Sur"),
+    EntregarCalendarioAgotamiento: (
+        "Decir cuántos días quedan",
+        "Ninguno. Difundirlo acelera lo que mide.",
+        "entregar el calendario de agotamiento"),
 }
 
 for _cls, (_nom, _req, _ej) in GUIA.items():

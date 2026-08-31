@@ -116,7 +116,7 @@ def cargar_estado(ruta: str | Path | None = None) -> Estado:
     estado.reservas = Reservas(**P.RESERVAS_T0)
     estado.banderas = Banderas()          # ningún mitigador activo en t=0
     estado.intensidad_nacional = P.INTENSIDAD_NACIONAL_T0
-    estado.duplas_disponibles = P.DUPLAS_TOTALES
+    estado.equipos_disponibles = P.EQUIPOS_TERRENO_TOTALES
 
     # Los gremios arrancan FUERA y no evaluando: lo que los activa en el turno 1
     # no es el umbral de legitimidad sino el ultimátum de 48 horas del paquete
@@ -146,7 +146,7 @@ def _aplicar_hecho_h1(estado: Estado, h: dict | None) -> None:
         control_voceria 0,28 ..... casi no hay con quién concertar
         51 % protesta legítima ... apenas sobre el umbral de 0,50, así que
                                    operar ahí cuesta el doble
-        región epicentro, corredor de la refinería — el que Minas necesita
+        región epicentro, corredor de la refinería — el que Transporte necesita
 
     Responder con fuerza es la jugada evidente y es la más cara, en el punto
     donde menos se puede negociar, sobre el corredor que otra cartera necesita
@@ -180,7 +180,7 @@ def _aplicar_hecho_h1(estado: Estado, h: dict | None) -> None:
     estado.intensidad_nacional = min(
         100.0, estado.intensidad_nacional + h.get("intensidad_nacional", 0.0))
 
-    # La custodia inmoviliza fuerza: es la colisión entre lo que Minas necesita
+    # La custodia inmoviliza fuerza: es la colisión entre lo que el Interior necesita
     # proteger y lo que Defensa necesita disponible. Sale de la reserva, para que
     # se note en el contador del tablero desde el primer minuto.
     # LA INSTALACIÓN VIENE POR IDENTIFICADOR, no por nombre. Queda marcada como
@@ -260,8 +260,11 @@ def _verificar_invariantes(estado: Estado) -> None:
             raise ValueError(f"Nodo {n.nodo_id}: composicion_real no suma 1 ({s})")
 
     if any(v for k, v in vars(estado.banderas).items()
-           if isinstance(v, bool) and k not in ("defensoria_presente",)):
-        raise ValueError("En t=0 no debe haber ninguna bandera activa salvo defensoria_presente")
+           if isinstance(v, bool)):
+        # Antes había una excepción, `defensoria_presente`, que empezaba en
+        # verdadero porque el Delegado ya estaba sentado. Sin ese rol, en t=0 no
+        # hay ninguna: la mesa empieza sin constituir absolutamente nada.
+        raise ValueError("En t=0 no debe haber ninguna bandera activa")
 
     # INVARIANTE CRÍTICA: toda región debe tener al menos un corredor humanitario.
     #

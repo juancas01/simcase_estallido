@@ -1,6 +1,6 @@
 # Pendientes
 
-Lo que falta para correr esto con nueve personas en una sala. **Este es el único
+Lo que falta para correr esto con siete personas en una sala. **Este es el único
 sitio donde se lleva la cuenta**: si algo está pendiente y no está aquí, es que
 se me pasó.
 
@@ -25,7 +25,7 @@ lunes por la mañana:
 | | Pendiente | ¿Necesita gente? | Estado |
 |---|---|---|---|
 | **B1** | el archivo de la corrida — persistencia y telemetría | no | **no existe** · bloquea B7 |
-| **B2** | la identidad de los nueve roles, en datos | no | `data/roles/` vacío · hoy duplicada en el frontend · **ahora son nueve** |
+| **B2** | la identidad de los siete roles, en datos | no | `data/roles/` vacío · hoy duplicada en el frontend · **ahora son nueve** |
 | **B7** | el debriefing, la superficie que falta | no | **no existe** · depende de B1 |
 | **B5** | presupuesto de latencia medido | el reloj de la fase, en P2 | **medido** · el timeout ya es duro y las dos capas caben dentro |
 | **B6** | el guion de la sesión | no | fuera del código |
@@ -38,14 +38,15 @@ lunes por la mañana:
 | **A1** | cuántos dispositivos, o papel | — | esperando |
 | **A2** | quién opera la consola | — | esperando |
 | **A3** | ¿con llave o sin llave la primera vez? | — | esperando |
-| **A4** | el contenido exacto de las nueve vistas | se decide probando | esperando |
+| **A4** | el contenido exacto de las siete vistas | se decide probando | esperando |
 | **A5** | cerrar el territorio ficticio | — | nombres provisionales puestos |
 | **A6** | ¿el mapa muestra dónde está la fuerza? | se decide tras P3 | esperando |
 | **B8** | órdenes condicionales en el canal | no | el motor sabe; el canal no lee «si…» · hoy se avisa |
 | **A7** | ¿la consola puede decir qué punto bloquea un corredor? | — | esperando · es el dato exclusivo de Transporte |
-| **B9** | **ninguna prueba mira lo que la interfaz dibuja** | no | **no existe** · un fallo de una línea vació las nueve vistas y la suite pasó entera |
+| **B9** | **ninguna prueba mira lo que la interfaz dibuja** | no | **no existe** · un fallo de una línea vació las siete vistas y la suite pasó entera |
 | **B11** | la lista agroalimentaria no se comprueba después | no | se concede la clase y nadie mira si se cumplió |
 | **B12** | tres constantes y tres campos que nadie lee | no | declarados y con prueba que impide que crezcan |
+| **B13** | dos números del reparto de carteras sin calibrar | no | provisionales y declarados · van con **C5** |
 
 Lo que **sí** funciona está en el README, sección «Estado actual»; el
 ejercicio explicado del juego al motor, en
@@ -159,7 +160,7 @@ caída durante la corrida es exactamente cuando más falta hace el registro.
 la semilla y las órdenes, reproducirla es exacto.
 
 
-### B2 · La identidad de los nueve roles, en datos
+### B2 · La identidad de los siete roles, en datos
 
 **Dónde:** [`data/roles/`](data/roles/) (vacío) ·
 [`web_ui/src/comun.jsx`](web_ui/src/comun.jsx) tiene hoy la lista duplicada
@@ -263,10 +264,10 @@ tablero:
 
 | Decisión | El dato privado que la respalda | De quién |
 |---|---|---|
-| Prioridad de combustible a una región | ¿es la del reloj de oxígeno más corto? El tablero solo da el semáforo | **Minas** |
+| Prioridad de combustible a una región | ¿es la del reloj de oxígeno más corto? El tablero solo da el semáforo | **Transporte + Agricultura** |
 | Verificar un punto y no otro | ¿es el que bloquea un corredor? | **Transporte** |
-| Escoltar por un corredor | ¿sirve a la región peor abastecida? | **Minas + Transporte** |
-| Operar con dupla presente | el mitigador que solo la Defensoría puede aportar | **Defensoría** |
+| Escoltar por un corredor | ¿sirve a la región peor abastecida? | **Agricultura + Transporte** |
+| Verificar una denuncia contra la fuerza | solo cuenta con protocolo común adoptado | **Policía + Defensa** |
 | Concertar en vez de operar | ¿tiene el punto vocería con quién hablar? | **Interior + Alcalde** |
 
 Cada una da *alineada · no alineada · no aplica*. El agregado —«N de M
@@ -350,11 +351,11 @@ siguiente para ser útil.
 
 **Dónde:** [`nlu.py`](src/agents/nlu.py) · el motor ya está listo
 
-`MotorCrisis.encolar_condicional()` existe y funciona: **«en cuanto la Defensoría
+`MotorCrisis.encolar_condicional()` existe y funciona: **«en cuanto Defensa
 verifique ese punto, opérenlo»** es una orden que el motor sabe guardar y
 disparar sola. El canal no sabe leerla.
 
-Hoy, «si la Defensoría verifica el Puente Amarillo, opérenlo» se traduce como
+Hoy, «si un equipo de terreno verifica el Puente Amarillo, opérenlo» se traduce como
 orden **inmediata**, y lo único que impide que eso pase inadvertido es un aviso:
 
 ```
@@ -446,7 +447,7 @@ Ninguna de las cuatro señales nombra un remedio.
 
 **¿La asimetría de información produce conversación?**
 
-Tres roles, uno por frente: **Interior**, **Defensa** y **Minas**. Tres turnos,
+Tres roles, uno por frente: **Interior**, **Defensa** y **Transporte**. Tres turnos,
 sin turno 0 ni debriefing. Y una sola cosa que mirar:
 
 - ¿Alguien dice un dato de su vista privada **sin que se lo pregunten**?
@@ -627,6 +628,28 @@ consecuencias. Si la sala se queda con la boca abierta y el reloj ya abrió la
 jornada siguiente, el reparto correcto es 12/3 y no 13/2. Se cambia en
 `parameters.py` (`MIN_DIA`, `MIN_NOCHE`) y en ningún otro sitio.
 
+### B13 · Dos números del paso de nueve roles a siete, sin calibrar
+
+De [«De nueve roles a siete»](docs/historial/resueltos.md#11--de-nueve-roles-a-siete).
+Los dos están puestos, funcionan y **son provisionales**: se eligieron por
+coherencia con lo que había, no midiendo. Van con `C5`, que este cambio obliga a
+rehacer de todos modos.
+
+| | Qué hay que fijar | Hoy |
+|---|---|---|
+| **1** | El precio de `FijarReglasEmpleoSector`, que ahora enciende los **tres** mitigadores en una sola acción · antes el tercero lo traía la Defensoría | `estandar_autoimpuesto`: respaldo **+8**, cohesión **−6** |
+| **2** | Cuánto cambian los costos de verificar una denuncia **sin** protocolo común adoptado, ahora que quien verifica es el sector señalado | veraz: respaldo **−11**, legitimidad **−7** · falsa: legitimidad **+1** |
+
+**Por qué importa el primero.** Encender tres mitigadores el primer día sin
+ningún costo divide el riesgo por tres y medio a cambio de nada, y eso vacía la
+decisión que el subsistema de fuerza existe para producir. El número tiene que
+salir de medir cuántas salas lo adoptan en la jornada 1 y qué pasa con las que
+no.
+
+> Medido tras el cambio, la tabla de estrategias se movió poco: `constituida`
+> baja de 74 a 68 de cohesión y `humanitaria` de 28 a 22. Ninguna estrategia
+> pasó a dominar, que era el riesgo.
+
 ### B12 · Lo que quedó escrito y nadie lee
 
 De la [revisión general del motor](docs/historial/resueltos.md#9--revisión-general-del-motor).
@@ -638,7 +661,7 @@ porque tocarlo sería cambiar el diseño y no arreglar un error.
 | | Qué pasa | Qué habría que decidir |
 |---|---|---|
 | `MIN_INSTALACION` · `MIN_DEBRIEFING` | 12 y 20 minutos del cuadro de tiempos de la sesión. El reloj del ejercicio solo conduce las cinco jornadas | O el reloj cubre la sesión entera —instalación, jornadas, debriefing— o estos dos se van a la guía del facilitador. Hoy están en el sitio donde nadie los va a mirar |
-| `CUSTODIA_MILITARES_POR_INSTALACION = 3` | Su gemela policial (`= 2`) sí se usa. El redespliegue militar inmoviliza **por unidad**, no por instalación, así que esta nunca entra | Que la custodia militar cueste por instalación como la policial, o quitar la constante. Lo primero **cambia la aritmética** que enfrenta a Minas con Defensa, y esa es la decisión |
+| `CUSTODIA_MILITARES_POR_INSTALACION = 3` | Su gemela policial (`= 2`) sí se usa. El redespliegue militar inmoviliza **por unidad**, no por instalación, así que esta nunca entra | Que la custodia militar cueste por instalación como la policial, o quitar la constante. Lo primero **cambia la aritmética** que enfrenta al Interior con Defensa, y esa es la decisión |
 
 **Tres campos del estado que se escriben y nadie lee:**
 
@@ -687,7 +710,7 @@ tenía que capitalizar y devolver el texto. Devolvía **un guion**, porque la
 primera guarda miraba `valor` —que con un solo argumento es `undefined`— antes de
 darse cuenta de que el argumento único era el valor.
 
-Así se formatea **cada celda de texto de las nueve vistas privadas**. El resultado:
+Así se formatea **cada celda de texto de las siete vistas privadas**. El resultado:
 el nombre de cada punto, cada corredor, cada región y cada estado salía como
 «—» en la pantalla de su titular. Nueve tablas llenas de guiones, que desde el
 otro lado de la sala se ve exactamente como una pantalla en blanco.
@@ -760,7 +783,7 @@ degradan y el ejercicio corre igual.
 > motor esté calibrado, se enciende y se mide qué añade, que es una medición
 > distinta y también interesante.
 
-### A4 · ¿Cuál es el contenido exacto de las nueve vistas?
+### A4 · ¿Cuál es el contenido exacto de las siete vistas?
 
 **Bloquea:** la versión definitiva. No bloquea probar.
 
@@ -801,7 +824,7 @@ porque el motor identifica por código y no por nombre.
 mesa.
 
 El mapa ya dibuja **lo que se hizo**: un anillo sobre cada punto donde ocurrió
-algo en la última ventana — se operó, con qué unidad y si llevaba dupla; se
+algo en la última ventana — se operó y con qué unidad; se
 volvió a cerrar de noche; alguien lo verificó. Eso es público: sale en las
 noticias esa misma tarde.
 
@@ -815,7 +838,7 @@ solo en la vista de la Dirección General de la Policía.
 | **La Policía** | pierde su razón de estar | es la única que convierte «hay 6 escuadrones libres» en «hay 2 que llegan a tiempo» |
 | **El ejercicio** | más fácil de seguir | siete roles siguen necesitando al octavo |
 
-> **Está puesto del lado que preserva los nueve roles**, que es el que sostiene el
+> **Está puesto del lado que preserva los siete roles**, que es el que sostiene el
 > diseño. Cambiarlo es media hora: `vista_publica()` ya tiene el dato y solo
 > habría que dejarlo salir.
 

@@ -131,7 +131,7 @@ class MotorCrisis:
     # abrir el día y resolverlo NO son el mismo acto:
     #
     #     abrir_jornada()    no avanza el mundo. Pone la mesa: es de día, hay
-    #                        tres duplas otra vez, y la fecha de la pared sube.
+    #                        tres equipos otra vez, y la fecha de la pared sube.
     #     cerrar_jornada()   avanza el mundo. Resuelve el día con lo que haya en
     #                        cola y a continuación pasa la noche.
     #
@@ -146,15 +146,15 @@ class MotorCrisis:
         """
         Empieza el día de la jornada siguiente. **No avanza el mundo.**
 
-        Reponer aquí las duplas y no dentro del paso no es cosmético: la
-        Defensoría tiene que ver sus tres duplas MIENTRAS decide a dónde
-        mandarlas. Si se repusieran al resolver, su propia pantalla le diría
-        durante los trece minutos que no le queda ninguna.
+        Reponer aquí los equipos y no dentro del paso no es cosmético: el
+        Ministro de Defensa tiene que ver sus tres equipos MIENTRAS decide a
+        dónde mandarlos. Si se repusieran al resolver, su propia pantalla le
+        diría durante los trece minutos que no le queda ninguno.
         """
         self.estado.jornada_abierta = max(
             self.estado.turno_decision, self.estado.jornada_abierta) + 1
         self.estado.franja = "dia"
-        information.reponer_duplas(self.estado)
+        information.reponer_equipos(self.estado)
         return self.estado.jornada_abierta
 
     def cerrar_jornada(self) -> list[ResultadoTurno]:
@@ -192,11 +192,11 @@ class MotorCrisis:
             # quien corre el motor sin reloj de sala —las pruebas, el corredor
             # sin interfaz— no llama a `abrir_jornada()` nunca.
             e.jornada_abierta = max(e.jornada_abierta, e.turno_decision)
-            # Las tres duplas se reponen al empezar cada turno de decisión. Con
+            # Los tres equipos se reponen al empezar cada turno de decisión. Con
             # reloj de sala ya las repuso `abrir_jornada()`, y volver a hacerlo
             # aquí no quita nada: entre una cosa y la otra no se gasta ninguna,
             # porque las acciones se ejecutan más abajo.
-            information.reponer_duplas(e)
+            information.reponer_equipos(e)
 
         res = ResultadoTurno(turno=e.turno_decision, franja=e.franja)
 
@@ -286,7 +286,7 @@ class MotorCrisis:
         "operacion", "punto_verificado", "apertura", "reapertura",
         "desgaste", "paso_seguro", "acuerdo_incumplido", "mesa_congelada",
     })
-    CAMPOS_DE_HECHO = frozenset({"tipo", "via", "unidad", "dupla", "incidente",
+    CAMPOS_DE_HECHO = frozenset({"tipo", "via", "unidad", "incidente",
                                  "por", "jornadas"})
 
     def hechos_por_punto(self) -> dict[str, list[dict]]:
@@ -298,10 +298,10 @@ class MotorCrisis:
         dice que se cerró anoche, que es otra conversación.
 
         LA LÍNEA QUE NO SE CRUZA: aquí va lo que YA OCURRIÓ y es público —se
-        operó en este punto, una dupla lo miró, el acuerdo se rompió— y nunca
+        operó en este punto, un equipo lo miró, el acuerdo se rompió— y nunca
         dónde está la fuerza AHORA. Lo primero sale en las noticias esa misma
         tarde; lo segundo es de la Dirección General de la Policía, y en el
-        tablero dejaría sin oficio a uno de los nueve.
+        tablero dejaría sin oficio a uno de los siete.
         """
         if not self.historial:
             return {}
@@ -670,7 +670,6 @@ class MotorCrisis:
             "denuncias_estalladas": denuncias_estalladas,
             "escoltas_logradas": sum(1 for x in eventos if x.get("tipo") == "escolta_lograda"),
             "escoltas_atacadas": sum(1 for x in eventos if x.get("tipo") == "escolta_atacada"),
-            "dudas_permanencia": e.dudas_permanencia,
             "reservas": self._reservas_dict(),
             # EL RIESGO QUE SE ASUMIÓ, no el daño que ocurrió. No hay acciones
             # en contra de la infraestructura: lo que el cierre cobra es lo que

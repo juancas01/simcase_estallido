@@ -1,7 +1,7 @@
 # SIMCASE · El Estado frente al Estallido Social
 
 Simulación de conducción de crisis sobre el Paro Nacional de 2021. Un Puesto de
-Mando Unificado de nueve roles, dos horas de mundo real, y un motor que calcula
+Mando Unificado de siete roles, dos horas de mundo real, y un motor que calcula
 las consecuencias de lo que la sala decide.
 
 **Escuela de Gobierno · Universidad de La Sabana**
@@ -33,7 +33,7 @@ Los tres primeros no piden saber programar.
 
 | | Lea | Para qué |
 |---|---|---|
-| **1** | [`docs/propuesta.md`](docs/propuesta.md) | **El diseño del juego.** Qué se simula y hasta dónde, qué ve cada uno de los nueve, qué puede hacer y cómo se afectan entre sí. Incluye el modelo del mundo y un glosario. **Empiece por aquí si no conoce el caso** |
+| **1** | [`docs/propuesta.md`](docs/propuesta.md) | **El diseño del juego.** Qué se simula y hasta dónde, qué ve cada uno de los siete, qué puede hacer y cómo se afectan entre sí. Incluye el modelo del mundo y un glosario. **Empiece por aquí si no conoce el caso** |
 | **2** | [`docs/COMO_FUNCIONA.md`](docs/COMO_FUNCIONA.md) | **Del juego al motor.** Cada sección tiene la misma forma: qué pasa en la sala, qué cálculo lo produce, y en qué archivo está. **Es el documento central**, y el hogar de todos los números |
 | **3** | [`PENDIENTES.md`](PENDIENTES.md) | **Qué falta.** Separado por lo que se hace sin convocar a nadie, lo que necesita personas en una sala, y lo que decide el equipo docente. **Es el único sitio donde se lleva la cuenta** |
 | **4** | [`docs/EL_CODIGO.md`](docs/EL_CODIGO.md) | **Cómo está organizado el repositorio.** Dónde vive cada cosa, cómo añadir una acción o un punto, qué convenciones hay. Este sí pide saber programar |
@@ -42,7 +42,7 @@ Y dos **de consulta, que no se leen seguidos**:
 
 | Lea | Para qué |
 |---|---|
-| [`docs/GUIA_DE_ACCIONES.md`](docs/GUIA_DE_ACCIONES.md) | **Las 39 acciones en lenguaje corriente y sin una sola cifra.** Cómo se llama cada una, qué hace, qué hace falta antes y la frase que la pide. Es la guía que cada titular tiene en pantalla, con las nueve carteras a la vez: **esto es lo que se imprime y se reparte en la sala** |
+| [`docs/GUIA_DE_ACCIONES.md`](docs/GUIA_DE_ACCIONES.md) | **Las 37 acciones en lenguaje corriente y sin una sola cifra.** Cómo se llama cada una, qué hace, qué hace falta antes y la frase que la pide. Es la guía que cada titular tiene en pantalla, con las siete carteras a la vez: **esto es lo que se imprime y se reparte en la sala** |
 | [`docs/LAS_ACCIONES.md`](docs/LAS_ACCIONES.md) | **Las mismas 39, con los números.** Qué escribe cada una en el estado y cuánto cobra. Se abre por el rol o por la acción que se está discutiendo |
 
 ### Y dos más, según lo que busque
@@ -70,7 +70,7 @@ uv run python scripts/correr_ejercicio.py
 # 3 · Comparar estrategias — el criterio de calibración
 uv run python scripts/correr_ejercicio.py --comparar
 
-# 4 · Las nueve vistas privadas de un turno real
+# 4 · Las siete vistas privadas de un turno real
 uv run python scripts/correr_ejercicio.py --vistas
 
 # 5 · Las superficies
@@ -84,7 +84,7 @@ uv run python -m src.api.main        # http://localhost:8000
 | Superficie | Ruta | Para quién |
 |---|---|---|
 | Tablero de situación | `/tablero` | **proyectar** — con la esfera pública en su barra lateral |
-| Vista privada | `/vista/Minas`, `/vista/Defensoría`… | el dispositivo de cada uno |
+| Vista privada | `/vista/Interior`, `/vista/Agricultura`… | el dispositivo de cada uno |
 | Consola | `/consola` | quien transcribe · no proyectar |
 
 > **La esfera pública no tiene ruta propia, y es a propósito.** La distancia
@@ -135,7 +135,7 @@ src/engine/          EL MOTOR. Único dueño del estado. Sin IA, determinista sa
   supply.py            el reloj y el oxígeno medicinal
   territory.py         las lecturas del mapa, qué se hace en cada punto, geometría
   views.py             LAS NUEVE VISTAS PRIVADAS
-  actions.py           las 39 acciones de los nueve roles
+  actions.py           las 37 acciones de los siete roles
   simulation.py        el bucle de turnos
 
 src/api/             capa delgada · sirve las superficies
@@ -160,7 +160,7 @@ está en [`docs/EL_CODIGO.md`](docs/EL_CODIGO.md).
 | **3** | **El estándar de derechos es un multiplicador de riesgo**, no un discurso. Seis mitigadores dividen la probabilidad de incidente por casi cinco | `force.py` |
 | **4** | **Lo primero no es el territorio: es la mesa.** Diez acciones de protocolo no abren ningún corredor y modifican todo lo posterior. Nada está bloqueado; todo está tarifado | `actions.py` |
 | **5** | **Cada rol ve su cartera en alta resolución** y el resto del país en grano grueso. Resolución, no secreto: lo que hace valiosa una vista no es que esté oculta, sino que hay una sola persona que la tiene actualizada | `views.py` |
-| **6** | **No hay moderador como figura aparte.** El sistema conduce el turno; quien opera la consola puede ser uno de los nueve | `simulation.py` |
+| **6** | **No hay moderador como figura aparte.** El sistema conduce el turno; quien opera la consola puede ser uno de los siete | `simulation.py` |
 
 ## Tres invariantes que no se pueden romper
 
@@ -168,8 +168,9 @@ Las tres se verifican solas. Si fallan, el ejercicio pierde su objeto sin que
 nada reviente ruidosamente — que es la peor clase de fallo.
 
 **1 · La mezcla real de un punto nunca sale del motor** — ni al tablero, ni a
-ninguna de las nueve vistas privadas. Si la verdad se proyecta, las cinco fuentes
-con sesgo sobran, el error doble desaparece y la Defensoría se queda sin oficio.
+ninguna de las siete vistas privadas. Si la verdad se proyecta, las cinco fuentes
+con sesgo sobran, el error doble desaparece y los equipos de terreno se quedan
+sin oficio.
 Y esa mezcla **sí tiene consecuencia**: operar sobre población mayoritariamente
 civil cuesta casi el doble, y pactar donde hay estructura organizada produce un
 acuerdo que se rompe.
@@ -199,11 +200,11 @@ serlo — y eso, sobre hechos con responsabilidad judicial viva, es tomar partid
 - **el frente agroalimentario**: el Ministro de Agricultura, la única cartera
   cuyo daño **ya ocurrió** mientras la mesa delibera, con la única mesa de
   negociación que sobrevive a la salida del Comité del Paro
-- **39 acciones** de los nueve roles — de protocolo, de operación y de
+- **37 acciones** de los siete roles — de protocolo, de operación y de
   información —, cada una con su **guía**: cómo se llama en la sala, qué hace,
   qué hace falta antes (en cualitativo, nunca una cifra) y una frase que
   funciona tal cual en la consola
-- **las nueve vistas privadas**, con sus sesgos opuestos y su alerta por turno
+- **las siete vistas privadas**, con sus sesgos opuestos y su alerta por turno
 - **las mesas de diálogo se instalan cada jornada o se congelan**, y eso se ve:
   en el mapa, en las consecuencias de la noche, y en una pregunta que reciben al
   abrir el día los dos que pueden convocarlas
@@ -211,7 +212,10 @@ serlo — y eso, sobre hechos con responsabilidad judicial viva, es tomar partid
   en negociación, o nada en absoluto
 - **doce instalaciones de infraestructura relevante** con nombre y sitio, y el
   riesgo de dejarlas sin custodia se cobra en el debriefing
-- tres duplas en un solo bolsillo: verificar un punto, una denuncia, o acompañar
+- tres equipos de terreno en un solo bolsillo: verificar un punto o una
+  denuncia. Los despliega el Ministerio de Defensa, así que **el que mira es
+  parte** — y lo que hace que su palabra cuente es el protocolo común de
+  verificación, que adopta la Policía
 - denuncias con veracidad oculta, y el ultimátum gremial del turno 1
 - territorio ficticio sobre **geografía real**: la silueta y la red vial salen
   de datos cartográficos abiertos de un sitio que no consta, y **cada corredor
@@ -220,11 +224,11 @@ serlo — y eso, sobre hechos con responsabilidad judicial viva, es tomar partid
 
 **Falta** — la lista completa está en [`PENDIENTES.md`](PENDIENTES.md):
 
-- **la primera corrida con nueve personas.** Nada de lo de arriba está probado con
+- **la primera corrida con siete personas.** Nada de lo de arriba está probado con
   gente: es la única prueba que no se puede sustituir por código
 - **verificación de lo que la interfaz dibuja** (B9). Todo lo que se comprueba
   hoy mira el motor y el canal; nada mira la pantalla, y un fallo de una línea
-  vació las nueve vistas privadas sin que nada avisara
+  vació las siete vistas privadas sin que nada avisara
 - **persistencia** de la corrida, para repetirla con una decisión cambiada
 - **telemetría por turno**, para saber dónde se fue el tiempo
 - cinco decisiones que esperan al equipo docente (A1–A7 en `PENDIENTES.md`)

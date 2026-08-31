@@ -2,11 +2,11 @@
 state.py — Las estructuras de estado del mundo.
 
 De qué está hecho el país dentro del ejercicio. Tres niveles espaciales, porque
-los nueve roles no deciden sobre lo mismo:
+los siete roles no deciden sobre lo mismo:
 
     PUNTO DE CIERRE   un bloqueo concreto            24    Policía · Interior · Alcalde
     CORREDOR          una secuencia de puntos         5    Transporte · Defensa
-    REGIÓN            un departamento o área          4    Minas · Interior
+    REGIÓN            un departamento o área          4    Agricultura · Interior
 
 DESVIACIÓN DELIBERADA RESPECTO DE MACONDO
 -----------------------------------------
@@ -354,7 +354,6 @@ class Banderas:
 
     asistencia_militar_firmada: bool = False
     asistencia_militar_delimitada: bool = False
-    defensoria_presente: bool = True         # decisión A3: no se retira nunca
 
     activada_en_turno: dict[str, int] = field(default_factory=dict)
 
@@ -546,9 +545,8 @@ class Estado:
 
     # UN SOLO BOLSILLO DE TRES: verificar un punto, verificar una denuncia o
     # acompañar una operación salen de aquí. Se repone al empezar cada turno.
-    duplas_disponibles: int = P.DUPLAS_TOTALES
-    duplas_usadas_en: list[str] = field(default_factory=list)
-    dudas_permanencia: int = 0           # cuántas veces la Defensoría lo ha dicho
+    equipos_disponibles: int = P.EQUIPOS_TERRENO_TOTALES
+    equipos_usados_en: list[str] = field(default_factory=list)
 
     denuncias: list[Denuncia] = field(default_factory=list)
     acuerdos: list[Acuerdo] = field(default_factory=list)

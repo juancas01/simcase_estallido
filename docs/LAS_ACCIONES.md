@@ -1,6 +1,6 @@
-# Las 39 acciones, una por una
+# Las 37 acciones, una por una
 
-Qué puede pedir cada uno de los nueve, qué significa eso en la sala, y qué hace
+Qué puede pedir cada uno de los siete, qué significa eso en la sala, y qué hace
 exactamente el motor cuando se ejecuta.
 
 **Este documento es el puente entre las dos lecturas.**
@@ -35,7 +35,7 @@ titular:
 | `ejemplo_consola` | una frase que produce esta acción | **tiene que funcionar de verdad** — hay una prueba que las pasa todas por el intérprete |
 
 > **`nombre` vive también en `GUIA`**, con los otros dos, y por la misma razón:
-> treinta y nueve rótulos escritos a dos mil líneas de distancia no se pueden
+> treinta y siete rótulos escritos a dos mil líneas de distancia no se pueden
 > redactar con el mismo rasero, y un rótulo que no es comparable con el de al
 > lado no sirve de rótulo.
 
@@ -61,10 +61,10 @@ tener a mano para leer una ficha:
 | Qué | Dónde está, con sus números |
 |---|---|
 | **Las cuatro reservas** y sus seis umbrales duros | [§9 · La mesa](COMO_FUNCIONA.md#9-la-mesa-reservas-banderas-y-acuerdos) |
-| **Los seis mitigadores** y su factor | [§5 · La fuerza y el riesgo](COMO_FUNCIONA.md#5-la-fuerza-y-el-riesgo) |
+| **Los cinco mitigadores** y su factor | [§5 · La fuerza y el riesgo](COMO_FUNCIONA.md#5-la-fuerza-y-el-riesgo) |
 | **La intensidad de movilización** y su tabla de eventos | [§4 · El adversario reflexivo](COMO_FUNCIONA.md#4-el-adversario-reflexivo) |
 | **Las tres vías de abrir un punto** | [§6 · Las tres vías](COMO_FUNCIONA.md#6-las-tres-vías-de-abrir-un-camino) |
-| **Las duplas** — un solo bolsillo de tres | [§8 · La información](COMO_FUNCIONA.md#8-la-información-verdad-vistas-y-denuncias) |
+| **Los equipos de terreno** — un solo bolsillo de tres | [§8 · La información](COMO_FUNCIONA.md#8-la-información-verdad-vistas-y-denuncias) |
 
 Y las cuatro cosas que hay que saber de memoria, porque aparecen en casi todas
 las fichas:
@@ -78,15 +78,16 @@ las fichas:
 - **Tres banderas son además mitigadores de riesgo**, y ahí está la decisión de
   diseño de fondo: el estándar de derechos no es un discurso, es un
   multiplicador.
-- **Las duplas son tres por turno de decisión**, y verificar un punto, verificar
-  una denuncia y acompañar una operación salen del mismo bolsillo. Verificar
-  aquí es no verificar allá.
+- **Los equipos de terreno son tres por turno de decisión**, y verificar un
+  punto y verificar una denuncia salen del mismo bolsillo. Mirar aquí es no
+  mirar allá — y desde que los despliega el Ministerio de Defensa, **el que
+  mira es parte**.
 
 ## En una mirada
 
 **P** Protocolo · **O** Operación · **I** Información
 
-**Las treinta y nueve se piden por la consola, en lenguaje corriente.** Hubo una
+**Las treinta y siete se piden por la consola, en lenguaje corriente.** Hubo una
 columna que decía cuáles sí y cuáles no; se fue con las ocho que decían que no.
 
 La primera columna de cada acción es **cómo se llama en la sala**; la segunda,
@@ -97,61 +98,61 @@ hace falta antes y cómo se pide, está en
 | Rol | | Acción | | |
 |---|---|---|---|---|
 | **Presidente** | P | **Dejar todo por escrito** | `FijarRegistroEscrito` | registro escrito y responsable nominado |
-| | P | **Decir qué no se negocia** | `FijarLineasRojas` | el marco de lo negociable |
-| | O | **Autorizar al Ejército** | `FirmarAsistenciaMilitar` | la única firma que habilita tropa |
-| | O | **Reunir a los alcaldes** | `ConvocarAlcaldes` | corresponsabilidad territorial |
-| | I | **Ir al epicentro en persona** | `DesplazarseAlEpicentro` | ir en persona |
+|  | P | **Decir qué no se negocia** | `FijarLineasRojas` | el marco de lo negociable |
+|  | O | **Autorizar al Ejército** | `FirmarAsistenciaMilitar` | la única firma que habilita tropa |
+|  | O | **Reunir a los alcaldes** | `ConvocarAlcaldes` | corresponsabilidad territorial |
+|  | I | **Ir al epicentro en persona** | `DesplazarseAlEpicentro` | ir en persona |
 | **Interior** | P | **Poner un solo vocero** | `ExigirProtocoloVoceria` | una sola voz y plazo suspensivo |
-| | O | **Sentar al Comité del Paro** | `ConvocarMesaNacional` | **la única que produce un acuerdo verificable** |
-| | O | **Abrir una mesa en un punto** | `AbrirMesaLocal` | concertar un punto · **hay que instalarla cada jornada** |
-| | I | **Ofrecer algo a cambio** | `OfrecerContraprestacion` | la moneda no violenta |
+|  | O | **Sentar al Comité del Paro** | `ConvocarMesaNacional` | **la única que produce un acuerdo verificable** |
+|  | O | **Abrir una mesa en un punto** | `AbrirMesaLocal` | concertar un punto · **hay que instalarla cada jornada** |
+|  | I | **Ofrecer algo a cambio** | `OfrecerContraprestacion` | la moneda no violenta |
+|  | O | **Exigir un paso humanitario permanente** | `RequerirCorredoresHumanitarios` | paso permanente, exigible a las dos partes |
+|  | O | **Poner custodia a una instalación** | `DeclararInfraestructuraCritica` | proteger, inmovilizando · **lo que se protege sale de lo que desbloquea** |
 | **Alcalde** | P | **Exigir que le consulten la fuerza** | `CondicionarEmpleoFuerza` | concertación previa en su ciudad |
-| | O | **Sentarse con los voceros del punto** | `InstalarMesaConVoceros` | la mesa municipal · **cada jornada** |
-| | O | **Abrir paso a lo humanitario** | `EsquemaHumanitarioMunicipal` | **la única vía que no cuesta ninguna reserva** |
-| | I | **Publicar el conteo de la ciudad** | `PublicarParteMunicipal` | su propio conteo |
-| **Defensa** | P | **Poner reglas a sus unidades** | `FijarReglasEmpleoSector` | dos mitigadores |
-| | O | **Desbloquear un punto por la fuerza** | `OperarNodo` | **la que más mueve el tablero** |
-| | O | **Mover tropa a donde haga falta** | `RedesplegarMilitares` | tropa a infraestructura, o aire |
-| | I | **Mostrar quién financia los cierres** | `PresentarEvidenciaInteligencia` | quién financia los cierres |
+|  | O | **Sentarse con los voceros del punto** | `InstalarMesaConVoceros` | la mesa municipal · **cada jornada** |
+|  | O | **Abrir paso a lo humanitario** | `EsquemaHumanitarioMunicipal` | **la única vía que no cuesta ninguna reserva** |
+|  | I | **Publicar el conteo de la ciudad** | `PublicarParteMunicipal` | su propio conteo |
+| **Defensa** | P | **Poner reglas a sus unidades** | `FijarReglasEmpleoSector` | **los tres mitigadores, y ya no se los exige nadie** |
+|  | O | **Desbloquear un punto por la fuerza** | `OperarNodo` | **la que más mueve el tablero** |
+|  | O | **Mover tropa a donde haga falta** | `RedesplegarMilitares` | tropa a infraestructura, o aire |
+|  | I | **Mostrar quién financia los cierres** | `PresentarEvidenciaInteligencia` | quién financia los cierres |
+|  | O | **Mandar equipos al terreno** | `DesplegarEquiposTerreno` | los tres del turno, y ya no son de un tercero |
 | **Policía** | P | **Separar lo confirmado de lo estimado** | `ClasificarParteOperacional` | confirmado, estimado, en verificación |
-| | O | **Concentrar el ESMAD** | `DisponerESMAD` | concentrar fuerza |
-| | O | **Escoltar una caravana o misión médica** | `Escoltar` | **la condición material de todo lo logístico** |
-| | O | **Relevar a las unidades cansadas** | `SolicitarRelevo` | bajar la fatiga |
-| **Defensoría** | P | **Exigir reglas, identificación y cámaras** | `ExigirEstandaresEmpleo` | **tres mitigadores de golpe** |
-| | P | **Acordar una sola forma de verificar** | `AdoptarProtocoloVerificacion` | una sola cifra oficial |
-| | O | **Mandar a sus verificadores** | `AsignarDuplas` | las tres del turno |
-| | O | **Exigir un paso humanitario permanente** | `RequerirCorredoresHumanitarios` | paso permanente |
-| | I | **Poner en duda su permanencia** | `ManifestarDudaPermanencia` | su palanca, y se gasta |
+|  | P | **Acordar una sola forma de verificar** | `AdoptarProtocoloVerificacion` | una sola cifra oficial · **lo que hace que valga la palabra del que verifica** |
+|  | O | **Concentrar el ESMAD** | `DisponerESMAD` | concentrar fuerza |
+|  | O | **Escoltar una caravana o misión médica** | `Escoltar` | **la condición material de todo lo logístico** |
+|  | O | **Relevar a las unidades cansadas** | `SolicitarRelevo` | bajar la fatiga |
 | **Transporte** | P | **Fijar el orden de los corredores** | `AdoptarCriterioPriorizacion` | en qué orden se atiende |
-| | O | **Organizar una caravana** | `OrganizarCaravana` | mover carga |
-| | O | **Hablar con los camioneros** | `NegociarConGremios` | que no se sumen |
-| | I | **Publicar el mapa de cierres** | `PublicarMapaCierres` | dónde está cerrado |
-| **Minas** | P | **Decidir a qué va el combustible** | `FijarPrioridadCombustible` | **la segunda entrada del reloj** |
-| | O | **Poner custodia a una instalación** | `DeclararInfraestructuraCritica` | proteger, inmovilizando · **del registro de infraestructura** |
-| | O | **Acordar ventanas de paso** | `AcordarPasosSeguros` | pasar sin abrir |
-| | I | **Decir cuántos días quedan** | `EntregarCalendarioAgotamiento` | el reloj, y lo que difundirlo hace |
+|  | P | **Decidir a qué va el combustible** | `FijarPrioridadCombustible` | **la segunda entrada del reloj** |
+|  | O | **Organizar una caravana** | `OrganizarCaravana` | mover carga |
+|  | O | **Hablar con los camioneros** | `NegociarConGremios` | que no se sumen |
+|  | O | **Acordar ventanas de paso** | `AcordarPasosSeguros` | pasar sin abrir y sin gastar escolta |
+|  | I | **Publicar el mapa de cierres** | `PublicarMapaCierres` | dónde está cerrado |
 | **Agricultura** | P | **Poner los alimentos en la prioridad** | `FijarClasePrioridadAlimentaria` | reordena corredores, no añade ninguno |
-| | O | **Sentarse con el campo** | `InstalarMesaTecnicaAgropecuaria` | **la única mesa que sobrevive a la salida del Comité** |
-| | O | **Aliviar a los productores** | `ActivarInstrumentosSectoriales` | la única suya que no depende de nadie |
-| | O | **Concentrar el despacho de alimentos** | `AcordarAcopioYVentanas` | hace rendir la escolta que ya hay |
-| | I | **Publicar lo que se está perdiendo** | `PublicarBalancePerdida` | el costo del cierre, en lo que paga un hogar |
+|  | O | **Sentarse con el campo** | `InstalarMesaTecnicaAgropecuaria` | **la única mesa que sobrevive a la salida del Comité** |
+|  | O | **Aliviar a los productores** | `ActivarInstrumentosSectoriales` | la única suya que no depende de nadie |
+|  | I | **Publicar lo que se está perdiendo** | `PublicarBalancePerdida` | el costo del cierre, en lo que paga un hogar |
+|  | O | **Concentrar el despacho de alimentos** | `AcordarAcopioYVentanas` | hace rendir la escolta que ya hay |
+|  | I | **Decir cuántos días quedan** | `EntregarCalendarioAgotamiento` | el reloj, y lo que difundirlo hace |
 
 ---
+---
+
 ---
 
 # 01 · Presidente de la República
 
-Cinco acciones, porque decide más. Dos de ellas constituyen la mesa y casi no
-cuestan; una sola —la firma— puede reordenar el episodio entero.
+Cinco acciones, porque decide más. Dos de ellas constituyen la mesa y
+casi no cuestan; una sola —la firma— puede reordenar el episodio entero.
 
 ### `FijarRegistroEscrito`
-**Dejar todo por escrito** · Protocolo · [`actions.py:206`](../src/engine/actions.py#L206)
+**Dejar todo por escrito** · Protocolo · [`actions.py:219`](../src/engine/actions.py#L219)
 
 > *Deja por escrito cada decisión y quién responde por ella. Sin registro, al
 > cierre nadie puede decir quién ordenó qué.*
 
 **En la sala.** Parece burocracia y es la pieza que decide sobre quién cae el
-costo de lo que salga mal. Sin ella, un incidente se reparte sobre los nueve y
+costo de lo que salga mal. Sin ella, un incidente se reparte sobre los siete y
 golpea la cohesión; con ella, cae sobre quien firmó. Es la acción que el
 Ministro de Defensa quiere que exista antes de operar y la que, una vez existe,
 lo deja expuesto.
@@ -168,7 +169,7 @@ lo deja expuesto.
 - Es idempotente: repetirla devuelve «ya estaba vigente» y no cobra nada.
 
 ### `FijarLineasRojas`
-**Decir qué no se negocia** · Protocolo · [`actions.py:230`](../src/engine/actions.py#L230)
+**Decir qué no se negocia** · Protocolo · [`actions.py:243`](../src/engine/actions.py#L243)
 
 > *Anuncia qué está y qué no está sobre la mesa. Fija el terreno de lo negociable
 > antes de que lo fije otro.*
@@ -192,13 +193,14 @@ porcentaje: **0 = nada es negociable**, **1 = todo lo es**. Por defecto vale
 - **Habilita** `OfrecerContraprestacion`, que sin esta bandera se valida como
   *parcial* con el aviso de que lo ofrecido se renegociará.
 - **Efecto cruzado que sorprende:** con la bandera puesta, los pasos seguros de
-  Minas pasan a costar **cohesión −4**, porque se leen como negociación paralela.
+  Transporte pasan a costar **cohesión −4**, porque se leen como negociación
+  paralela.
 
 > **Cuidado con esta acción: hoy el número no se comprueba.** Ver el punto 3 de
 > [«lo que este recuento deja a la vista»](#3--el-margen-de-las-líneas-rojas-no-se-comprueba).
 
 ### `FirmarAsistenciaMilitar`
-**Autorizar al Ejército** · Operación · [`actions.py:259`](../src/engine/actions.py#L259)
+**Autorizar al Ejército** · Operación · [`actions.py:272`](../src/engine/actions.py#L272)
 
 > *Autoriza que el Ejército apoye a la Policía. Da más fuerza disponible, y
 > militares frente a multitudes suben la tensión en la calle.*
@@ -226,7 +228,7 @@ diferencia entre las dos es casi tres veces el costo.
 > mitigador y devuelve seis unidades. **No hay lectura en la que salga peor.**
 
 ### `ConvocarAlcaldes`
-**Reunir a los alcaldes** · Operación · [`actions.py:308`](../src/engine/actions.py#L308)
+**Reunir a los alcaldes** · Operación · [`actions.py:321`](../src/engine/actions.py#L321)
 
 > *Reúne a los alcaldes de las ciudades más golpeadas. Sirve para llegar a la
 > mesa con una sola posición en vez de varias.*
@@ -248,7 +250,7 @@ alinearlos es comprometer prioridad de fuerza que Defensa quería libre.
 > a Defensa ese peaje sin que Defensa esté en la conversación.
 
 ### `DesplazarseAlEpicentro`
-**Ir al epicentro en persona** · Información · [`actions.py:338`](../src/engine/actions.py#L338)
+**Ir al epicentro en persona** · Información · [`actions.py:351`](../src/engine/actions.py#L351)
 
 > *Viaja en persona a la ciudad más afectada. Es un gesto público de que el
 > Gobierno da la cara.*
@@ -269,13 +271,17 @@ sobra. Y lo que decide su signo no es ir, sino **a qué se acompaña al llegar**
 
 ---
 
+---
+
 # 02 · Ministro del Interior
 
-El polo de negociación. Cuatro acciones, y una de ellas es la única del ejercicio
-que puede producir el mayor movimiento a la baja de toda la movilización.
+Seis, y dos son heredadas. **Es el rol que más creció al salir la
+Defensoría del Pueblo y el Ministerio de Minas**: se quedó con el paso
+humanitario permanente y con el registro de infraestructura, que es la
+única aritmética que hace escasa la fuerza por una razón que no es operar.
 
 ### `ExigirProtocoloVoceria`
-**Poner un solo vocero** · Protocolo · [`actions.py:386`](../src/engine/actions.py#L386)
+**Poner un solo vocero** · Protocolo · [`actions.py:399`](../src/engine/actions.py#L399)
 
 > *Establece que una sola persona habla por el Gobierno. Evita que dos carteras
 > digan cosas distintas el mismo día.*
@@ -295,11 +301,11 @@ velocidad, y quien paga la demora es Defensa.
 
 > Sumando los dos, en un turno con una operación esta acción ahorra **13 puntos
 > de cohesión** —y 8 más por cada operación adicional—. Es la constitutiva con
-> mejor relación costo-beneficio después de la de la Defensoría, y la que más
+> mejor relación costo-beneficio después del estándar de empleo, y la que más
 > ruido causa en la sala, porque su costo lo paga otro.
 
 ### `ConvocarMesaNacional`
-**Sentar al Comité del Paro** · Operación · [`actions.py:409`](../src/engine/actions.py#L409)
+**Sentar al Comité del Paro** · Operación · [`actions.py:422`](../src/engine/actions.py#L422)
 
 > *Sienta al Gobierno con el Comité del Paro. Es la vía más rápida para bajar la
 > tensión, y operar por la fuerza ese mismo día es lo que más caro le sale a la
@@ -335,13 +341,13 @@ diseño. Sin ella el caso queda con un solo polo activo, la fuerza.
 > y dos turnos después se cobra entero.
 
 ### `AbrirMesaLocal`
-**Abrir una mesa en un punto** · Operación · [`actions.py:482`](../src/engine/actions.py#L482)
+**Abrir una mesa en un punto** · Operación · [`actions.py:495`](../src/engine/actions.py#L495)
 
 > *Negocia un punto concreto para que lo desbloqueen sus propios voceros. Tarda
 > dos turnos, y lo que se abre así aguanta mientras se cumpla lo pactado.*
 
 **En la sala.** La vía pactada punto por punto. Lenta, sostenible, y con dos
-trampas que la sala no puede ver sin haber gastado una dupla ahí.
+trampas que la sala no puede ver sin haber gastado un equipo de terreno ahí.
 
 **En el motor.**
 - **Valida**: que el punto exista y no esté abierto; que el Comité esté
@@ -366,7 +372,7 @@ trampas que la sala no puede ver sin haber gastado una dupla ahí.
 > verdad**: solo se paga.
 
 ### `OfrecerContraprestacion`
-**Ofrecer algo a cambio** · Información · [`actions.py:571`](../src/engine/actions.py#L571)
+**Ofrecer algo a cambio** · Información · [`actions.py:595`](../src/engine/actions.py#L595)
 
 > *Ofrece algo concreto a cambio de levantar los cierres. Funciona donde hay con
 > quién negociar; no donde nadie manda.*
@@ -390,13 +396,50 @@ escuadrón. Y es una apuesta — el Congreso responde seis de cada diez veces.
 
 ---
 
+### `RequerirCorredoresHumanitarios`
+**Exigir un paso humanitario permanente** · Operación · [`actions.py:632`](../src/engine/actions.py#L632)
+
+> *Exige que haya un paso permanente para lo humanitario. Negarlo es lo que más
+> caro cuesta de cara al exterior.*
+
+**En la sala.** Exigible **tanto al Estado como a quienes sostienen los cierres**.
+Sin oxígeno modelado sería una declaración de principios; con él, negarlo tiene
+contador de víctimas.
+
+**En el motor.**
+- Elige el corredor humanitario **de menor caudal efectivo**, si no se nombra
+  otro.
+- **Baja el apoyo al cierre −0,06** en todos sus puntos: la misión médica se
+  vuelve línea roja también para quienes bloquean.
+- **Respaldo internacional +5.**
+
+### `DeclararInfraestructuraCritica`
+**Poner custodia a una instalación** · Operación · [`actions.py:680`](../src/engine/actions.py#L680)
+
+> *Declara una instalación como crítica para que la custodien. Queda protegida, e
+> inmoviliza fuerza que hace falta en otra parte.*
+
+**En la sala.** **Es la aritmética que enfrenta al Interior con Defensa**: la
+protección permanente resta exactamente de la capacidad de desbloqueo.
+
+**En el motor.**
+- **Valida como parcial** si no alcanza el cupo —**2 unidades por instalación**—
+  con el aviso de que se protegerá lo que se pueda y señalando a Defensa.
+- Manda a `custodia` tantos escuadrones ESMAD disponibles como instalaciones.
+- Devuelve cuántas unidades quedan **inmovilizadas** y qué puntos contiguos a
+  infraestructura crítica dejan de poder producir el hecho irreversible: *es
+  exactamente lo que se está comprando*.
+
+---
+
 # 03 · Alcalde de la ciudad epicentro
 
-Manda poco y puede frenar mucho. Su jurisdicción es una sola región —la del
-epicentro— y todas sus acciones la comprueban.
+Cuatro, y es el único que no heredó nada. No es un descuido: su mandato
+acaba en el borde de su ciudad, y las carteras que se fueron eran
+nacionales.
 
 ### `CondicionarEmpleoFuerza`
-**Exigir que le consulten la fuerza** · Protocolo · [`actions.py:612`](../src/engine/actions.py#L612)
+**Exigir que le consulten la fuerza** · Protocolo · [`actions.py:825`](../src/engine/actions.py#L825)
 
 > *Exige que cualquier operación en su ciudad se acuerde antes con la Alcaldía.
 > Baja el riesgo de que salga mal, y le quita velocidad a Defensa.*
@@ -415,7 +458,7 @@ llamar. No bloquea nada: pone precio.
 > mitigador hace que llamarlo sirva.
 
 ### `InstalarMesaConVoceros`
-**Sentarse con los voceros del punto** · Operación · [`actions.py:635`](../src/engine/actions.py#L635)
+**Sentarse con los voceros del punto** · Operación · [`actions.py:848`](../src/engine/actions.py#L848)
 
 > *Sienta a hablar a los voceros de un punto de su ciudad. Es la vía pactada,
 > hecha desde el municipio.*
@@ -436,7 +479,7 @@ y es exactamente inversa.
 > misma frontera vista desde los dos lados.
 
 ### `EsquemaHumanitarioMunicipal`
-**Abrir paso a lo humanitario** · Operación · [`actions.py:699`](../src/engine/actions.py#L699)
+**Abrir paso a lo humanitario** · Operación · [`actions.py:912`](../src/engine/actions.py#L912)
 
 > *Monta un paso para ambulancias, oxígeno y alimentos en su jurisdicción. No
 > abre el punto: abre una ventana.*
@@ -458,7 +501,7 @@ gratis — y el Gobierno Nacional puede leerla como sostenimiento del bloqueo.
 > la única cuyo resultado no aparece el turno en que se ordena.
 
 ### `PublicarParteMunicipal`
-**Publicar el conteo de la ciudad** · Información · [`actions.py:735`](../src/engine/actions.py#L735)
+**Publicar el conteo de la ciudad** · Información · [`actions.py:948`](../src/engine/actions.py#L948)
 
 > *Publica su propio conteo de lo que pasó en la ciudad. Si contradice la cifra
 > nacional, uno de los dos queda desmentido.*
@@ -478,23 +521,31 @@ protocolo, cambia de signo.
 | Dentro del protocolo, o sin disputar | legitimidad **+2**, respaldo **+3** |
 
 > El signo lo decide una bandera que el Alcalde no controla: la pone el Director
-> de Policía o la Defensoría.
+> General de la Policía.
+
+---
 
 ---
 
 # 04 · Ministro de Defensa
 
-Cuatro acciones, y una de ellas es la que más mueve el tablero. El ejercicio
-tiende a la fuerza si nadie lo frena, y esto es lo que lo hace tender.
+Cinco. La quinta son **los equipos de verificación en terreno**, que eran
+las duplas del Delegado de la Defensoría del Pueblo. Es el cambio que más
+pesa de esta versión del ejercicio: el que opera es ahora el que va a
+constatar qué pasó.
 
 ### `FijarReglasEmpleoSector`
-**Poner reglas a sus unidades** · Protocolo · [`actions.py:778`](../src/engine/actions.py#L778)
+**Poner reglas a sus unidades** · Protocolo · [`actions.py:991`](../src/engine/actions.py#L991)
 
 > *Ordena que sus unidades vayan identificadas, con reglas escritas y grabando.
 > Baja mucho la probabilidad de que una operación termine mal.*
 
-**En la sala.** Que el estándar lo imponga el sector y no la Defensoría cambia
-quién se lo apunta. La aritmética es la misma.
+**En la sala.** **Esta acción absorbió la del Delegado de la Defensoría del
+Pueblo**, que exigía lo mismo desde fuera. Los tres mitigadores son ahora una
+sola decisión y la toma quien tiene que cumplirlos: ya no es «un tercero pide
+más de lo que el sector concede», es **«el sector se autolimita, o no lo hace
+nadie»**. Y atarse las manos delante de la mesa tiene precio en cohesión, que es
+lo que antes no costaba porque lo pedía otro.
 
 **En el motor.**
 - **Escribe** `reglas_escritas` **(×0,70)** y `registro_av` **(×0,80)**. Juntos:
@@ -503,7 +554,7 @@ quién se lo apunta. La aritmética es la misma.
   al 25 %** cuando hay incidente.
 
 ### `OperarNodo`
-**Desbloquear un punto por la fuerza** · Operación · [`actions.py:802`](../src/engine/actions.py#L802)
+**Desbloquear un punto por la fuerza** · Operación · [`actions.py:1032`](../src/engine/actions.py#L1032)
 
 > *Manda a la fuerza pública a abrir un punto. Es lo más rápido que existe y lo
 > más caro: el punto suele volver a cerrarse esa misma noche.*
@@ -545,8 +596,10 @@ P = 1 − e^(−riesgo)        con techo en 0,98
 > ver.
 
 **Qué hace al ejecutarse.**
-- Si `dupla_presente`, **gasta una dupla del bolsillo de tres**. Si no quedan, la
-  operación sigue sin el mitigador.
+- **El acompañamiento ya no existe.** Era el sexto mitigador y descontaba porque
+  miraba una dupla de la Defensoría del Pueblo; con los equipos de terreno en
+  manos del mismo ministerio que ordena la operación, acompañarse a sí mismo no
+  cambia la probabilidad de que una imagen circule.
 - **El éxito de la apertura es independiente del incidente**:
   `P = max(0,15, 1 − dureza × 0,6)`. Se puede abrir el punto y producir una
   catástrofe reputacional a la vez.
@@ -578,7 +631,7 @@ multiplicador = 1 + max(0, protesta_legítima − 0,50) × 2,0
 
 Un punto que es **90 % protesta legítima** cuesta **1,8 veces** lo que uno que es
 mitad y mitad. **La sala no puede saberlo antes de operar.** Puede averiguarlo
-gastando una dupla — y esa es exactamente la decisión que el ejercicio quiere
+gastando un equipo — y esa es exactamente la decisión que el ejercicio quiere
 producir.
 
 > **Cuidado con el nombre del parámetro: `operacion_dia_de_mesa` no significa
@@ -598,7 +651,7 @@ producir.
 > la acción justo después de que ella haya destruido lo que la encarecía.
 
 ### `RedesplegarMilitares`
-**Mover tropa a donde haga falta** · Operación · [`actions.py:972`](../src/engine/actions.py#L972)
+**Mover tropa a donde haga falta** · Operación · [`actions.py:1197`](../src/engine/actions.py#L1197)
 
 > *Mueve tropa a proteger instalaciones críticas. Libera policía para otras
 > tareas e inmoviliza esas unidades donde las puso.*
@@ -616,7 +669,7 @@ desatendido que el motor contabiliza.
 | `proyeccion_aerea` | **concentra 6 escuadrones** en horas —con el mismo precio que `DisponerESMAD`—, registra `militares_en_multitudes` **+8** y suma **+N** frentes descubiertos |
 
 ### `PresentarEvidenciaInteligencia`
-**Mostrar quién financia los cierres** · Información · [`actions.py:1039`](../src/engine/actions.py#L1039)
+**Mostrar quién financia los cierres** · Información · [`actions.py:1264`](../src/engine/actions.py#L1264)
 
 > *Presenta lo que Inteligencia tiene sobre quién financia los cierres. Vale
 > según lo sólido que sea; si no se sostiene, se vuelve en contra.*
@@ -637,13 +690,68 @@ ante los jueces, arrastra la credibilidad de todos los demás.
 
 ---
 
+### `DesplegarEquiposTerreno`
+**Mandar a sus verificadores** · Operación · [`actions.py:1314`](../src/engine/actions.py#L1314)
+
+> *Manda equipos suyos a constatar en el sitio qué pasa en un punto o si una
+> denuncia es cierta. Solo tiene tres por turno, y son los mismos para las dos
+> cosas.*
+
+**En la sala.** Un **equipo de terreno** es una pareja de funcionarios que va al
+sitio a constatar qué pasa. Van de a dos porque protege a quien verifica y porque
+dos testigos producen una constancia difícil de desestimar. **Hay tres, y cada
+uno hace una sola cosa por turno.**
+
+**ERA LA VEEDURÍA DE UN TERCERO Y ES INTELIGENCIA DE UNA PARTE.** Cuando esto lo
+hacía el Delegado de la Defensoría del Pueblo, su lectura era la única del
+ejercicio sin sesgo apreciable y la única que producía el grado `confirmado`.
+Ahora lo hace el mismo ministerio que ordena las operaciones, y eso cambia tres
+cosas a la vez.
+
+**En el motor.**
+- **Valida**: **queda al menos un equipo**; y **se dijo qué verificar** — sin
+  punto ni denuncia se rechaza, porque antes esto se ejecutaba y se reportaba
+  como correcto.
+- **Verificar un punto** gasta un equipo, lo marca como mirado —hecho público— y
+  produce una estimación con fuente `equipo_terreno`, **sesgo +0,12**. Ir al
+  terreno corrige más de la mitad del `+0,28` que tiene la inteligencia desde el
+  escritorio, y sigue tirando hacia arriba: hacia el lado que justifica escalar.
+- **Ninguna fuente concede ya el grado `confirmado`.** Un grado que solo podía
+  otorgar quien no era parte es una promesa que este ejercicio ya no puede
+  cumplir, así que se retiró. Todo se lee `estimado`.
+- Lo que no alcanza sale en `no_alcanzados`, y eso **importa tanto como lo
+  verificado**: es lo que hay que informar a la mesa como «esto no lo he podido
+  mirar».
+
+**Verificar una denuncia** también gasta un equipo — y **lo que vale el resultado
+depende de si hay protocolo común de verificación adoptado**, porque las
+denuncias son sobre conducta de la fuerza y quien las resuelve es la fuerza:
+
+| | Con `protocolo_verificacion` | Sin él |
+|---|---|---|
+| Era **cierta** | respaldo **−6**, legitimidad **−3** · el costo llega con el Estado enterado en vez de sorprendido | respaldo **−11**, legitimidad **−7** · el hecho es cierto y además parece administrado |
+| Era **falsa** | legitimidad **+3**, credibilidad **+2** · `denuncia_desmentida` **−3** | legitimidad **+1** y nada más · se lee como una parte absolviéndose |
+
+> **El protocolo es la sustitución funcional del tercero que se fue.** No es una
+> formalidad: es una regla que la sala pacta ANTES de saber qué va a decir, y por
+> eso su palabra cuenta después. La adopta el Director General de la Policía.
+
+> **Nunca hay una sola denuncia sin verificar: siempre al menos dos, con
+> veracidad distinta y sin ninguna señal que las distinga.** Y no esperan: a los
+> **2 turnos estallan** solas. Declararlas públicamente *en verificación* no
+> cuesta dupla y **abarata el golpe a la mitad** — el Estado no afirmó lo que no
+> sabía.
+
+---
+
 # 05 · Director General de la Policía Nacional
 
-El dueño del ESMAD. Sus tres acciones operativas son la condición material de lo
-que hacen otros tres roles.
+Cinco, y la que llega es el **protocolo único de verificación**. No es un
+relleno: desde que quien verifica es parte, ese protocolo es lo único que
+hace que su palabra cuente.
 
 ### `ClasificarParteOperacional`
-**Separar lo confirmado de lo estimado** · Protocolo · [`actions.py:1093`](../src/engine/actions.py#L1093)
+**Separar lo confirmado de lo estimado** · Protocolo · [`actions.py:1410`](../src/engine/actions.py#L1410)
 
 > *Separa en su parte lo confirmado, lo estimado y lo que está en verificación.
 > Evita que una estimación se lea en la mesa como un hecho.*
@@ -658,8 +766,20 @@ que cada desmentido posterior deje de costar.
   publicar el parte municipal disputando, y al anunciar un corredor abierto que
   no lo está.
 
+### `AdoptarProtocoloVerificacion`
+**Acordar una sola forma de verificar** · Protocolo · [`actions.py:1438`](../src/engine/actions.py#L1438)
+
+> *Establece una sola manera de verificar cifras y denuncias, igual para todos.
+> Evita que cada cartera traiga su propio número.*
+
+**En el motor.** Escribe `protocolo_verificacion`, **la misma bandera** que la
+constitutiva del Director de Policía y con el mismo efecto: retira el
+**legitimidad −4** de cada cifra desmentida. Que dos roles distintos puedan
+ponerla es deliberado — el Gobierno acepta que un tercero fije la cifra, o la fija
+él.
+
 ### `DisponerESMAD`
-**Concentrar el ESMAD** · Operación · [`actions.py:1121`](../src/engine/actions.py#L1121)
+**Concentrar el ESMAD** · Operación · [`actions.py:1459`](../src/engine/actions.py#L1459)
 
 > *Concentra escuadrones en los puntos que decida. Gana fuerza donde la lleva y
 > deja descubierto lo que abandona.*
@@ -677,13 +797,13 @@ local que los pierde lo lee como abandono territorial.
   toda comprometida.
 
 ### `Escoltar`
-**Escoltar una caravana o misión médica** · Operación · [`actions.py:1165`](../src/engine/actions.py#L1165)
+**Escoltar una caravana o misión médica** · Operación · [`actions.py:1503`](../src/engine/actions.py#L1503)
 
 > *Escolta una caravana, un carrotanque o una misión médica. Hace llegar el
 > suministro sin abrir el punto, y ocupa escuadrones todo el turno.*
 
 **En la sala.** **Sin escolta no hay caravana ni carrotanque**, por más que
-Transporte priorice y Minas asigne. Es el cuello de botella de todo el frente
+Transporte priorice y asigne. Es el cuello de botella de todo el frente
 logístico, y está en manos de un rol que no responde por él.
 
 **En el motor.**
@@ -703,7 +823,7 @@ logístico, y está en manos de un rol que no responde por él.
 | **Atacada** | legitimidad **−6**, respaldo **−4** | `escolta_atacada` **+7** | nada, y el corredor humanitario se vuelve escenario de confrontación |
 
 ### `SolicitarRelevo`
-**Relevar a las unidades cansadas** · Operación · [`actions.py:1248`](../src/engine/actions.py#L1248)
+**Relevar a las unidades cansadas** · Operación · [`actions.py:1586`](../src/engine/actions.py#L1586)
 
 > *Releva a las unidades más agotadas. Un escuadrón cansado es el principal
 > factor de que una operación salga mal.*
@@ -724,133 +844,16 @@ cobertura simultánea. Es el intercambio más limpio del repertorio.
 
 ---
 
-# 06 · Delegado de la Defensoría del Pueblo
-
-Cinco acciones, porque cruza dos ejes sin mandar sobre nadie.
-
-> **El Delegado no está en la sala para moralizar: está para bajar una
-> probabilidad.**
-
-### `ExigirEstandaresEmpleo`
-**Exigir reglas, identificación y cámaras** · Protocolo · [`actions.py:1283`](../src/engine/actions.py#L1283)
-
-> *Exige que la fuerza actúe con reglas escritas, identificada y grabando. Es lo
-> que hace que después se pueda saber qué pasó de verdad.*
-
-**En la sala.** **La acción de mayor rendimiento del ejercicio, y la que menos se
-parece a una acción.** Enciende tres mitigadores de golpe sin consumir un solo
-escuadrón.
-
-**En el motor.**
-- **Si `exigencias > 3`**: devuelve **fallo** y registra `defensoria_aislada`.
-  *Condicionó sin priorizar: la mesa lo aísla y su palanca desaparece justo
-  cuando se decide el escalamiento.*
-- Si no: escribe `reglas_escritas`, `identificacion_agentes` y `registro_av` —
-  **×0,70 × 0,85 × 0,80 = ×0,476**.
-- **Respaldo internacional +10.**
-
-> Poco más de la mitad de la probabilidad de incidente en **todas** las
-> operaciones futuras, por una acción que no gasta nada. Si la sala no la adopta
-> en los dos primeros turnos, está pagando de más en cada operación que ordene.
-
-### `AdoptarProtocoloVerificacion`
-**Acordar una sola forma de verificar** · Protocolo · [`actions.py:1321`](../src/engine/actions.py#L1321)
-
-> *Establece una sola manera de verificar cifras y denuncias, igual para todos.
-> Evita que cada cartera traiga su propio número.*
-
-**En el motor.** Escribe `protocolo_verificacion`, **la misma bandera** que la
-constitutiva del Director de Policía y con el mismo efecto: retira el
-**legitimidad −4** de cada cifra desmentida. Que dos roles distintos puedan
-ponerla es deliberado — el Gobierno acepta que un tercero fije la cifra, o la fija
-él.
-
-### `AsignarDuplas`
-**Mandar a sus verificadores** · Operación · [`actions.py:1342`](../src/engine/actions.py#L1342)
-
-> *Manda a sus verificadores a mirar puntos concretos. Solo tiene tres por turno,
-> y también hacen falta para comprobar denuncias y acompañar operaciones.*
-
-**En la sala.** Una **dupla** es una pareja de funcionarios que va al terreno a
-constatar qué pasa. Van de a dos porque protege a los verificadores y porque dos
-testigos producen una constancia difícil de desestimar. **Hay tres, y salen del
-mismo bolsillo que el acompañamiento de operaciones.**
-
-**En el motor.**
-- **Valida**: la Defensoría está en la mesa; **queda al menos una dupla**; y
-  **se dijo qué verificar** — sin punto ni denuncia se rechaza, porque antes esto
-  se ejecutaba y se reportaba como correcto.
-- **Verificar un punto** gasta una dupla, lo marca como mirado —hecho público— y
-  produce una estimación con fuente `dupla_defensoria`, **sesgo +0,02: casi no se
-  equivoca**. Es la única fuente cuyo grado es `confirmado`.
-- Lo que no alcanza sale en `no_alcanzados`, y eso **importa tanto como lo
-  verificado**: es lo que hay que informar a la mesa como «esto no lo he podido
-  mirar».
-
-**Verificar una denuncia** también gasta una dupla, y **las dos salidas son
-valiosas**:
-
-| | Reservas | Movilización |
-|---|---|---|
-| Era **cierta** | respaldo **−6**, legitimidad **−3** | — · pero el costo llega con el Estado enterado en vez de sorprendido |
-| Era **falsa** | legitimidad **+3**, credibilidad **+2** | `denuncia_desmentida` **−3** |
-
-> **Nunca hay una sola denuncia sin verificar: siempre al menos dos, con
-> veracidad distinta y sin ninguna señal que las distinga.** Y no esperan: a los
-> **2 turnos estallan** solas. Declararlas públicamente *en verificación* no
-> cuesta dupla y **abarata el golpe a la mitad** — el Estado no afirmó lo que no
-> sabía.
-
-### `RequerirCorredoresHumanitarios`
-**Exigir un paso humanitario permanente** · Operación · [`actions.py:1421`](../src/engine/actions.py#L1421)
-
-> *Exige que haya un paso permanente para lo humanitario. Negarlo es lo que más
-> caro cuesta de cara al exterior.*
-
-**En la sala.** Exigible **tanto al Estado como a quienes sostienen los cierres**.
-Sin oxígeno modelado sería una declaración de principios; con él, negarlo tiene
-contador de víctimas.
-
-**En el motor.**
-- Elige el corredor humanitario **de menor caudal efectivo**, si no se nombra
-  otro.
-- **Baja el apoyo al cierre −0,06** en todos sus puntos: la misión médica se
-  vuelve línea roja también para quienes bloquean.
-- **Respaldo internacional +5.**
-
-### `ManifestarDudaPermanencia`
-**Poner en duda su permanencia** · Información · [`actions.py:1469`](../src/engine/actions.py#L1469)
-
-> *Dice en público que se está planteando si tiene sentido seguir en la mesa. Es
-> su palanca más fuerte y se gasta: la segunda vez pesa menos que la primera.*
-
-**En la sala.** **No se retira** — el Delegado nunca abandona la mesa. Es mejor
-que la amenaza de irse por tres razones: se puede usar varias veces, es graduada,
-y **nunca saca sus mitigadores del juego**. Y es lo que hacen los defensores del
-pueblo reales: no se van, emiten pronunciamientos.
-
-**En el motor.**
-- Base: legitimidad **−7**, respaldo **−9**.
-- **Escala `0,45^n`**, con `n` el número de veces ya usada.
-
-| Vez | Escala | Efecto real |
-|---|---|---|
-| **1.ª** | 1,00 | legitimidad −7,0 · respaldo −9,0 |
-| **2.ª** | 0,45 | legitimidad −3,2 · respaldo −4,1 |
-| **3.ª** | 0,20 | legitimidad −1,4 · respaldo −1,8 · **y credibilidad −3 adicional** |
-
-> A la tercera se lee como denuncia general: el Gobierno restringe su acceso y la
-> advertencia pierde la única medida de su utilidad, que es la oportunidad.
-
 ---
 
-# 07 · Ministro de Transporte
+# 06 · Ministro de Transporte
 
-No tiene fuerza propia. Depende por completo de que otro despeje y otro
-acompañe: es el rol que más empuja la conversación de vuelta a la mesa.
+Seis. Hereda del Ministerio de Minas el reparto del combustible y las
+ventanas de paso, que son las dos cosas que ya negociaba con los mismos
+transportadores.
 
 ### `AdoptarCriterioPriorizacion`
-**Fijar el orden de los corredores** · Protocolo · [`actions.py:1534`](../src/engine/actions.py#L1534)
+**Fijar el orden de los corredores** · Protocolo · [`actions.py:1621`](../src/engine/actions.py#L1621)
 
 > *Fija en qué orden se atienden los corredores y por qué. Sin criterio, cada
 > turno se discute lo mismo desde cero.*
@@ -864,74 +867,8 @@ aplaza.
   turno de día**: `sin_criterio_priorizacion`, **cohesión −3**.
 - Devuelve el orden calculado por población aguas abajo y costo diario.
 
-### `OrganizarCaravana`
-**Organizar una caravana** · Operación · [`actions.py:1564`](../src/engine/actions.py#L1564)
-
-> *Junta la carga en una caravana por un corredor prioritario. Necesita escolta
-> para poder pasar.*
-
-**En el motor.**
-- **Valida** tres cosas, y las tres son de otros: el corredor existe; **hay al
-  menos una unidad en escolta** —*habilitada por: Director de Policía*—; y el
-  corredor **no está bloqueado** —*habilitada por: Defensa (operar) o Interior
-  (concertar)*.
-- Repone **`0,6 × caudal`** días de autonomía **por cada clase de prioridad** del
-  corredor, en todas las regiones que toca.
-- **Legitimidad +3.**
-
-> Es la acción con más requisitos ajenos del repertorio. Sin los otros dos roles,
-> no se puede ni intentar.
-
-### `NegociarConGremios`
-**Hablar con los camioneros** · Operación · [`actions.py:1629`](../src/engine/actions.py#L1629)
-
-> *Habla con los camioneros antes de que decidan sumarse al paro. Si se suman, se
-> cierra lo que hoy todavía circula.*
-
-**En la sala.** Un solo gremio que se sume convierte el bloqueo en cierre
-logístico nacional. En el turno 1 llega un **ultimátum de 48 horas**, y hay
-**2 turnos** para responderlo.
-
-**En el motor.**
-- Si los gremios ya están **sumados**, devuelve **fallo**: la negociación llega
-  tarde.
-- **Con compensación** → posición **`fuera`**, se cancela el ultimátum;
-  legitimidad **+2**, **credibilidad −3** — el Comité lo leerá como trato
-  preferente.
-- **Sin compensación** → posición **`evaluando`**. La presión se aplaza, no se
-  resuelve.
-
-> Los gremios también se mueven solos por umbral: con **legitimidad < 40** pasan
-> a evaluando, y con **legitimidad < 25 se suman**, se haya negociado o no.
-
-### `PublicarMapaCierres`
-**Publicar el mapa de cierres** · Información · [`actions.py:1679`](../src/engine/actions.py#L1679)
-
-> *Publica dónde está cerrado y qué se ha abierto. Anunciar una apertura que no
-> se sostiene cuesta credibilidad.*
-
-**En la sala.** Publicar el mapa **le da a la mesa un dato que hasta entonces no
-tenía**: qué punto concreto bloquea cada corredor. Es el dato exclusivo de este
-rol.
-
-**En el motor.**
-- Marca verificado el punto que bloquea cada corredor, con fuente
-  `mapa_transporte`.
-- Si además **se anuncia un corredor como abierto**:
-
-| Caudal efectivo | Qué pasa |
-|---|---|
-| **< 0,30** | `costo_de_no_clasificar` **+ legitimidad −4**. *Una docena de camiones presentada como normalización se desmiente sola* |
-| **≥ 0,30** | legitimidad **+3**, credibilidad **+2**, y el dato queda utilizable por los demás frentes |
-
----
-
-# 08 · Ministro de Minas y Energía
-
-El dueño del reloj. Y de la aritmética que lo enfrenta con Defensa.
-
 ### `FijarPrioridadCombustible`
-**Decidir a qué va el combustible** · Protocolo · [`actions.py:1741`](../src/engine/actions.py#L1741)
+**Decidir a qué va el combustible** · Protocolo · [`actions.py:1664`](../src/engine/actions.py#L1664)
 
 > *Decide a qué va primero el combustible que queda: hospitales, transporte o
 > industria. Es un criterio permanente, no una entrega puntual.*
@@ -958,25 +895,48 @@ al transporte de alimentos, y las dos cosas tienen quien las reclame en esta mes
 > regiones — y sin depender de que nadie abra nada. Es la única palanca del
 > reloj que no pasa por el territorio.
 
-### `DeclararInfraestructuraCritica`
-**Poner custodia a una instalación** · Operación · [`actions.py:1783`](../src/engine/actions.py#L1783)
+### `OrganizarCaravana`
+**Organizar una caravana** · Operación · [`actions.py:1706`](../src/engine/actions.py#L1706)
 
-> *Declara una instalación como crítica para que la custodien. Queda protegida, e
-> inmoviliza fuerza que hace falta en otra parte.*
-
-**En la sala.** **Es la aritmética que enfrenta a Minas con Defensa**: la
-protección permanente resta exactamente de la capacidad de desbloqueo.
+> *Junta la carga en una caravana por un corredor prioritario. Necesita escolta
+> para poder pasar.*
 
 **En el motor.**
-- **Valida como parcial** si no alcanza el cupo —**2 unidades por instalación**—
-  con el aviso de que se protegerá lo que se pueda y señalando a Defensa.
-- Manda a `custodia` tantos escuadrones ESMAD disponibles como instalaciones.
-- Devuelve cuántas unidades quedan **inmovilizadas** y qué puntos contiguos a
-  infraestructura crítica dejan de poder producir el hecho irreversible: *es
-  exactamente lo que se está comprando*.
+- **Valida** tres cosas, y las tres son de otros: el corredor existe; **hay al
+  menos una unidad en escolta** —*habilitada por: Director de Policía*—; y el
+  corredor **no está bloqueado** —*habilitada por: Defensa (operar) o Interior
+  (concertar)*.
+- Repone **`0,6 × caudal`** días de autonomía **por cada clase de prioridad** del
+  corredor, en todas las regiones que toca.
+- **Legitimidad +3.**
+
+> Es la acción con más requisitos ajenos del repertorio. Sin los otros dos roles,
+> no se puede ni intentar.
+
+### `NegociarConGremios`
+**Hablar con los camioneros** · Operación · [`actions.py:1771`](../src/engine/actions.py#L1771)
+
+> *Habla con los camioneros antes de que decidan sumarse al paro. Si se suman, se
+> cierra lo que hoy todavía circula.*
+
+**En la sala.** Un solo gremio que se sume convierte el bloqueo en cierre
+logístico nacional. En el turno 1 llega un **ultimátum de 48 horas**, y hay
+**2 turnos** para responderlo.
+
+**En el motor.**
+- Si los gremios ya están **sumados**, devuelve **fallo**: la negociación llega
+  tarde.
+- **Con compensación** → posición **`fuera`**, se cancela el ultimátum;
+  legitimidad **+2**, **credibilidad −3** — el Comité lo leerá como trato
+  preferente.
+- **Sin compensación** → posición **`evaluando`**. La presión se aplaza, no se
+  resuelve.
+
+> Los gremios también se mueven solos por umbral: con **legitimidad < 40** pasan
+> a evaluando, y con **legitimidad < 25 se suman**, se haya negociado o no.
 
 ### `AcordarPasosSeguros`
-**Acordar ventanas de paso** · Operación · [`actions.py:1924`](../src/engine/actions.py#L1924)
+**Acordar ventanas de paso** · Operación · [`actions.py:1821`](../src/engine/actions.py#L1821)
 
 > *Acuerda ventanas horarias para que pasen carrotanques por un punto. Pasa el
 > suministro sin abrir el bloqueo.*
@@ -992,8 +952,158 @@ hecho una contraparte en el cierre**.
 - **Si el Presidente fijó líneas rojas → cohesión −4**: se leerá como negociación
   paralela por fuera de la mesa.
 
+### `PublicarMapaCierres`
+**Publicar el mapa de cierres** · Información · [`actions.py:1879`](../src/engine/actions.py#L1879)
+
+> *Publica dónde está cerrado y qué se ha abierto. Anunciar una apertura que no
+> se sostiene cuesta credibilidad.*
+
+**En la sala.** Publicar el mapa **le da a la mesa un dato que hasta entonces no
+tenía**: qué punto concreto bloquea cada corredor. Es el dato exclusivo de este
+rol.
+
+**En el motor.**
+- Marca verificado el punto que bloquea cada corredor, con fuente
+  `mapa_transporte`.
+- Si además **se anuncia un corredor como abierto**:
+
+| Caudal efectivo | Qué pasa |
+|---|---|
+| **< 0,30** | `costo_de_no_clasificar` **+ legitimidad −4**. *Una docena de camiones presentada como normalización se desmiente sola* |
+| **≥ 0,30** | legitimidad **+3**, credibilidad **+2**, y el dato queda utilizable por los demás frentes |
+
+---
+
+---
+
+# 07 · Ministro de Agricultura y Desarrollo Rural
+
+Seis. La que llega es el **calendario de agotamiento**: el reloj de las
+cuatro regiones, que era el dato exclusivo del Ministerio de Minas y que
+se queda en la cartera cuyo daño ya ocurrió.
+
+### `FijarClasePrioridadAlimentaria`
+**Poner los alimentos en la prioridad** · Protocolo · [`actions.py:1957`](../src/engine/actions.py#L1957)
+
+> *Consigue que los alimentos y el alimento de las granjas tengan turno propio en
+> el reparto de corredores. Lo que va detrás de todo llega tarde, y lo que llega
+> tarde ya no sirve.*
+
+**En la sala.** No pide capacidad nueva: **reordena la que hay**, y se la quita a
+un criterio que otro ministro ya defendió. Es la acción que obliga al Presidente
+a arbitrar entre dos priorizaciones legítimas dentro de la misma sesión.
+
+**En el motor.**
+- **Escribe** la bandera `clase_alimentaria`, que es la **undécima** constitutiva
+  del cuadro del Presidente.
+- **Añade `"alimentario"`** a las clases del corredor con más población que sirva
+  a la región con menos días de comida y todavía no cuente como alimentario. A
+  partir de ahí ese corredor alimenta el reloj de la comida en `supply.step()`.
+- **Cuesta cohesión −2**, o **−5 si Transporte ya adoptó su criterio único**. La
+  diferencia es la fricción declarada entre las dos carteras: entrar en un orden
+  que no existe no es deshacer el que un ministro defendió delante de todos.
+- Es idempotente por bandera: pedirla dos veces sale «ya vigente».
+
+### `InstalarMesaTecnicaAgropecuaria`
+**Sentarse con el campo** · Operación · [`actions.py:2026`](../src/engine/actions.py#L2026)
+
+> *Se sienta con las organizaciones campesinas de un punto rural para acordar el
+> paso de alimentos e insumos. Avanza igual que una mesa local, y sigue en pie
+> aunque el Comité del Paro se levante.*
+
+**En la sala.** Es **la razón por la que el rol vale un asiento.** Cuando la
+credibilidad cae y el Comité suspende, las mesas locales del Interior se quedan
+sin los puntos de mejor vocería —justo los que responden a él— y el frente de
+estrategia se queda sin canal. Esta no pasa por el Comité: su contraparte son
+organizaciones rurales.
+
+Su mandato es **el tránsito de carga y nada más**. El pliego es del Interior, y
+desbordar esa frontera rompe la línea roja del Presidente desde dentro del
+gabinete.
+
+**En el motor.**
+- **Valida jurisdicción al revés que las otras dos mesas:** rechaza los puntos
+  del epicentro y nombra al Alcalde y al Interior como quienes sí pueden ahí.
+- **No mira `comite_disponible`.** `AbrirMesaLocal` sí, y por eso las dos
+  divergen exactamente en el peor día del episodio.
+- **Instala mesa** (`aperture.instalar_mesa`) y **avanza la concertación** con la
+  misma mecánica de dos sesiones. Se apunta en `estado.mesas_tecnicas_agro`, que
+  es lo que el Interior ve en su vista.
+- **Cohesión −4** cuando hay protocolo de vocería fijado o un acuerdo nacional
+  vivo: es entonces cuando abrir un segundo canal le quita algo a alguien.
+- **Respaldo internacional −6** con probabilidad `estructura_organizada × 1,5`.
+  Medido sobre el escenario, eso es una cola del **6 % al 18 %** en los puntos
+  rurales — un riesgo que se corre, no un peaje que se paga.
+
+### `ActivarInstrumentosSectoriales`
+**Aliviar a los productores** · Operación · [`actions.py:2152`](../src/engine/actions.py#L2152)
+
+> *Da crédito y alivios a los productores con pérdida, y autoriza mover animales
+> y su alimento por rutas alternas. Alivia sin resolver, y la excepción sanitaria
+> deja un riesgo que se paga después.*
+
+**En la sala.** La única suya que no depende de nadie, y por eso la que más se va
+a pedir. Mitiga y **no compensa a la escala del daño** — que es lo que la ficha
+del rol declara y lo que el segundo paquete demuestra.
+
+**En el motor.**
+- **Suma +0,5 días de comida** a la región y **baja `indice_precios`**, que es el
+  dato que solo esta cartera lee.
+- **Erosiona el apoyo al cierre** en 0,06 — menos que el esquema humanitario
+  municipal (0,12), porque el alivio llega al productor y no al barrio.
+- **Cada paquete siguiente en la misma región rinde la mitad**
+  (`DECAIMIENTO_ALIVIO_SECTORIAL`). Sin esto, repetir la acción cinco jornadas
+  apagaba el frente rural entero.
+- **Suma uno a `riesgo_sanitario_asumido`**, que **no toca ninguna reserva** y
+  sale entero en `metricas()`. Hermano del riesgo de infraestructura, y por la
+  misma razón: si moviera un número, la sala jugaría contra el número.
+
+### `PublicarBalancePerdida`
+**Publicar lo que se está perdiendo** · Información · [`actions.py:2230`](../src/engine/actions.py#L2230)
+
+> *Publica con los gremios cuántos animales se están sacrificando y cuánto ha
+> subido la comida. Le quita respaldo ciudadano al cierre, y le entrega el
+> argumento de la urgencia a quien pide mano dura.*
+
+**En la sala.** **La más peligrosa del rol para su propio titular.** Traslada el
+costo del cierre al plano de la población, y el mismo argumento lo hereda quien
+pide decisión inmediata — lo que puede convertirlo en vocero sectorial del
+escalamiento y cerrarle la interlocución rural de la que vive todo lo demás.
+
+**En el motor.**
+- **Erosiona el apoyo al cierre en 0,04 en TODAS las regiones**: la cifra circula
+  por el país entero, no solo donde hay pérdida.
+- **Legitimidad +2, cohesión −3.**
+- **Con `protocolo_verificacion`**: respaldo internacional **+2**, la cifra se
+  sostiene.
+  **Sin él**: credibilidad **−5** y evento `cifra_sectorial_disputada`. Es el
+  enlace con el frente de seguridad, y el que decide si esta acción cierra la guerra de
+  números o la alimenta.
+
+### `AcordarAcopioYVentanas`
+**Concentrar el despacho de alimentos** · Operación · [`actions.py:2286`](../src/engine/actions.py#L2286)
+
+> *Junta la producción en pocos despachos grandes y los manda por la ventana
+> escoltada que ya existe. Llega mucha más comida con la misma escolta, y quien
+> queda fuera del cupo lo nota.*
+
+**En la sala.** **No pide escolta: hace rendir la que ya está puesta.** Es su
+aporte cooperativo al frente logístico, y el único caso del ejercicio en que una
+cartera mejora el rendimiento de un recurso de otra sin consumirlo.
+
+**En el motor.**
+- **Requiere tres cosas a la vez**: corredor de clase `alimentario`, escolta ya
+  dispuesta y ningún punto que lo bloquee. Cada rechazo nombra a quien lo
+  habilita — la propia Agricultura para la clase, la Policía para la escolta,
+  Defensa o Interior para el punto.
+- **Repone `ACOPIO_CONCENTRADO` (1,1) × caudal** en clase alimentaria, contra el
+  **0,6** de una caravana normal.
+- **Baja `indice_precios`** en las regiones que el corredor sirve.
+- **Legitimidad −2, cohesión +2**: los cupos dejan fuera a productores, y la
+  escolta rinde más para todos.
+
 ### `EntregarCalendarioAgotamiento`
-**Decir cuántos días quedan** · Información · [`actions.py:1982`](../src/engine/actions.py#L1982)
+**Decir cuántos días quedan** · Información · [`actions.py:2371`](../src/engine/actions.py#L2371)
 
 > *Dice cuántos días de oxígeno, combustible y comida le quedan a cada región. Es
 > el dato que solo usted tiene, y difundirlo también genera pánico.*
@@ -1012,6 +1122,8 @@ decidir — pero se filtra, hay compra por pánico, y el agotamiento llega antes
 > efecto colateral acelera exactamente aquello que mide.
 
 ---
+---
+
 ---
 
 # Lo que se cobra sin que nadie lo ordene
@@ -1037,11 +1149,13 @@ castigo real no es la penalización: **es el reloj**, que corre igual.
 
 ---
 
+---
+
 # Cinco cosas que este recuento deja a la vista
 
 Salieron de escribir el documento, no de leerlo, y todas son verificables desde
-el código. **Tres siguen abiertas; la segunda y la cuarta ya están corregidas** y se dejan
-anotada porque la clase de fallo que ilustra es fácil de repetir.
+el código. **Tres siguen abiertas; la segunda y la cuarta ya están corregidas**
+y se dejan anotadas porque la clase de fallo que ilustran es fácil de repetir.
 
 ### 1 · La Policía no tiene acción informativa
 
@@ -1050,20 +1164,18 @@ La cabecera de [`actions.py`](../src/engine/actions.py) afirma:
 > *«Cada rol tiene al menos una de cada clase, y eso es lo que garantiza que
 > ningún participante pase el ejercicio sin nada que hacer.»*
 
-**No es cierto para el Director General de la Policía**, que tiene una
-constitutiva y **tres** operativas:
+**No es cierto para el Director General de la Policía**, que tiene dos
+constitutivas —la segunda le llegó con el reparto— y **tres** operativas:
 
 | Rol | P | O | I |
 |---|---|---|---|
 | Presidente | 2 | 2 | 1 |
-| Interior | 1 | 2 | 1 |
+| Interior | 1 | 4 | 1 |
 | Alcalde | 1 | 2 | 1 |
-| Defensa | 1 | 2 | 1 |
-| **Policía** | 1 | **3** | **0** |
-| Defensoría | 2 | 2 | 1 |
-| Transporte | 1 | 2 | 1 |
-| Minas | 1 | 2 | 1 |
-| Agricultura | 1 | 3 | 1 |
+| Defensa | 1 | 3 | 1 |
+| **Policía** | **2** | **3** | **0** |
+| Transporte | 2 | 3 | 1 |
+| Agricultura | 1 | 3 | 2 |
 
 No es un error de código: es una decisión de diseño que la cabecera describe mal,
 o una acción que falta. **Se corrige la frase o se añade la acción**, y esa es una
@@ -1147,8 +1259,7 @@ porque cambia quién se apunta el tanto:
 | Bandera | La escriben |
 |---|---|
 | `protocolo_voceria` | `ExigirProtocoloVoceria` (Interior) y `ConvocarAlcaldes` (Presidente) |
-| `protocolo_verificacion` | `ClasificarParteOperacional` (Policía) y `AdoptarProtocoloVerificacion` (Defensoría) |
-| `reglas_escritas` | `FijarReglasEmpleoSector` (Defensa), `ExigirEstandaresEmpleo` (Defensoría) y **`FirmarAsistenciaMilitar` delimitada** (Presidente) |
+| `protocolo_verificacion` | `ClasificarParteOperacional` y `AdoptarProtocoloVerificacion`, las dos del Director General de la Policía |
 | `concertacion_previa_cali` | `CondicionarEmpleoFuerza` (Alcalde) y `ConvocarAlcaldes` con prioridad (Presidente) |
 
 El último es el más consecuente: **el Presidente puede activarle a Defensa el
@@ -1170,134 +1281,3 @@ de La Sabana*
 
 ---
 ---
-
-# 09 · Ministro de Agricultura y Desarrollo Rural
-
-Cinco acciones, y **ninguna se ejecuta sola**: cada una pasa por una escolta de
-la Policía, un corredor que Transporte prioriza o un punto que otro abre. Es la
-única cartera de la que eso es cierto entera, y es lo que la convierte en el rol
-que más empuja la conversación de vuelta a la mesa.
-
-Lo que aporta no es capacidad. Es el único reloj que **ya sonó** —en su frente el
-día de bloqueo no es un costo diferido sino una pérdida que ya ocurrió— y una
-interlocución rural que no pasa por el Comité del Paro.
-
-### `FijarClasePrioridadAlimentaria`
-**Poner los alimentos en la prioridad** · Protocolo · [`actions.py:2038`](../src/engine/actions.py#L2038)
-
-> *Consigue que los alimentos y el alimento de las granjas tengan turno propio en
-> el reparto de corredores. Lo que va detrás de todo llega tarde, y lo que llega
-> tarde ya no sirve.*
-
-**En la sala.** No pide capacidad nueva: **reordena la que hay**, y se la quita a
-un criterio que otro ministro ya defendió. Es la acción que obliga al Presidente
-a arbitrar entre dos priorizaciones legítimas dentro de la misma sesión.
-
-**En el motor.**
-- **Escribe** la bandera `clase_alimentaria`, que es la **undécima** constitutiva
-  del cuadro del Presidente.
-- **Añade `"alimentario"`** a las clases del corredor con más población que sirva
-  a la región con menos días de comida y todavía no cuente como alimentario. A
-  partir de ahí ese corredor alimenta el reloj de la comida en `supply.step()`.
-- **Cuesta cohesión −2**, o **−5 si Transporte ya adoptó su criterio único**. La
-  diferencia es la fricción declarada entre las dos carteras: entrar en un orden
-  que no existe no es deshacer el que un ministro defendió delante de todos.
-- Es idempotente por bandera: pedirla dos veces sale «ya vigente».
-
-### `InstalarMesaTecnicaAgropecuaria`
-**Sentarse con el campo** · Operación · [`actions.py:2107`](../src/engine/actions.py#L2107)
-
-> *Se sienta con las organizaciones campesinas de un punto rural para acordar el
-> paso de alimentos e insumos. Avanza igual que una mesa local, y sigue en pie
-> aunque el Comité del Paro se levante.*
-
-**En la sala.** Es **la razón por la que el rol vale un asiento.** Cuando la
-credibilidad cae y el Comité suspende, las mesas locales del Interior se quedan
-sin los puntos de mejor vocería —justo los que responden a él— y el frente de
-estrategia se queda sin canal. Esta no pasa por el Comité: su contraparte son
-organizaciones rurales.
-
-Su mandato es **el tránsito de carga y nada más**. El pliego es del Interior, y
-desbordar esa frontera rompe la línea roja del Presidente desde dentro del
-gabinete.
-
-**En el motor.**
-- **Valida jurisdicción al revés que las otras dos mesas:** rechaza los puntos
-  del epicentro y nombra al Alcalde y al Interior como quienes sí pueden ahí.
-- **No mira `comite_disponible`.** `AbrirMesaLocal` sí, y por eso las dos
-  divergen exactamente en el peor día del episodio.
-- **Instala mesa** (`aperture.instalar_mesa`) y **avanza la concertación** con la
-  misma mecánica de dos sesiones. Se apunta en `estado.mesas_tecnicas_agro`, que
-  es lo que el Interior ve en su vista.
-- **Cohesión −4** cuando hay protocolo de vocería fijado o un acuerdo nacional
-  vivo: es entonces cuando abrir un segundo canal le quita algo a alguien.
-- **Respaldo internacional −6** con probabilidad `estructura_organizada × 1,5`.
-  Medido sobre el escenario, eso es una cola del **6 % al 18 %** en los puntos
-  rurales — un riesgo que se corre, no un peaje que se paga.
-
-### `ActivarInstrumentosSectoriales`
-**Aliviar a los productores** · Operación · [`actions.py:2233`](../src/engine/actions.py#L2233)
-
-> *Da crédito y alivios a los productores con pérdida, y autoriza mover animales
-> y su alimento por rutas alternas. Alivia sin resolver, y la excepción sanitaria
-> deja un riesgo que se paga después.*
-
-**En la sala.** La única suya que no depende de nadie, y por eso la que más se va
-a pedir. Mitiga y **no compensa a la escala del daño** — que es lo que la ficha
-del rol declara y lo que el segundo paquete demuestra.
-
-**En el motor.**
-- **Suma +0,5 días de comida** a la región y **baja `indice_precios`**, que es el
-  dato que solo esta cartera lee.
-- **Erosiona el apoyo al cierre** en 0,06 — menos que el esquema humanitario
-  municipal (0,12), porque el alivio llega al productor y no al barrio.
-- **Cada paquete siguiente en la misma región rinde la mitad**
-  (`DECAIMIENTO_ALIVIO_SECTORIAL`). Sin esto, repetir la acción cinco jornadas
-  apagaba el frente rural entero.
-- **Suma uno a `riesgo_sanitario_asumido`**, que **no toca ninguna reserva** y
-  sale entero en `metricas()`. Hermano del riesgo de infraestructura, y por la
-  misma razón: si moviera un número, la sala jugaría contra el número.
-
-### `PublicarBalancePerdida`
-**Publicar lo que se está perdiendo** · Información · [`actions.py:2311`](../src/engine/actions.py#L2311)
-
-> *Publica con los gremios cuántos animales se están sacrificando y cuánto ha
-> subido la comida. Le quita respaldo ciudadano al cierre, y le entrega el
-> argumento de la urgencia a quien pide mano dura.*
-
-**En la sala.** **La más peligrosa del rol para su propio titular.** Traslada el
-costo del cierre al plano de la población, y el mismo argumento lo hereda quien
-pide decisión inmediata — lo que puede convertirlo en vocero sectorial del
-escalamiento y cerrarle la interlocución rural de la que vive todo lo demás.
-
-**En el motor.**
-- **Erosiona el apoyo al cierre en 0,04 en TODAS las regiones**: la cifra circula
-  por el país entero, no solo donde hay pérdida.
-- **Legitimidad +2, cohesión −3.**
-- **Con `protocolo_verificacion`**: respaldo internacional **+2**, la cifra se
-  sostiene.
-  **Sin él**: credibilidad **−5** y evento `cifra_sectorial_disputada`. Es el
-  enlace con la Defensoría, y el que decide si esta acción cierra la guerra de
-  números o la alimenta.
-
-### `AcordarAcopioYVentanas`
-**Concentrar el despacho de alimentos** · Operación · [`actions.py:2367`](../src/engine/actions.py#L2367)
-
-> *Junta la producción en pocos despachos grandes y los manda por la ventana
-> escoltada que ya existe. Llega mucha más comida con la misma escolta, y quien
-> queda fuera del cupo lo nota.*
-
-**En la sala.** **No pide escolta: hace rendir la que ya está puesta.** Es su
-aporte cooperativo al frente logístico, y el único caso del ejercicio en que una
-cartera mejora el rendimiento de un recurso de otra sin consumirlo.
-
-**En el motor.**
-- **Requiere tres cosas a la vez**: corredor de clase `alimentario`, escolta ya
-  dispuesta y ningún punto que lo bloquee. Cada rechazo nombra a quien lo
-  habilita — la propia Agricultura para la clase, la Policía para la escolta,
-  Defensa o Interior para el punto.
-- **Repone `ACOPIO_CONCENTRADO` (1,1) × caudal** en clase alimentaria, contra el
-  **0,6** de una caravana normal.
-- **Baja `indice_precios`** en las regiones que el corredor sirve.
-- **Legitimidad −2, cohesión +2**: los cupos dejan fuera a productores, y la
-  escolta rinde más para todos.

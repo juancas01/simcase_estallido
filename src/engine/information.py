@@ -17,13 +17,19 @@ Actuar sobre una estimación equivocada se castiga en las dos direcciones:
     → se pacta con quien no controla nada → el acuerdo se incumple visiblemente.
 
 No hay opción segura. Hay una decisión sobre cuánta evidencia se exige, y
-resolverla cuesta una dupla que no se tiene.
+resolverla cuesta un equipo que no se tiene.
 
-LAS DUPLAS SALEN DE UN SOLO BOLSILLO DE TRES
---------------------------------------------
-Verificar un punto, verificar una denuncia y acompañar una operación compiten
-por el mismo presupuesto, y cada dupla hace UNA sola cosa por turno. Antes
-acompañar salía gratis y la asignación de la Defensoría no era una decisión.
+LOS EQUIPOS SALEN DE UN SOLO BOLSILLO DE TRES
+---------------------------------------------
+Verificar un punto y verificar una denuncia compiten por el mismo presupuesto, y
+cada equipo hace UNA sola cosa por turno.
+
+**Y EL BOLSILLO ES DEL MINISTERIO DE DEFENSA.** Eran las duplas de la Defensoría
+del Pueblo, que miraba sin ser parte; ahora los despliega el mismo ministerio que
+ordena las operaciones. La capacidad de mirar no se perdió: se perdió que quien
+mira no responda ante quien operó, y eso tiene dos consecuencias escritas en
+este archivo —el grado «confirmado» ya no lo concede nadie, y desmentir la
+denuncia propia solo cuenta si hay protocolo común adoptado.
 """
 
 from __future__ import annotations
@@ -48,9 +54,10 @@ FUENTES = {
         "dueno": "Alcalde de la ciudad epicentro", "cobertura": "solo su jurisdicción",
         "latencia": 0, "sesga": "subestima la estructura organizada",
     },
-    "dupla_defensoria": {
-        "dueno": "Defensoría", "cobertura": "3 puntos por turno", "latencia": 1,
-        "sesga": "casi no se equivoca",
+    "equipo_terreno": {
+        "dueno": "Ministro de Defensa", "cobertura": "3 puntos por turno",
+        "latencia": 1,
+        "sesga": "sobreestima, bastante menos que desde el escritorio",
     },
 }
 
@@ -89,7 +96,7 @@ def estimar_nodo(nodo: Nodo, fuente: str, turno: int, semilla: int) -> Estimacio
     |---|---|
     | **Mirar dos veces da lo mismo** | antes cada F5 volvía a tirar el dado, y el parte de Interior cambiaba solo por refrescar la pantalla |
     | **Mirar no gasta azar de la corrida** | antes la API pasaba aquí el `rng` del motor: el resultado de la simulación dependía de cuántas veces alguien refrescó, que es justo lo que una semilla existe para impedir |
-    | **Lo constatado se queda quieto** | pasando el turno en que la dupla fue, una verificación del turno 2 sigue diciendo lo mismo en el turno 5 |
+    | **Lo constatado se queda quieto** | pasando el turno en que el equipo fue, una verificación del turno 2 sigue diciendo lo mismo en el turno 5 |
 
     Por eso `turno` es el turno **de la lectura**, no el turno actual. Quien
     consulta algo verificado antes pasa `nodo.ultima_verificacion_turno`.
@@ -107,7 +114,12 @@ def estimar_nodo(nodo: Nodo, fuente: str, turno: int, semilla: int) -> Estimacio
     sesgo_voc = P.SESGO_CONTROL_VOCERIA.get(_rol_de(fuente), 0.0)
     voc = min(1.0, max(0.0, nodo.control_voceria + sesgo_voc + rng.gauss(0, 0.04)))
 
-    grado = "confirmado" if fuente == "dupla_defensoria" else "estimado"
+    # NINGUNA FUENTE VUELVE A SER «CONFIRMADA». El grado lo concedía el equipo de
+    # la Defensoría del Pueblo, que era el único que miraba sin ser parte. Sin
+    # tercero no hay quién lo conceda, y un grado que nadie puede otorgar es una
+    # promesa que el ejercicio no puede cumplir. Todo se lee estimado, y lo que
+    # separa una lectura de otra es de quién viene y cuánto se le descuenta.
+    grado = "estimado"
     return Estimacion(nodo.nodo_id, fuente, est, voc, grado, turno)
 
 
@@ -115,47 +127,47 @@ def _rol_de(fuente: str) -> str:
     return {
         "inteligencia_defensa": "defensa",
         "parte_municipal": "alcalde_cali",
-        "dupla_defensoria": "defensoria",
+        "equipo_terreno": "defensa",
         "interlocucion_rural": "agricultura",
     }.get(fuente, "interior")
 
 
 # ---------------------------------------------------------------------------
-# Las duplas — un solo bolsillo de tres
+# Los equipos de terreno — un solo bolsillo de tres
 # ---------------------------------------------------------------------------
 
-def duplas_libres(estado: Estado) -> int:
-    return max(0, estado.duplas_disponibles)
+def equipos_libres(estado: Estado) -> int:
+    return max(0, estado.equipos_disponibles)
 
 
-def consumir_dupla(estado: Estado, para: str) -> bool:
+def consumir_equipo(estado: Estado, para: str) -> bool:
     """
-    Gasta una dupla. Devuelve False si no quedan.
+    Gasta un equipo. Devuelve False si no quedan.
 
-    Verificar aquí es no verificar allá: es la restricción que convierte a la
-    Defensoría en un recurso que hay que ASIGNAR, no consultar.
+    Mirar aquí es no mirar allá: es la restricción que convierte la verificación
+    en un recurso que hay que ASIGNAR, no consultar.
     """
-    if estado.duplas_disponibles <= 0:
+    if estado.equipos_disponibles <= 0:
         return False
-    estado.duplas_disponibles -= 1
-    estado.duplas_usadas_en.append(para)
+    estado.equipos_disponibles -= 1
+    estado.equipos_usados_en.append(para)
     return True
 
 
-def reponer_duplas(estado: Estado) -> None:
-    estado.duplas_disponibles = P.DUPLAS_TOTALES
-    estado.duplas_usadas_en = []
+def reponer_equipos(estado: Estado) -> None:
+    estado.equipos_disponibles = P.EQUIPOS_TERRENO_TOTALES
+    estado.equipos_usados_en = []
 
 
 def marcar_verificado(estado: Estado, nodo, por: str, turno: int) -> None:
     """
     Registra que alguien miró este punto — y lo deja visible en el tablero.
 
-    Las cuatro fuentes de observación (dupla, parte municipal, inteligencia de
-    Defensa, mapa de Transporte) pasaban por aquí poniendo los mismos dos campos
-    a mano, y ninguna dejaba rastro. Que un punto **haya sido mirado en la última
-    ventana** es un hecho público y es justo lo que la sala necesita ver para
-    saber si su decisión de gastar una dupla surtió efecto.
+    Las cuatro fuentes de observación (equipo de terreno, parte municipal,
+    inteligencia de Defensa, mapa de Transporte) pasaban por aquí poniendo los
+    mismos dos campos a mano, y ninguna dejaba rastro. Que un punto **haya sido
+    mirado en la última ventana** es un hecho público y es justo lo que la sala
+    necesita ver para saber si su decisión de gastar un equipo surtió efecto.
 
     Lo que NO sale de aquí es qué vio: la estimación, con su sesgo, es de quien
     la encargó.
@@ -171,30 +183,27 @@ def verificar_puntos(
     estado: Estado, nodos_ids: list[str], turno: int
 ) -> dict:
     """
-    Manda duplas a constatar qué hay en unos puntos. Una dupla por punto.
+    Manda equipos a constatar qué hay en unos puntos. Un equipo por punto.
 
     Devuelve lo verificado y lo que no alcanzó — y lo segundo importa tanto como
-    lo primero: es lo que la Defensoría tiene que informar a la mesa como «esto
-    no lo he podido mirar».
+    lo primero: es lo que hay que informar a la mesa como «esto no lo he podido
+    mirar».
     """
-    if not estado.banderas.defensoria_presente:
-        return {"ok": False, "motivo": "la Defensoría no está en la mesa"}
-
     verificados, no_alcanzados = [], []
     for nid in nodos_ids:
         nodo = estado.nodos.get(nid)
         if nodo is None:
             continue
-        if not consumir_dupla(estado, f"verificar:{nid}"):
+        if not consumir_equipo(estado, f"verificar:{nid}"):
             no_alcanzados.append(nid)
             continue
-        marcar_verificado(estado, nodo, "dupla_defensoria", turno)
+        marcar_verificado(estado, nodo, "equipo_terreno", turno)
         verificados.append(
-            estimar_nodo(nodo, "dupla_defensoria", turno, estado.semilla))
+            estimar_nodo(nodo, "equipo_terreno", turno, estado.semilla))
 
     aviso = None
     if no_alcanzados:
-        aviso = (f"No alcanzaron las duplas para {len(no_alcanzados)} punto(s). "
+        aviso = (f"No alcanzaron los equipos para {len(no_alcanzados)} punto(s). "
                  f"Quedan sin verificar y hay que decirlo en la mesa.")
     return {"ok": True, "verificados": verificados,
             "no_alcanzados": no_alcanzados, "aviso": aviso}
@@ -206,37 +215,66 @@ def verificar_puntos(
 
 def verificar_denuncia(estado: Estado, denuncia_id: str) -> dict:
     """
-    Gastar una dupla en establecer si un hecho grave ocurrió o no.
+    Gastar un equipo en establecer si un hecho grave ocurrió o no.
 
     Las dos salidas son valiosas y ninguna es gratis:
-      * si era cierta, queda documentada por la Defensoría — y el costo llega,
-        pero llega con el Estado enterado en vez de sorprendido;
+      * si era cierta, queda documentada — y el costo llega, pero llega con el
+        Estado enterado en vez de sorprendido;
       * si era falsa, se desmiente antes de que consuma fuerza y de que el
         Estado pierda legitimidad al reaccionar a algo que no pasó.
+
+    PERO EL QUE VERIFICA ES AHORA EL QUE PODRÍA ESTAR SEÑALADO. Las denuncias de
+    este ejercicio son sobre conducta de la fuerza, y desde que los equipos son
+    del Ministerio de Defensa, verificarlas es la parte acusada resolviendo sobre
+    sí misma. Eso no se prohíbe —prohibirlo dejaría las denuncias sin salida— y
+    tampoco se cobra igual:
+
+        **la palabra del que verifica solo cuenta si hay un protocolo común de
+        verificación adoptado.**
+
+    Sin él, documentar la propia falta no ahorra nada y el desmentido no da
+    credibilidad: la mesa está oyendo a una parte hablar de su propia conducta.
+    Con él —lo adopta el Director de la Policía— hay una regla previa que la
+    sala pactó antes de saber qué iba a decir, y por eso vale.
+
+    Es la sustitución funcional del tercero que ya no está sentado.
     """
     d = next((x for x in estado.denuncias if x.denuncia_id == denuncia_id), None)
     if d is None:
         return {"ok": False, "motivo": f"no existe la denuncia {denuncia_id}"}
     if d.verificada:
         return {"ok": False, "motivo": "esa denuncia ya está verificada"}
-    if not consumir_dupla(estado, f"denuncia:{denuncia_id}"):
-        return {"ok": False, "motivo": "no quedan duplas este turno"}
+    if not consumir_equipo(estado, f"denuncia:{denuncia_id}"):
+        return {"ok": False, "motivo": "no quedan equipos este turno"}
 
     d.verificada = True
-    if d.veraz:
+    con_protocolo = estado.banderas.protocolo_verificacion
+
+    if d.veraz and con_protocolo:
         estado.reservas.aplicar(P.COSTO_RESERVAS["denuncia_veraz_confirmada"])
-        msg = ("La denuncia se confirma. El hecho es cierto y ahora está "
-               "documentado por la Defensoría, no por la prensa.")
-    else:
+        msg = ("La denuncia se confirma. El hecho es cierto y queda documentado "
+               "dentro del protocolo común, no por la prensa.")
+    elif d.veraz:
+        estado.reservas.aplicar(P.COSTO_RESERVAS["denuncia_veraz_sin_protocolo"])
+        msg = ("La denuncia se confirma, y la constata el mismo sector del que "
+               "se denuncia. Sin protocolo común de verificación, documentarla "
+               "no ahorra nada: el hecho es cierto y además parece administrado.")
+    elif con_protocolo:
         estado.reservas.aplicar(P.COSTO_RESERVAS["denuncia_falsa_desmentida"])
         from src.engine import mobilization
         mobilization.registrar_evento(estado, "denuncia_desmentida")
-        msg = ("La denuncia se desmiente en terreno. La Defensoría gana "
-               "credibilidad ante ambas partes y no se desplazó fuerza a una "
+        msg = ("La denuncia se desmiente en terreno, dentro del protocolo común. "
+               "El desmentido se sostiene y no se desplazó fuerza a una "
                "situación inexistente.")
+    else:
+        estado.reservas.aplicar(P.COSTO_RESERVAS["denuncia_falsa_sin_protocolo"])
+        msg = ("La denuncia se desmiente en terreno, pero la desmiente el propio "
+               "sector señalado y sin protocolo común: se lee como una parte "
+               "absolviéndose. No se desplazó fuerza, y el desmentido no cuenta.")
 
     estado.eventos_turno.append(
-        {"tipo": "denuncia_verificada", "id": denuncia_id, "veraz": d.veraz}
+        {"tipo": "denuncia_verificada", "id": denuncia_id,
+         "veraz": d.veraz, "con_protocolo": con_protocolo}
     )
     return {"ok": True, "veraz": d.veraz, "mensaje": msg}
 
@@ -246,7 +284,7 @@ def declarar_en_verificacion(estado: Estado, denuncia_id: str) -> dict:
     La cuarta conducta del cuadro del paquete detonante, y la mejor disponible:
     no afirmar lo que no se sabe.
 
-    No cuesta una dupla. Cuando la denuncia estalle, el costo se aplica con
+    No cuesta un equipo. Cuando la denuncia estalle, el costo se aplica con
     descuento — porque el Estado no la negó ni la afirmó: dijo que la estaba
     mirando.
     """

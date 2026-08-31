@@ -1,5 +1,5 @@
 """
-views.py — Las nueve vistas privadas.
+views.py — Las siete vistas privadas.
 
     El tablero general responde QUÉ ESTÁ PASANDO.
     La vista privada responde CUÁNTO, DÓNDE EXACTAMENTE Y DESDE CUÁNDO.
@@ -8,8 +8,8 @@ RESOLUCIÓN, NO SECRETO
 ----------------------
 Nadie tiene información que los demás no puedan pedir. Lo que cada uno tiene es
 **su cartera en alta resolución**, y el resto del país en grano grueso. El
-tablero dice «Las Cumbres · abastecimiento ROJO»; solo Minas sabe que son 1,8
-días y que mañana serán 0,4.
+tablero dice «Las Cumbres · abastecimiento ROJO»; solo Agricultura sabe que son
+1,8 días y que mañana serán 0,4.
 
 La vista es **personal, no confidencial**: el sistema solo se la muestra a su
 titular, pero nadie está obligado a callársela y el ejercicio quiere que se
@@ -46,14 +46,18 @@ from src.engine import information
 from src.engine.state import Estado
 
 
-# LOS NUEVE, EN EL ORDEN DE LOS TRES FRENTES: estrategia, seguridad, logística.
+# LOS SIETE, EN EL ORDEN DE LOS TRES FRENTES: estrategia, seguridad, logística.
 # El orden no es decorativo — la portada y el acceso desde el tablero agrupan
-# por frente leyendo esta lista, y tres bloques de tres es lo que hace que la
-# rejilla se lea de un vistazo.
+# por frente leyendo esta lista.
+#
+# Eran nueve y los frentes eran tres bloques de tres. Con la salida de la
+# Defensoría del Pueblo y del Ministerio de Minas quedan 3 · 2 · 2, y la rejilla
+# de la portada deja de ser cuadrada. Es la consecuencia visible de que el
+# ejercicio ya no tiene un tercero que vigile ni una cartera que lleve el reloj.
 ROLES = [
     "Presidente", "Interior", "Alcalde",
-    "Defensa", "Policía", "Defensoría",
-    "Transporte", "Minas", "Agricultura",
+    "Defensa", "Policía",
+    "Transporte", "Agricultura",
 ]
 
 
@@ -70,6 +74,115 @@ def _dias(valor: float) -> float:
     return round(max(0.0, valor), 1)
 
 
+# ---------------------------------------------------------------------------
+# LO QUE ENSEÑABAN LAS DOS VISTAS QUE YA NO EXISTEN
+#
+# Cuando salieron la Defensoría del Pueblo y el Ministerio de Minas, sus dos
+# pantallas se repartieron entre las que quedan. Vive aquí, en funciones, y no
+# copiado dentro de cada vista: un bloque copiado en dos sitios se desincroniza
+# en el primer cambio, y ninguna prueba mira lo que la interfaz dibuja
+# (`PENDIENTES.md · B9`).
+# ---------------------------------------------------------------------------
+
+def _bloque_equipos(estado: Estado) -> dict:
+    """
+    Los equipos de terreno, que ahora son del Ministerio de Defensa.
+
+    **Mismo bolsillo escaso, otro dueño.** Eran la veeduría de un tercero y son
+    inteligencia de una parte: lo que se pierde no es la capacidad de mirar, es
+    que quien mira no responda ante el que opera.
+    """
+    sin_verificar = [n for n in estado.nodos.values()
+                     if n.ultima_verificacion_turno is None]
+    abiertas = [d for d in estado.denuncias if not d.verificada and not d.estallo]
+
+    constatado = []
+    for n in estado.nodos.values():
+        if n.verificado_por != "equipo_terreno":
+            continue
+        # El turno de la LECTURA, no el actual: lo que el equipo constató en el
+        # turno 2 tiene que seguir diciendo lo mismo en el turno 5. Con
+        # `estado.turno` la lectura se volvía a tirar cada vez que alguien abría
+        # la vista, que es lo contrario de «constatado».
+        cuando = n.ultima_verificacion_turno
+        if cuando is None:
+            cuando = estado.turno
+        est = information.estimar_nodo(
+            n, "equipo_terreno", cuando, estado.semilla)
+        constatado.append({
+            "punto": n.nombre,
+            "estructura_organizada": round(est.estructura_organizada, 2),
+            "turno": n.ultima_verificacion_turno,
+        })
+
+    return {
+        "equipos_disponibles": estado.equipos_disponibles,
+        "equipos_usados_este_turno": list(estado.equipos_usados_en),
+        "denuncias_en_ventanilla": [d.vista_publica() for d in abiertas],
+        "puntos_sin_mirar": len(sin_verificar),
+        "lo_que_han_constatado": constatado[-5:],
+        "_nota_equipos": ("cada equipo hace UNA cosa por turno: verificar un "
+                          "punto o verificar una denuncia"),
+    }
+
+
+def _bloque_infraestructura(estado: Estado) -> tuple[list, list]:
+    """
+    El registro de infraestructura relevante, que ahora es del Interior.
+
+    Devuelve `(filas, vitales_sin_custodia)`. Declarar a ciegas era la
+    consecuencia de no tener la lista: la vista decía cuántas instalaciones se
+    habían declarado —un número— y no cuáles existen ni qué queda sin custodiar.
+    """
+    infra = sorted(
+        estado.infraestructura.values(),
+        key=lambda i: (i.protegida, {"vital": 0, "alta": 1}.get(i.criticidad, 2)),
+    )
+    filas = [
+        {
+            "instalacion": i.nombre,
+            "region": estado.regiones[i.region_id].nombre
+            if i.region_id in estado.regiones else i.region_id,
+            "criticidad": i.criticidad,
+            "custodia": "puesta" if i.protegida else "sin proteger",
+            "de_que_depende": i.de_que_depende,
+        }
+        for i in infra
+    ]
+    vitales_solas = [i for i in infra
+                     if not i.protegida and i.criticidad == "vital"]
+    return filas, vitales_solas
+
+
+def _calendario_por_region(estado: Estado) -> list[dict]:
+    """
+    El reloj, región por región. Era el dato exclusivo del Ministerio de Minas.
+
+    Sigue habiendo un reloj y sigue sin verlo la mesa entera: lo lleva
+    Agricultura, que es la cartera cuyo daño ya ocurrió. El tablero general
+    sigue diciendo «ROJO» y no los días.
+    """
+    filas = []
+    for r in estado.regiones.values():
+        entra_oxi = any(
+            c.caudal_efectivo(estado.nodos) > 0.05
+            for c in estado.corredores_que_sirven(r.region_id, "humanitario")
+        )
+        manana = r.dias_autonomia_oxigeno - (0.0 if entra_oxi else 1.0 * (1 + r.panico))
+        filas.append({
+            "region": r.nombre,
+            "region_id": r.region_id,
+            "oxigeno_dias": _dias(r.dias_autonomia_oxigeno),
+            "oxigeno_manana": _dias(manana),
+            "combustible_dias": _dias(r.dias_autonomia_combustible),
+            "alimentos_dias": _dias(r.dias_autonomia_alimentos),
+            "entra_humanitario": entra_oxi,
+            "muertes_evitables": r.muertes_evitables,
+        })
+    return sorted(filas, key=lambda x: x["oxigeno_dias"])
+
+
+
 # Las once decisiones constitutivas que la mesa puede tomar, y qué bandera
 # levanta cada una. Es el cuadro de mando del Presidente: quién ha constituido
 # qué, y qué sigue sin constituirse. Se lee del estado y no se escribe a mano.
@@ -78,12 +191,12 @@ CONSTITUTIVAS = (
     ("lineas_rojas_fijadas", "Líneas rojas del Ejecutivo", "Presidente"),
     ("protocolo_voceria", "Protocolo de vocería única", "Interior"),
     ("concertacion_previa_cali", "Fuerza concertada con la Alcaldía", "Alcalde"),
-    ("reglas_escritas", "Reglas de empleo escritas", "Defensa · Defensoría"),
-    ("identificacion_agentes", "Identificación de agentes", "Defensoría"),
-    ("registro_av", "Registro audiovisual", "Defensoría · Defensa"),
-    ("protocolo_verificacion", "Protocolo de verificación", "Policía · Defensoría"),
+    ("reglas_escritas", "Reglas de empleo escritas", "Defensa"),
+    ("identificacion_agentes", "Identificación de agentes", "Defensa"),
+    ("registro_av", "Registro audiovisual", "Defensa"),
+    ("protocolo_verificacion", "Protocolo de verificación", "Policía"),
     ("criterio_priorizacion", "Criterio de priorización", "Transporte"),
-    ("prioridad_combustible_fijada", "Prioridad del combustible", "Minas"),
+    ("prioridad_combustible_fijada", "Prioridad del combustible", "Transporte"),
     ("clase_alimentaria", "Clase de prioridad agroalimentaria", "Agricultura"),
 )
 
@@ -178,7 +291,7 @@ def vista(estado: Estado, rol: str) -> dict:
     """
     fn = _VISTAS.get(rol)
     if fn is None:
-        raise KeyError(f"rol desconocido: {rol}. Los nueve son {ROLES}")
+        raise KeyError(f"rol desconocido: {rol}. Los siete son {ROLES}")
     detalle, alerta = fn(estado)
 
     # SOLO DE DÍA. De noche no se instala nada, y una pregunta sobre lo que hay
@@ -285,7 +398,7 @@ def _temperatura_coalicion(estado: Estado) -> str:
 
 
 # ===========================================================================
-# 02 · Interior — el estado del canal, sesgado hacia arriba
+# 02 · Interior — el canal sesgado hacia arriba, y lo que hay que proteger
 # ===========================================================================
 
 def _interior(estado: Estado):
@@ -297,6 +410,12 @@ def _interior(estado: Estado):
     Y ahí está la sinergia con el Alcalde, que ve la vocería de su jurisdicción
     bien. Si los dos comparan lecturas antes de negociar, el error se evita. Los
     dos están diciendo la verdad; uno de los dos mira desde más cerca.
+
+    Y LLEVA EL REGISTRO DE INFRAESTRUCTURA RELEVANTE, que era del Ministerio de
+    Minas. La aritmética no cambió al cambiar de dueño y es la única que hace
+    escasa la fuerza por una razón que no es operar: **lo que se pone a
+    proteger sale de lo que desbloquea.** Que la lleve quien no opera es lo que
+    mantiene ese pulso entre dos personas y no dentro de una.
     """
     cerrados = [n for n in estado.nodos.values() if not n.abierto]
     lecturas = []
@@ -335,6 +454,12 @@ def _interior(estado: Estado):
         "_nota_sesgo": "su interlocutor le asegura que controla más de lo que controla",
     }
 
+    infra, vitales_solas = _bloque_infraestructura(estado)
+    detalle["infraestructura_relevante"] = infra
+    detalle["puntos_contiguos_a_infraestructura"] = [
+        n.nombre for n in estado.nodos.values() if n.proximidad_infra_critica
+    ]
+
     if estado.comite_retirado_definitivo:
         # Las dos situaciones se leían con la misma frase, y no son la misma:
         # de una se vuelve subiendo la credibilidad y de la otra no se vuelve.
@@ -353,6 +478,16 @@ def _interior(estado: Estado):
     elif estado.reservas.credibilidad_mesa < 35:
         alerta = ("La credibilidad del canal está a un paso del umbral en que el "
                   "Comité se levanta.")
+    elif vitales_solas:
+        # Nunca dice «protéjala»: dice qué está sin custodiar y de qué depende.
+        # Custodiar inmoviliza fuerza que Defensa necesita, y esa es la
+        # conversación que tiene que ocurrir en la mesa y no en la pantalla.
+        nombres = ", ".join(i.nombre for i in vitales_solas[:2])
+        resto = len(vitales_solas) - 2
+        alerta = (f"{len(vitales_solas)} instalación(es) de criticidad vital sin "
+                  f"custodia: {nombres}"
+                  f"{f' y {resto} más' if resto > 0 else ''}. "
+                  f"Custodiarlas inmoviliza fuerza que hoy desbloquea.")
     else:
         alerta = "Hay ventana para una sesión de mesa. Una operación hoy la cierra."
     return detalle, alerta
@@ -420,7 +555,7 @@ def _alcalde(estado: Estado):
 
 
 # ===========================================================================
-# 04 · Defensa — la inteligencia, y su propia solidez
+# 04 · Defensa — la inteligencia, su propia solidez y sus equipos
 # ===========================================================================
 
 def _defensa(estado: Estado):
@@ -432,6 +567,11 @@ def _defensa(estado: Estado):
     Su tercer dato es un freno a su propio argumento: sabe cuáles de sus casos no
     aguantarían ante un juez. Compartirlo debilita su posición hoy; callarlo
     significa que si un caso se cae, arrastra a todos los demás.
+
+    Y AHORA TIENE LOS EQUIPOS DE TERRENO, que eran las duplas de la Defensoría
+    del Pueblo. Es el cambio que más pesa de esta versión: **el que opera es el
+    que va a constatar qué pasó.** No pierde capacidad de mirar; lo que se
+    perdió es que quien mira no responda ante quien operó.
     """
     cerrados = [n for n in estado.nodos.values() if not n.abierto]
     inteligencia = []
@@ -465,8 +605,15 @@ def _defensa(estado: Estado):
         ),
         "_nota_sesgo": "la inteligencia sobreestima la estructura organizada",
     }
+    detalle.update(_bloque_equipos(estado))
 
-    if fragiles:
+    abiertas = detalle["denuncias_en_ventanilla"]
+    if len(abiertas) >= 2 and detalle["equipos_disponibles"] < len(abiertas):
+        alerta = (f"{len(abiertas)} denuncias graves sin verificar y "
+                  f"{detalle['equipos_disponibles']} equipo(s). No alcanzan: hay "
+                  f"que elegir, y declarar públicamente que la otra está en "
+                  f"verificación.")
+    elif fragiles:
         alerta = (f"{len(fragiles)} de {len(inteligencia)} casos de financiación "
                   f"no aguantarían ante un juez. Si uno se cae, arrastra al resto.")
     elif not estado.banderas.reglas_escritas:
@@ -531,66 +678,7 @@ def _policia(estado: Estado):
 
 
 # ===========================================================================
-# 06 · Defensoría — tres duplas y veinticuatro puntos
-# ===========================================================================
-
-def _defensoria(estado: Estado):
-    """
-    Es la única fuente que casi no se equivoca, y la que menos alcanza a ver.
-    **Verificar aquí es no verificar allá**, y esa elección es suya cada turno.
-
-    Las tres duplas salen del mismo bolsillo que el acompañamiento de
-    operaciones: no puede hacer las tres cosas.
-    """
-    sin_verificar = [n for n in estado.nodos.values()
-                     if n.ultima_verificacion_turno is None]
-    abiertas = [d for d in estado.denuncias if not d.verificada and not d.estallo]
-
-    verificados = []
-    for n in estado.nodos.values():
-        if n.verificado_por == "dupla_defensoria":
-            # El turno de la LECTURA, no el actual: lo que la dupla constató en
-            # el turno 2 tiene que seguir diciendo lo mismo en el turno 5. Con
-            # `estado.turno` la verificación se volvía a tirar cada vez que
-            # alguien abría la vista, que es lo contrario de «constatado».
-            cuando = n.ultima_verificacion_turno
-            if cuando is None:
-                cuando = estado.turno
-            est = information.estimar_nodo(
-                n, "dupla_defensoria", cuando, estado.semilla)
-            verificados.append({
-                "punto": n.nombre,
-                "estructura_organizada": round(est.estructura_organizada, 2),
-                "turno": n.ultima_verificacion_turno,
-            })
-
-    detalle = {
-        "duplas_disponibles": estado.duplas_disponibles,
-        "duplas_usadas_este_turno": list(estado.duplas_usadas_en),
-        "denuncias_en_ventanilla": [d.vista_publica() for d in abiertas],
-        "puntos_sin_mirar": len(sin_verificar),
-        "lo_que_han_constatado": verificados[-5:],
-        "_nota": ("cada dupla hace UNA cosa por turno: verificar un punto, "
-                  "verificar una denuncia, o acompañar una operación"),
-    }
-
-    if len(abiertas) >= 2 and estado.duplas_disponibles < len(abiertas):
-        alerta = (f"{len(abiertas)} denuncias graves sin verificar y "
-                  f"{estado.duplas_disponibles} dupla(s). No alcanzan: hay que "
-                  f"elegir, y declarar públicamente que la otra está en verificación.")
-    elif estado.duplas_disponibles == 0:
-        alerta = "No quedan duplas este turno. Lo que no se miró, no se miró."
-    elif not estado.banderas.reglas_escritas:
-        alerta = ("Ningún mitigador está activo. El estándar completo divide la "
-                  "probabilidad de incidente por casi cinco y no cuesta un escuadrón.")
-    else:
-        alerta = (f"{len(sin_verificar)} punto(s) que nadie ha mirado y "
-                  f"{estado.duplas_disponibles} dupla(s) disponibles.")
-    return detalle, alerta
-
-
-# ===========================================================================
-# 07 · Transporte — el mapa vivo
+# 06 · Transporte — el mapa vivo, y el reparto del combustible
 # ===========================================================================
 
 def _transporte(estado: Estado):
@@ -599,6 +687,11 @@ def _transporte(estado: Estado):
     sabe que son cuatro puntos, que tres están abiertos y que todo depende de
     uno** — y esa es la información que evita gastar una operación en el punto
     equivocado.
+
+    Y REPARTE EL COMBUSTIBLE, que era del Ministerio de Minas. Por eso ve los
+    días que le quedan a cada región: **quien asigna tiene que ver lo que
+    asigna.** Es el único número de esta pantalla que también está en otra —la
+    de Agricultura, que lleva el reloj entero—, y está en las dos a propósito.
     """
     corredores = []
     for c in estado.corredores.values():
@@ -631,9 +724,24 @@ def _transporte(estado: Estado):
         # como lo que es, la petición de alguien que también tiene asiento. Verla
         # aquí es lo que le permite defender su orden o cederlo a sabiendas.
         "clase_agroalimentaria_exigida": estado.banderas.clase_alimentaria,
+        "combustible_por_region": [
+            {"region": f["region"], "combustible_dias": f["combustible_dias"]}
+            for f in sorted(_calendario_por_region(estado),
+                            key=lambda x: x["combustible_dias"])
+        ],
+        "prioridad_de_combustible_fijada": estado.banderas.prioridad_combustible_fijada,
     }
 
-    if estado.posicion_gremios == "evaluando":
+    seco = [f for f in detalle["combustible_por_region"]
+            if f["combustible_dias"] <= 0]
+
+    if seco:
+        alerta = (f"{', '.join(f['region'] for f in seco)} sin combustible. Sin "
+                  f"él no se mueve ninguna caravana, escolte quien escolte.")
+    elif not estado.banderas.prioridad_combustible_fijada:
+        alerta = ("El combustible se está asignando sin criterio: cada turno se "
+                  "pelea de nuevo y nadie defiende el orden.")
+    elif estado.posicion_gremios == "evaluando":
         alerta = ("Los gremios camioneros están evaluando sumarse. Si lo hacen, "
                   "esto deja de ser orden público y pasa a ser cierre logístico "
                   "nacional.")
@@ -651,106 +759,7 @@ def _transporte(estado: Estado):
 
 
 # ===========================================================================
-# 08 · Minas — el reloj
-# ===========================================================================
-
-def _minas(estado: Estado):
-    """
-    **Es quien tiene el reloj.** Mientras no lo diga, la mesa sabe que hay un
-    problema de abastecimiento y no sabe cuánto tiempo tiene.
-
-    Su proyección a mañana es lo que convierte la deliberación en una cuenta
-    atrás — y entregarla formalmente la acelera.
-    """
-    regiones = []
-    for r in estado.regiones.values():
-        entra_oxi = any(
-            c.caudal_efectivo(estado.nodos) > 0.05
-            for c in estado.corredores_que_sirven(r.region_id, "humanitario")
-        )
-        manana = r.dias_autonomia_oxigeno - (0.0 if entra_oxi else 1.0 * (1 + r.panico))
-        regiones.append({
-            "region": r.nombre,
-            "region_id": r.region_id,
-            "oxigeno_dias": _dias(r.dias_autonomia_oxigeno),
-            "oxigeno_manana": _dias(manana),
-            "combustible_dias": _dias(r.dias_autonomia_combustible),
-            "alimentos_dias": _dias(r.dias_autonomia_alimentos),
-            "entra_humanitario": entra_oxi,
-            "muertes_evitables": r.muertes_evitables,
-        })
-
-    criticas = [x for x in regiones if x["oxigeno_dias"] < 1.5]
-
-    # LA INFRAESTRUCTURA QUE LE TOCA PROTEGER, con nombre y con estado. Es su
-    # cartera y no la tenía: hasta ahora su vista decía cuántas instalaciones
-    # había declarado —un número— y no cuáles existen ni qué queda sin custodiar.
-    # Declarar a ciegas era la consecuencia.
-    infra = sorted(
-        estado.infraestructura.values(),
-        key=lambda i: (i.protegida, {"vital": 0, "alta": 1}.get(i.criticidad, 2)),
-    )
-    sin_custodia = [i for i in infra if not i.protegida]
-    vitales_solas = [i for i in sin_custodia if i.criticidad == "vital"]
-
-    detalle = {
-        "calendario_por_region": sorted(regiones, key=lambda x: x["oxigeno_dias"]),
-        "infraestructura_relevante": [
-            {
-                "instalacion": i.nombre,
-                "region": estado.regiones[i.region_id].nombre
-                if i.region_id in estado.regiones else i.region_id,
-                "criticidad": i.criticidad,
-                "custodia": "puesta" if i.protegida else "sin proteger",
-                "de_que_depende": i.de_que_depende,
-            }
-            for i in infra
-        ],
-        "puntos_contiguos_a_infraestructura": [
-            n.nombre for n in estado.nodos.values() if n.proximidad_infra_critica
-        ],
-        "prioridad_de_combustible_fijada": estado.banderas.prioridad_combustible_fijada,
-        "panico_por_difusion": round(
-            max((r.panico for r in estado.regiones.values()), default=0.0), 2
-        ),
-    }
-
-    agotadas = [x for x in regiones if x["oxigeno_dias"] <= 0]
-    if agotadas:
-        alerta = (f"{', '.join(x['region'] for x in agotadas)} sin oxígeno. "
-                  f"Ahí ya no queda margen: lo que corre es el contador de "
-                  f"muertes evitables.")
-    elif criticas:
-        peor = min(criticas, key=lambda x: x["oxigeno_dias"])
-        alerta = (f"{peor['region']}: {peor['oxigeno_dias']} días de oxígeno. "
-                  f"Si mañana no entra nada, {peor['oxigeno_manana']}.")
-    elif vitales_solas:
-        # Nunca dice «protéjala»: dice qué está sin custodiar y de qué depende.
-        # Custodiar inmoviliza fuerza que Defensa necesita, y esa es la
-        # conversación que tiene que ocurrir en la mesa y no en la pantalla.
-        #
-        # DOS NOMBRES Y EL RECUENTO, no la lista entera: con cinco instalaciones
-        # sin custodia la línea pasaba de 260 caracteres y la vista dejaba de
-        # caber en una pantalla, que es la regla que hace que la sala se mire
-        # entre sí en vez de mirar el dispositivo. La lista completa está en el
-        # detalle, dos centímetros más abajo.
-        nombres = ", ".join(i.nombre for i in vitales_solas[:2])
-        resto = len(vitales_solas) - 2
-        alerta = (f"{len(vitales_solas)} instalación(es) de criticidad vital sin "
-                  f"custodia: {nombres}"
-                  f"{f' y {resto} más' if resto > 0 else ''}. "
-                  f"Custodiarlas inmoviliza fuerza que hoy desbloquea.")
-    elif not estado.banderas.prioridad_combustible_fijada:
-        alerta = ("El combustible se está asignando sin criterio: cada turno se "
-                  "pelea de nuevo y nadie defiende el orden.")
-    else:
-        peor = min(regiones, key=lambda x: x["oxigeno_dias"])
-        alerta = f"{peor['region']} es la más apretada: {peor['oxigeno_dias']} días."
-    return detalle, alerta
-
-
-# ===========================================================================
-# 09 · Agricultura — el reloj que ya sonó
+# 07 · Agricultura — el reloj que ya sonó, y el que sigue corriendo
 # ===========================================================================
 
 def _agricultura(estado: Estado):
@@ -767,6 +776,11 @@ def _agricultura(estado: Estado):
     lecturas antes de que ella instale una mesa, el error se evita; si no, el
     Estado le reconoce interlocución a quien el frente de seguridad está
     documentando como financiador del cierre.
+
+    Y LLEVA EL RELOJ, que era del Ministerio de Minas: los días de oxígeno, de
+    combustible y de comida de cada región. Sigue sin verlo la mesa entera —el
+    tablero general dice «ROJO» y no los días—, y lo lleva la cartera cuyo daño
+    ya ocurrió. **Entregarlo formalmente acelera lo que mide.**
     """
     filas = []
     for r in estado.regiones.values():
@@ -804,8 +818,11 @@ def _agricultura(estado: Estado):
             "mesa_tecnica": n.nodo_id in estado.mesas_tecnicas_agro,
         })
 
+    calendario = _calendario_por_region(estado)
+
     detalle = {
         "tablero_agroalimentario": sorted(filas, key=lambda f: f["alimentos_dias"]),
+        "calendario_por_region": calendario,
         "con_quien_hablar_en_el_campo": lecturas,
         "clase_agroalimentaria_fijada": estado.banderas.clase_alimentaria,
         "corredores_de_alimentos": sorted(
@@ -822,8 +839,21 @@ def _agricultura(estado: Estado):
 
     sin_comida = [f for f in filas if f["alimentos_dias"] <= 0]
     apretadas = [f for f in filas if f["alimentos_dias"] < 1.5]
+    sin_oxigeno = [x for x in calendario if x["oxigeno_dias"] <= 0]
+    criticas = [x for x in calendario if x["oxigeno_dias"] < 1.5]
 
-    if sin_comida:
+    # EL OXÍGENO VA PRIMERO Y LA COMIDA DESPUÉS, aunque la comida sea su
+    # cartera. Por debajo de cero días de oxígeno lo que corre es el contador de
+    # muertes evitables, y no hay nada en esta pantalla que sea más urgente.
+    if sin_oxigeno:
+        alerta = (f"{', '.join(x['region'] for x in sin_oxigeno)} sin oxígeno. "
+                  f"Ahí ya no queda margen: lo que corre es el contador de "
+                  f"muertes evitables.")
+    elif criticas:
+        peor = min(criticas, key=lambda x: x["oxigeno_dias"])
+        alerta = (f"{peor['region']}: {peor['oxigeno_dias']} días de oxígeno. "
+                  f"Si mañana no entra nada, {peor['oxigeno_manana']}.")
+    elif sin_comida:
         alerta = (f"{', '.join(f['region'] for f in sin_comida)} sin días de "
                   f"comida. Lo que se pierde ahí no vuelve abriendo el corredor "
                   f"mañana: son animales sacrificados y cosecha podrida.")
@@ -853,8 +883,6 @@ _VISTAS = {
     "Alcalde": _alcalde,
     "Defensa": _defensa,
     "Policía": _policia,
-    "Defensoría": _defensoria,
     "Transporte": _transporte,
-    "Minas": _minas,
     "Agricultura": _agricultura,
 }

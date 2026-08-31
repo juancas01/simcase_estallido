@@ -162,7 +162,6 @@ export const D = {
       </p>
       <dl>
         <dt>−9</dt><dd>incidente con víctima atribuible</dd>
-        <dt>−7</dt><dd>la Defensoría hace pública su duda de permanencia</dd>
         <dt>−6</dt><dd>imagen viral</dd>
         <dt>−3</dt><dd>turno cerrado sin ninguna decisión</dd>
         <dt>+5</dt><dd>acuerdo verificable cumplido</dd>
@@ -198,7 +197,6 @@ export const D = {
       </p>
       <dl>
         <dt>−12</dt><dd>corredor humanitario negado</dd>
-        <dt>−9</dt><dd>la Defensoría hace pública su duda de permanencia</dd>
         <dt>−7</dt><dd>incidente con víctima atribuible</dd>
         <dt>−6</dt><dd>denuncia grave confirmada como veraz</dd>
       </dl>
@@ -319,7 +317,7 @@ export const D = {
         <strong>No hay acciones en contra de esta infraestructura</strong>, y es
         deliberado: el ejercicio no simula un ataque a la refinería, simula la
         decisión de inmovilizar fuerza para custodiarla — que es la que enfrenta
-        a Minas con Defensa. Lo que queda registrado es el riesgo asumido al
+        al Interior con Defensa. Lo que queda registrado es el riesgo asumido al
         dejarla sola, y de eso se responde en el cierre.
       </p>
     </>
@@ -342,8 +340,8 @@ export const D = {
         <dt>Azul</dt><dd>alguien lo verificó en campo</dd>
       </dl>
       <p>
-        Al posarse sobre el punto se lee el detalle: qué unidad operó y si llevaba
-        dupla de la Defensoría.
+        Al posarse sobre el punto se lee el detalle: qué unidad operó y con qué
+        resultado.
       </p>
       <p>
         <strong>El mapa cuenta lo que se hizo, no dónde está la fuerza ahora.</strong>{' '}
@@ -390,7 +388,8 @@ export const D = {
       </dl>
       <p>
         Las cifras exactas, y cuál de los tres insumos manda, corresponden al
-        Ministerio de Minas y Energía.
+        Ministerio de Agricultura y Desarrollo Rural, que lleva el calendario de
+        agotamiento de las cuatro regiones.
       </p>
     </>
   ),
@@ -461,13 +460,17 @@ export const D = {
       </p>
       <p>
         No existe señal observable que distinga una denuncia veraz de una falsa
-        antes de verificarla. Confirmar una veraz descuenta 6 puntos de respaldo
-        internacional; desmentir una falsa aporta 3 de legitimidad.
+        antes de verificarla. Cada verificación consume uno de los tres equipos
+        de terreno del Ministerio de Defensa, que son los mismos que verifican
+        puntos: mirar aquí es no mirar allá.
       </p>
       <p>
-        Cada verificación consume una de las tres duplas de la Defensoría del
-        Pueblo, que son también las que verifican puntos y acompañan
-        operaciones.
+        <strong>Lo que vale el resultado depende de si hay protocolo común de
+        verificación adoptado.</strong> Con él, confirmar una veraz descuenta 6
+        puntos de respaldo internacional y desmentir una falsa aporta 3 de
+        legitimidad. Sin él, quien verifica es el mismo sector del que se
+        denuncia: confirmar cuesta 11 y desmentir casi no aporta, porque se lee
+        como una parte absolviéndose.
       </p>
     </>
   ),
@@ -479,9 +482,9 @@ export const D = {
         desconoce, y el tablero no lo supone.
       </p>
       <p>
-        La Defensoría del Pueblo puede verificarlo con una dupla. Dispone de
-        tres en total, y las mismas tres sirven para verificar denuncias y
-        acompañar operaciones: la que se emplea aquí no queda para otro sitio.
+        El Ministerio de Defensa puede verificarlo desplegando un equipo de
+        terreno. Dispone de tres por jornada, y los mismos tres sirven para
+        comprobar denuncias: el que se emplea aquí no queda para otro sitio.
       </p>
     </>
   ),
@@ -546,8 +549,8 @@ export const D = {
       </p>
       <p>
         Se puede decir de otras maneras y con otros datos — el punto, la unidad,
-        quién firma, si acompaña una dupla. El ejemplo es el esqueleto mínimo,
-        no la única forma admitida.
+        quién firma. El ejemplo es el esqueleto mínimo, no la única forma
+        admitida.
       </p>
       <p>
         Algunas acciones existen en el motor y <strong>todavía no se
@@ -722,11 +725,16 @@ export const D = {
         con techo del 98 %.
       </p>
       <p>
-        Seis mitigadores la reducen de forma multiplicativa: reglas escritas
+        Cinco mitigadores la reducen de forma multiplicativa: reglas escritas
         (×0,70), identificación de agentes (×0,85), registro audiovisual (×0,80),
-        dupla presente (×0,75), concertación con la alcaldía (×0,80) y unidades
-        descansadas (×0,75). Los seis juntos dividen el riesgo por 4,7
-        aproximadamente.
+        concertación con la alcaldía (×0,80) y unidades descansadas (×0,75). Los
+        cinco juntos dividen el riesgo por 3,5 aproximadamente.
+      </p>
+      <p>
+        Eran seis. El sexto era el acompañamiento por una dupla de la Defensoría
+        del Pueblo, y descontaba porque miraba alguien de fuera; desde que los
+        equipos de terreno son del propio Ministerio de Defensa, acompañarse a sí
+        mismo no cambia la probabilidad de que una imagen circule.
       </p>
       <p>
         <strong>Atribuible</strong> indica si un incidente eventual se imputaría

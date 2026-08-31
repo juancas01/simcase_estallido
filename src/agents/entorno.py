@@ -239,9 +239,6 @@ def _hechos_del_turno(estado: Estado, eventos: list[dict]) -> list[dict]:
         elif tipo == "comite_se_retira_definitivo":
             hechos.append({"que": "el Comité del Paro se retiró en definitiva de la "
                                   "mesa nacional"})
-        elif tipo == "duda_permanencia":
-            hechos.append({"que": "la Defensoría puso en duda públicamente su "
-                                  "permanencia en la mesa"})
         elif tipo == "gremios_se_suman":
             hechos.append({"que": "los gremios camioneros se sumaron al paro"})
         elif tipo == "ultimatum_gremios":

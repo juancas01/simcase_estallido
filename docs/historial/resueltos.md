@@ -22,6 +22,7 @@ en cuanto se borra el texto que la discutió.
 8. [Las superficies](#8--las-superficies)
 9. [Revisión general del motor](#9--revisión-general-del-motor)
 10. [Las ocho que no se podían pedir](#10--las-ocho-que-no-se-podían-pedir)
+11. [De nueve roles a siete](#11--de-nueve-roles-a-siete)
 
 ---
 
@@ -455,3 +456,105 @@ deducía de que la orden sonara razonable:
 > acuerda en la mesa» ya no puede ocurrir, y la columna **LN** de
 > `LAS_ACCIONES.md` —que decía cuáles sí y cuáles no— tenía las treinta y nueve
 > celdas diciendo lo mismo.
+
+---
+
+## 11 · De nueve roles a siete
+
+Salen el **Delegado de la Defensoría del Pueblo** y el **Ministro de Minas y
+Energía**. No es una poda de material sobrante: los dos sostenían mecánica que
+otros roles leían, así que el trabajo no fue borrar nueve acciones, fue decidir
+qué pasa con lo que quedaba colgando de cada una.
+
+**39 acciones y 9 roles → 37 y 7.** Siete acciones encontraron heredero y dos se
+retiraron.
+
+| Acción | Era de | Pasa a |
+|---|---|---|
+| `AsignarDuplas` → `DesplegarEquiposTerreno` | Defensoría | **Defensa**, transformada |
+| `AdoptarProtocoloVerificacion` | Defensoría | **Policía** |
+| `RequerirCorredoresHumanitarios` | Defensoría | **Interior** |
+| `ExigirEstandaresEmpleo` | Defensoría | **retirada** · sus tres mitigadores pasan a `FijarReglasEmpleoSector` |
+| `ManifestarDudaPermanencia` | Defensoría | **retirada** |
+| `DeclararInfraestructuraCritica` | Minas | **Interior** |
+| `FijarPrioridadCombustible` · `AcordarPasosSeguros` | Minas | **Transporte** |
+| `EntregarCalendarioAgotamiento` | Minas | **Agricultura** |
+
+**Por qué esas dos y no otras.** «Exigirle al Gobierno» y «poner en duda mi
+permanencia» son actos de quien no responde ante él. Sin tercero no tienen quién
+los diga: dárselos al Presidente o al Interior sería el Gobierno exigiéndose a sí
+mismo. Las otras siete sí tienen heredero institucional.
+
+**Por qué la custodia va al Interior y no a Defensa.** Es la única aritmética que
+hace escasa la fuerza por una razón que no es operar: lo que se protege sale de
+lo que desbloquea. Si el que protege es el que desbloquea, el pulso deja de
+existir y pasa a ser una cuenta que uno hace solo.
+
+### Lo que de verdad cambia: sin tercero, el que mira es parte
+
+Las duplas pasaron a Defensa **como inteligencia en terreno y no como veeduría**,
+y esa decisión ordena todo lo demás. Era la única lectura del ejercicio sin sesgo
+apreciable y la única que producía el grado «confirmado»; ahora la despliega el
+mismo ministerio que ordena las operaciones sobre las que se denuncia.
+
+Eso no se deja como efecto colateral. Se implementa:
+
+| | Antes | Ahora |
+|---|---|---|
+| Fuente | `dupla_defensoria`, sesgo **+0,02** | `equipo_terreno`, sesgo **+0,12** — ir al terreno corrige la mitad del `+0,28` de escritorio, y no lo limpia |
+| Grado | `confirmado` | **ninguna fuente lo concede.** Un grado que solo podía otorgar quien no era parte es una promesa que el ejercicio ya no puede cumplir |
+| Usos del bolsillo | 3: punto · denuncia · acompañar | **2**: punto · denuncia |
+| Mitigadores | seis, ×0,214 | **cinco**, ×0,286 |
+
+**El sexto mitigador se fue con el rol que lo justificaba.** Acompañar una
+operación descontaba un 25 % porque miraba alguien de fuera; que los propios
+funcionarios de Defensa acompañen una operación de Defensa no cambia la
+probabilidad de que una imagen circule, cambia quién la graba.
+
+### La sustitución funcional del tercero
+
+No es otro rol: es una regla. **`protocolo_verificacion` —que adopta el Director
+General de la Policía— es lo único que hace que la palabra del que verifica
+valga**, ahora que el que verifica es el sector del que se denuncia.
+
+| Denuncia | Con protocolo | Sin él |
+|---|---|---|
+| **cierta** | respaldo −6, legitimidad −3 · llega con el Estado enterado | respaldo −11, legitimidad −7 · el hecho es cierto y además parece administrado |
+| **falsa** | legitimidad +3, credibilidad +2 | legitimidad +1 y nada más · se lee como una parte absolviéndose |
+
+Una regla hay que pactarla **antes de saber qué va a decir**, y por eso vale
+después. También puede no pactarse, y esa es la diferencia con tener un tercero
+sentado: el tercero estaba ahí sin que nadie lo decidiera.
+
+### Lo que hubo que tocar además del reparto
+
+- **`actions.py` se reordenó físicamente.** Estaba en nueve secciones tituladas
+  por rol; cambiar solo el atributo `rol` habría dejado cabeceras anunciando un
+  rol inexistente sobre acciones que ya eran de otro.
+- **`identificacion_agentes` cambió de dueño.** Solo lo encendía la acción
+  retirada, así que `FijarReglasEmpleoSector` enciende ahora los tres. La lección
+  cambia y mejora: era «un tercero pide más de lo que el sector concede», y es
+  **«el sector se autolimita, o no lo hace nadie»**. Se le puso precio —
+  `estandar_autoimpuesto`— porque encender tres mitigadores el primer día gratis
+  desequilibraba el ejercicio entero.
+- **Las dos vistas se repartieron, no se borraron.** Los equipos y las denuncias
+  a Defensa; el registro de infraestructura al Interior; el calendario de
+  agotamiento a Agricultura; los días de combustible a Transporte, que es quien
+  los asigna. Viven en tres funciones auxiliares y no copiados en cada vista.
+- **`defensoria_presente` se retiró**, y con ella la única excepción de la
+  invariante de t=0: **la mesa empieza sin haber constituido absolutamente nada.**
+- **`dupla` → `equipo` en todo el código.** Un motor que sigue nombrando un rol
+  que no existe es la clase de deriva contra la que este repositorio ya tiene
+  pruebas.
+
+### Lo que queda sin calibrar
+
+Dos números provisionales, declarados como tales y pendientes de `C5`: el precio
+de `estandar_autoimpuesto`, y cuánto exactamente cambian los costos de las
+denuncias sin protocolo adoptado.
+
+> **Y una pérdida que conviene mirar de frente.** El bolsillo pasó de tres usos a
+> dos: se fue la decisión «¿acompaño la operación o miro el punto que nadie ha
+> mirado?», que era de las más vivas del ejercicio. Es consecuencia directa de
+> que el que acompaña ya no es un tercero. Conservar el tercer uso exigiría
+> inventarle otra justificación, y eso ya no sería trasladar un rol.

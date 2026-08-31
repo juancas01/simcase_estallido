@@ -86,7 +86,6 @@ MITIGADORES = {
     "reglas_escritas": 0.70,
     "identificacion_agentes": 0.85,
     "registro_av": 0.80,
-    "dupla_presente": 0.75,
     "concertado_con_alcaldia": 0.80,
     "unidades_descansadas": 0.75,   # aplica si fatiga_media < UMBRAL_FATIGA_DESCANSADA
 }
@@ -102,7 +101,7 @@ CUSTODIA_MILITARES_POR_INSTALACION = 3
 #
 # NO HAY ACCIONES EN CONTRA DE LA INFRAESTRUCTURA, y es deliberado: el ejercicio
 # no simula un ataque a la refinería. Lo que simula es la decisión de inmovilizar
-# fuerza para custodiarla, que es la que enfrenta a Minas con Defensa — proteger
+# fuerza para custodiarla, que es la que enfrenta al Interior con Defensa — proteger
 # resta exactamente de la capacidad de desbloquear.
 #
 # Pero una decisión que no cuesta nada tampoco es una decisión. Lo que se cobra
@@ -277,9 +276,27 @@ COSTO_RESERVAS = {
     "decision_con_responsable": {"cohesion_mesa": 2.0},
     "escolta_lograda": {"legitimidad": 3.0},
     "escolta_atacada": {"legitimidad": -6.0, "respaldo_internacional": -4.0},
+    # LAS CUATRO SALIDAS DE VERIFICAR UNA DENUNCIA, y son cuatro y no dos desde
+    # que el que verifica es el sector del que se denuncia. Lo que separa cada
+    # par es si hay protocolo común de verificación adoptado: sin él, la mesa
+    # está oyendo a una parte hablar de su propia conducta.
+    #
+    # Documentar la propia falta DENTRO del protocolo sigue saliendo más barato
+    # que el estallido; fuera de él no ahorra nada. Y desmentir sin protocolo no
+    # da credibilidad —se lee como una absolución— aunque sigue evitando que se
+    # desplace fuerza a algo que no pasó, que es lo que conserva la legitimidad.
     "denuncia_veraz_confirmada": {"respaldo_internacional": -6.0, "legitimidad": -3.0},
+    "denuncia_veraz_sin_protocolo": {"respaldo_internacional": -11.0, "legitimidad": -7.0},
     "denuncia_falsa_desmentida": {"legitimidad": 3.0, "credibilidad_mesa": 2.0},
-    "defensoria_duda_permanencia": {"legitimidad": -7.0, "respaldo_internacional": -9.0},
+    "denuncia_falsa_sin_protocolo": {"legitimidad": 1.0},
+    # EL PRECIO DE ATARSE LAS MANOS UNO MISMO. El estandar completo lo pedia un
+    # tercero y lo concedia el Gobierno; sin ese rol lo adopta el propio sector,
+    # y encender los tres mitigadores el primer dia sin costo desequilibraria el
+    # ejercicio entero. Gana respaldo fuera y cuesta cohesion dentro, que es lo
+    # que se paga cuando quien manda la fuerza se limita delante de la mesa.
+    #
+    # SIN CALIBRAR: los dos numeros son provisionales y salen de C5.
+    "estandar_autoimpuesto": {"respaldo_internacional": 8.0, "cohesion_mesa": -6.0},
     "constitutiva_reactiva": 0.5,   # multiplicador del rédito si se adopta tras incidente
     # --- el frente agroalimentario ---
     # Reordenar un criterio de priorización que la mesa ya adoptó no es lo mismo
@@ -304,10 +321,6 @@ COSTO_RESERVAS = {
 # la proyección la convertía en una rampa determinista de 12 peajes en 5
 # decisiones: bajaba igual hiciera lo que hiciera la sala.
 COBRAR_BANDERAS_SOLO_DE_DIA = True
-
-# Tope de la duda de permanencia: la credibilidad de la Defensoría se consume.
-# El n-ésimo pronunciamiento vale base × este factor ** (n-1).
-DECAIMIENTO_DUDA_PERMANENCIA = 0.45
 
 # ---------------------------------------------------------------------------
 # ABASTECIMIENTO
@@ -336,7 +349,7 @@ ORDEN_PRIORIDAD_COMBUSTIBLE = [
 # Cuánta autonomía mueve la prioridad de combustible, POR DÍA.
 #
 # Es un criterio PERMANENTE, no una decisión de un turno: mientras esté fijado,
-# se aplica en cada paso. Es la segunda entrada del reloj y la única que Minas
+# se aplica en cada paso. Es la segunda entrada del reloj y la única que Transporte
 # controla por sí solo — y es suma cero: lo que se pone en misión médica sale
 # del transporte de alimentos, y las dos cosas tienen quien las reclame.
 EFECTO_ASIGNACION_COMBUSTIBLE = 0.85
@@ -381,7 +394,7 @@ ACOPIO_CONCENTRADO = 1.1
 COSTO_LEGITIMAR_ESTRUCTURA = 6.0
 
 # ---------------------------------------------------------------------------
-# INFORMACIÓN — sesgos, duplas y denuncias
+# INFORMACIÓN — sesgos, equipos de terreno y denuncias
 # ---------------------------------------------------------------------------
 
 # Sesgo aplicado a `estructura_organizada` al estimar la mezcla de un punto.
@@ -389,7 +402,13 @@ SESGO_FUENTE = {
     "parte_operacional": 0.10,
     "inteligencia_defensa": 0.28,     # sobreestima
     "parte_municipal": -0.22,         # subestima
-    "dupla_defensoria": 0.02,         # casi sin sesgo
+    # IR AL TERRENO CORRIGE, NO LIMPIA. Cuando esto lo hacía la Defensoría del
+    # Pueblo el sesgo era 0,02 —la única lectura limpia del ejercicio— porque
+    # quien miraba no respondía ante quien operaba. Ahora los equipos son del
+    # mismo ministerio que ordena la operación: bajan a menos de la mitad del
+    # +0,28 que tiene la inteligencia desde el escritorio, y siguen tirando hacia
+    # arriba, que es la dirección que justifica escalar.
+    "equipo_terreno": 0.12,
     # AGRICULTURA SUBESTIMA LA ESTRUCTURA ARMADA EN EL CAMPO. Lleva años
     # tratando con esas organizaciones y las conoce como interlocutoras, así que
     # lee de menos lo que pueda haber detrás de ellas.
@@ -398,8 +417,11 @@ SESGO_FUENTE = {
     # ESCENARIO, EN EL CAMPO ELLA ACIERTA CASI SIEMPRE. La estructura real de
     # los cinco puntos rurales va de 0,04 a 0,12; la inteligencia de Defensa los
     # lee entre 0,33 y 0,42. El que se equivoca de largo en el campo es el
-    # frente de seguridad, y ella no tiene con qué demostrarlo: la única lectura
-    # sin sesgo es la de una dupla de la Defensoría, y hay tres por jornada.
+    # frente de seguridad, y ella no tiene con qué demostrarlo. ANTES SÍ HABÍA
+    # CON QUÉ: una dupla de la Defensoría del Pueblo leía sin sesgo, y era el
+    # árbitro posible de esa discusión. Desde que los equipos de terreno son del
+    # propio Ministerio de Defensa, la lectura que la contradice y la que la
+    # arbitraría vienen de la misma casa.
     #
     # Su exposición no es equivocarse en general: es el punto concreto donde sí
     # se equivoca. Sentarse ahí le reconoce interlocución a quien sostiene el
@@ -407,11 +429,14 @@ SESGO_FUENTE = {
     "interlocucion_rural": -0.10,     # subestima, y en el campo suele acertar
 }
 
-# UN SOLO BOLSILLO DE TRES (decisión V6 de la v2). Verificar un punto, verificar
-# una denuncia y acompañar una operación salen del mismo presupuesto, y cada
-# dupla hace UNA sola cosa por turno. Antes acompañar salía gratis y la
-# asignación de la Defensoría no era una decisión.
-DUPLAS_TOTALES = 3
+# UN SOLO BOLSILLO DE TRES. Verificar un punto y verificar una denuncia salen
+# del mismo presupuesto, y cada equipo hace UNA sola cosa por turno.
+#
+# Eran tres usos y son dos: acompañar una operación salía de aquí mientras el
+# acompañamiento era de un tercero y descontaba riesgo. Desde que los equipos son
+# del mismo ministerio que opera, acompañarse a sí mismo no mitiga nada, así que
+# ni gasta bolsillo ni lo ahorra.
+EQUIPOS_TERRENO_TOTALES = 3
 
 # control_voceria: Interior lo sobreestima; Cali lo estima bien en su jurisdicción
 SESGO_CONTROL_VOCERIA = {
