@@ -13,7 +13,7 @@
 //
 // POR QUÉ NO CUENTA EL NAVEGADOR
 // ------------------------------
-// Porque hay once pantallas mirando —el tablero, la consola y las nueve vistas—
+// Porque hay nueve pantallas mirando —el tablero, la consola y las siete vistas—
 // y un cronómetro por pantalla es un cronómetro DISTINTO por pantalla en cuanto
 // una se recarga a mitad de jornada. El servidor guarda tres instantes; aquí
 // solo se dibuja lo que se deriva de ellos.

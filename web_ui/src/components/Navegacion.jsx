@@ -1,43 +1,36 @@
 // ---------------------------------------------------------------------------
-// IR DE UNA SUPERFICIE A OTRA.
+// IR DE UNA SUPERFICIE A LA OTRA.
 //
-// Las cuatro superficies vivían cada una en su ruta y sin salida: quien tenía
-// abierta su vista personal o la consola solo podía volver con el botón de atrás
-// del navegador o escribiendo la ruta. En un ejercicio de dos horas, con nueve
-// personas que no montaron el sistema, eso es un callejón.
+// Con DOS superficies el problema de navegación desaparece: no hay un menú al
+// que volver ni un árbol que recorrer — hay «esta» y «la otra». Este enlace es
+// la otra, y por eso no recibe una lista de destinos sino uno solo.
 //
-// SE DECLARAN LOS DESTINOS, no se ocultan los que sobran. Cada superficie dice a
-// cuáles lleva —el tablero a la consola, las personales de vuelta al tablero y
-// al menú— y así un enlace que apunta a donde uno ya está no es algo que haya
-// que acordarse de apagar: es algo que no se escribió.
+// Existía un tercer destino, `menu`, que llevaba a una portada que ya no
+// existe. Un enlace que apunta a una pantalla retirada no es un enlace roto que
+// haya que acordarse de apagar: es algo que no se vuelve a escribir.
 // ---------------------------------------------------------------------------
 
 const DESTINOS = {
-  tablero: { href: '/tablero', texto: 'Tablero de situación', flecha: '←' },
-  menu: { href: '/', texto: 'Menú principal', flecha: '←' },
-  // La consola no se proyecta. El enlace existe porque quien conduce necesita
-  // llegar a ella en un clic, no porque la sala tenga que verla.
+  tablero: { href: '/', texto: 'Tablero de situación', flecha: '←' },
+  // La consola no se proyecta. El enlace existe porque quien transcribe
+  // necesita llegar a ella en un clic, no porque la sala tenga que verla.
   consola: { href: '/consola', texto: 'Consola de órdenes', flecha: '→' },
 }
 
-export default function Navegacion({ destinos = ['tablero', 'menu'] }) {
+export default function Navegacion({ a = 'tablero' }) {
+  const d = DESTINOS[a]
+  if (!d) return null
   return (
-    <nav className="nav-superficies" aria-label="Ir a otra superficie">
-      {destinos.map(id => {
-        const d = DESTINOS[id]
-        if (!d) return null
-        return (
-          <a key={id} className="enlace-superficie" href={d.href}>
-            {d.flecha === '←' && (
-              <span className="enlace-flecha" aria-hidden="true">←</span>
-            )}
-            {d.texto}
-            {d.flecha === '→' && (
-              <span className="enlace-flecha" aria-hidden="true">→</span>
-            )}
-          </a>
-        )
-      })}
+    <nav className="nav-superficies" aria-label="Ir a la otra superficie">
+      <a className="enlace-superficie" href={d.href}>
+        {d.flecha === '←' && (
+          <span className="enlace-flecha" aria-hidden="true">←</span>
+        )}
+        {d.texto}
+        {d.flecha === '→' && (
+          <span className="enlace-flecha" aria-hidden="true">→</span>
+        )}
+      </a>
     </nav>
   )
 }

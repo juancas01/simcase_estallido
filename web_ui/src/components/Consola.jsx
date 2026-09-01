@@ -38,7 +38,7 @@
 
 import { useState } from 'react'
 import Ayuda, { Titulo } from './Ayuda'
-import Navegacion from './Navegacion'
+import Cabecera from './Cabecera'
 import { D } from '../definiciones.jsx'
 import {
   CAMPO_CONSULTA, ESTADO_PLAN, EVENTO, FASE, FRANJA, rotulo,
@@ -106,38 +106,28 @@ export default function Consola() {
 
   return (
     <div className="pantalla">
-      <header className="cabecera">
-        <div>
-          <div className="cabecera-rotulo">
-            <span className="eyebrow">Consola · no se proyecta</span>
-            <Navegacion />
-          </div>
-          <h1>Transcripción de órdenes</h1>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <div className="num" style={{ fontWeight: 600 }}>
+      <Cabecera
+        eyebrow="Consola · no se proyecta"
+        titulo="Transcripción de órdenes"
+        a="tablero"
+      >
+        <div className="cabecera-jornada">
+          <div className="num">
             Jornada {crono?.jornada ?? 0} · {rotulo(FRANJA, tablero?.franja)}
           </div>
           <div className="eyebrow">{rotulo(FASE, tablero?.fase)}</div>
         </div>
-      </header>
+      </Cabecera>
 
       <div className="cuerpo" style={{ maxWidth: 1000, width: '100%', margin: '0 auto' }}>
         {cfg && !cfg.llave_presente && (
           <div className="tarjeta" style={{ borderColor: 'var(--medio)', marginBottom: '1rem' }}>
-            {/* El diagnóstico del motor no se borra: se retira al globo. Es un
-                dato, y además el único sitio donde consta qué falta exactamente. */}
             <h2 style={{ color: 'var(--medio)' }}>
               Sin llave de API
               <Ayuda etiqueta="Qué implica correr sin llave">
-                <>
-                  <p>{cfg.mensaje}</p>
-                  <p>
-                    Las capas de lenguaje natural quedan en modo determinista. El
-                    ejercicio se desarrolla completo: ninguna decisión de la
-                    simulación está delegada al modelo.
-                  </p>
-                </>
+                Sin llave, las capas de lenguaje natural pasan a modo
+                determinista. El ejercicio se desarrolla completo: ninguna
+                decisión de la simulación está delegada al modelo.
               </Ayuda>
             </h2>
             <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--texto-2)' }}>
@@ -274,7 +264,7 @@ export default function Consola() {
             disabled={!abierta || ocupado}
             onChange={e => setTexto(e.target.value)}
             placeholder={abierta
-              ? 'Ej.: operen el Puente Amarillo con ESMAD, con dupla de la Defensoría, responsable el Ministro de Defensa'
+              ? 'Ej.: operar el Puente Amarillo con ESMAD, responsable el Ministro de Defensa'
               : 'La consola no recibe órdenes durante la noche.'}
             onKeyDown={e => {
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && abierta) interpretar()
@@ -383,7 +373,7 @@ export default function Consola() {
                   <>
                     <span className="num" style={{ fontSize: '0.78rem',
                                                    color: 'var(--texto-3)' }}>
-                      {' '}· riesgo {Math.round(r.datos.p_incidente * 100)} %
+                      {' '}· riesgo {Math.round(r.datos.p_incidente * 100)}&nbsp;%
                       · atribuible {r.datos.atribuible ? 'sí' : 'no'}
                     </span>
                     <Ayuda etiqueta="Cómo se calcula el riesgo">{D.riesgo_mostrado}</Ayuda>
@@ -446,7 +436,7 @@ function formatear(v) {
  *
  * Lo dice el motor: cada entidad viaja con el argumento del que salió. Antes se
  * adivinaba aquí buscando el valor crudo entre los argumentos, y para los
- * campos de LISTA —los tres puntos de `asignar_duplas`— no aparecía nunca,
+ * campos de LISTA —los puntos de `desplegar_equipos`— no aparecía nunca,
  * porque los que no resuelven no se guardan. Se caía en 'nodo_id', que esa
  * herramienta no declara, y el botón de corregir devolvía un 400.
  */

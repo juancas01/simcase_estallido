@@ -50,8 +50,12 @@ MIN_DIA = 13.0
 MIN_NOCHE = 2.0
 MIN_JORNADA = MIN_DIA + MIN_NOCHE      # 15 min · ×5 jornadas = 75 min de mesa
 
-MIN_INSTALACION = 12
-MIN_DEBRIEFING = 20
+# LOS MINUTOS DE INSTALACIÓN Y DEBRIEFING SE FUERON A LA GUÍA DEL FACILITADOR.
+# `MIN_INSTALACION = 12` y `MIN_DEBRIEFING = 20` vivían aquí sin que ningún
+# cálculo del motor los leyera: el reloj del ejercicio solo conduce las cinco
+# jornadas. Una constante que nadie lee se documenta, se calibra y se discute
+# como si moviera algo — y estas dos son del cuadro de tiempos de la sesión, que
+# es material de sala y no de motor.
 
 TURNOS_PROYECCION_FINAL = 3  # T+72h sin nadie al mando
 
@@ -81,19 +85,36 @@ FACTOR_NOCTURNO = 1.6
 P_INCIDENTE_MAX = 0.98
 MASA_REFERENCIA = 300    # personas; normaliza el término de masa
 
-# Mitigadores multiplicativos. Producto de los seis ≈ 0.214 → divide por ~4,7.
+# Mitigadores multiplicativos. Producto de los cuatro ≈ 0.288 → divide por ~3,5.
+#
+# ERAN CINCO Y SON CUATRO: `identificacion_agentes` (0,85) se fundió en
+# `reglas_escritas`. No era una decisión aparte —ninguna acción la encendía sola
+# y ningún cálculo la consultaba fuera de este diccionario—, así que era un
+# factor multiplicativo que solo aparecía acompañado. El producto se conserva:
+#
+#     antes   0,70 × 0,85 = 0,595
+#     ahora   0,60
+#
+# Las otras dos del estándar SÍ tienen vida propia y por eso siguen separadas:
+# `reglas_escritas` la enciende también la firma delimitada de la asistencia
+# militar, y `registro_av` tiene un segundo efecto distinto —baja la
+# probabilidad de que la imagen circule, ver P_VIRAL_*.
 MITIGADORES = {
-    "reglas_escritas": 0.70,
-    "identificacion_agentes": 0.85,
+    "reglas_escritas": 0.60,        # reglas escritas E IDENTIFICACIÓN de agentes
     "registro_av": 0.80,
     "concertado_con_alcaldia": 0.80,
     "unidades_descansadas": 0.75,   # aplica si fatiga_media < UMBRAL_FATIGA_DESCANSADA
 }
 UMBRAL_FATIGA_DESCANSADA = 0.30
 
-# Custodia de infraestructura crítica: unidades inmovilizadas por instalación
+# Custodia de infraestructura crítica: unidades inmovilizadas por instalación.
+#
+# LA GEMELA MILITAR SE FUE. `CUSTODIA_MILITARES_POR_INSTALACION = 3` no la leía
+# nadie: el redespliegue militar inmoviliza POR UNIDAD y no por instalación. Que
+# la custodia militar pase a costar por instalación como la policial es una
+# decisión de diseño que cambia la aritmética que enfrenta al Interior con
+# Defensa, y mientras no se tome, la constante no debe existir.
 CUSTODIA_POLICIAS_POR_INSTALACION = 2
-CUSTODIA_MILITARES_POR_INSTALACION = 3
 
 # ---------------------------------------------------------------------------
 # EL RIESGO DE INFRAESTRUCTURA — se acumula callado, se cobra en el debriefing
@@ -182,9 +203,26 @@ DELTA_INTENSIDAD = {
     "acuerdo_incumplido": 6.0,
     "escolta_atacada": 7.0,
 }
+
+# LOS QUE BAJAN LA INTENSIDAD, Y DECAEN IGUAL QUE LOS QUE LA SUBEN.
+#
+# Estaban exentos, con este argumento escrito: «un acuerdo verificable no vale
+# menos por ser el segundo». Suena bien y era el agujero central del motor.
+# Mientras los eventos malos se amortiguaban y los buenos no, **repetir la misma
+# buena noticia era un sumidero infinito de intensidad**: seis sesiones de mesa
+# nacional en una jornada bajaban la presión de 61 a 36, y en cinco jornadas la
+# dejaban en cero con las cuatro reservas al techo.
+#
+# El argumento de la exención tampoco se sostiene fuera del motor: la sexta
+# sesión de la mesa nacional en un mismo día NO desinfla la calle como la
+# primera, exactamente igual que el sexto muerto no la enciende como el primero.
+# Es la misma saturación de atención, y va en las dos direcciones.
+#
+# `turno_sin_incidentes` se retiró de la tabla: no lo registraba nadie —era una
+# huérfana escondida entre claves vivas— y lo que decía que hacía ya lo hace
+# `TASA_DECAIMIENTO_PROPORCIONAL`, que es una sola regla en vez de dos.
 DELTA_INTENSIDAD_NEGATIVO = {
     "acuerdo_verificable": -8.0,
-    "turno_sin_incidentes": -2.0,
     "apertura_concertada": -4.0,
     "contraprestacion_tramitada": -6.0,
     "denuncia_desmentida": -3.0,
@@ -234,6 +272,57 @@ P_DESGASTE_POR_TURNO = 0.20
 DESGASTE_POR_ESQUEMA_HUMANITARIO = 0.12
 
 # ---------------------------------------------------------------------------
+# LO QUE ESTABA ESCRITO A MANO DENTRO DE LAS ACCIONES
+# ---------------------------------------------------------------------------
+#
+# Nueve umbrales y factores vivían dentro de la acción que los usaba, y dos de
+# ellos estaban COPIADOS en varios roles a la vez. El peor era el de la
+# fragilidad: la misma regla de diseño escrita tres veces —Interior, Alcalde y
+# Agricultura—, de modo que cambiarla exigía acordarse de las tres y nada
+# avisaba si se cambiaba en dos.
+#
+# Las tres mesas siguen siendo tres acciones distintas con su jurisdicción y su
+# contraparte. Lo que comparten ahora es el número, que es una regla del mundo y
+# no una capacidad de rol.
+
+# Lo que queda del caudal cuando el acuerdo sale frágil: quien firmó no manda
+# sobre quien sostiene el cierre. Lo leen las tres mesas.
+CAUDAL_RESTANTE_ACUERDO_FRAGIL = 0.40
+
+# Vocería mínima para que haya con quién acordar un paso o una mesa técnica.
+# Por debajo de esto no manda nadie reconocible. La leen Transporte (pasos
+# seguros) y Agricultura (mesa técnica rural).
+VOCERIA_MINIMA_PARA_ACORDAR = 0.25
+
+# Por encima de esto, la vocería del punto responde al Comité del Paro — y si el
+# Comité suspende, la mesa local del Interior en ese punto se cae con él.
+VOCERIA_QUE_RESPONDE_AL_COMITE = 0.50
+
+# Caudal por debajo del cual anunciar un corredor como abierto se desmiente
+# solo: una docena de camiones presentada como normalización.
+CAUDAL_MINIMO_PARA_ANUNCIAR = 0.30
+
+# Cuánto abre una ventana de despacho concertada, sobre el control de vocería.
+# No abre el punto: abre una ventana.
+CAUDAL_VENTANA_PASO_SEGURO = 0.25
+
+# Cuánto baja el apoyo al cierre cada instrumento que no es el esquema
+# humanitario municipal (0,12, más arriba). Los tres son deliberadamente
+# menores: llegan al productor o a la opinión, no al barrio que sostiene el punto.
+DESGASTE_POR_CORREDOR_HUMANITARIO = 0.06   # la misión médica se vuelve línea roja
+DESGASTE_POR_BALANCE_PUBLICADO = 0.04      # circula por el país entero
+
+# Días de autonomía que repone una caravana escoltada, por clase de prioridad
+# del corredor. Menos que el acopio concentrado (ACOPIO_CONCENTRADO, 1,1): la
+# carga va dispersa.
+REPOSICION_POR_CARAVANA = 0.6
+
+# Cuánto ceden los precios. El acopio concentrado descarga mucha comida de golpe
+# en la región; los alivios sectoriales solo sostienen al productor.
+ALIVIO_PRECIOS_POR_ACOPIO = 0.08
+ALIVIO_PRECIOS_POR_INSTRUMENTOS = 0.04
+
+# ---------------------------------------------------------------------------
 # RESERVAS SISTÉMICAS
 # ---------------------------------------------------------------------------
 #
@@ -257,25 +346,106 @@ UMBRALES = {
     "cohesion_contradicciones": 35.0,
 }
 
+# ---------------------------------------------------------------------------
+# LA ESCALA DE GRAVEDAD — seis peldaños, y es lo único que se calibra
+# ---------------------------------------------------------------------------
+#
+# ANTES HABÍA DOCE MAGNITUDES REPARTIDAS POR DOS ARCHIVOS. Veintinueve costos
+# tenían nombre y vivían aquí; otros veintidós estaban escritos a mano dentro de
+# la acción que los cobraba, en `actions.py`. Entre los dos sistemas se usaban
+# **todos los enteros del 1 al 12**, como si cada uno significara algo distinto
+# del de al lado — y nadie podía defender por qué un hecho costaba 7 y no 6,
+# porque ninguno de estos coeficientes está medido.
+#
+# Ahora una acción no elige una cifra: elige una GRAVEDAD. Calibrar deja de ser
+# mover cincuenta y seis números sueltos y pasa a ser mover seis peldaños.
+#
+#     Un número se optimiza. Un peldaño se defiende.
+#
+# La misma regla que el tablero aplica al territorio (`BANDAS_*`), aplicada al
+# precio de las decisiones.
+#
+# LOS SEIS VALORES SON UNA CONVENCIÓN DECLARADA, como todo lo demás en este
+# archivo. Salen de agrupar lo que ya se usaba —nearest rung, empates hacia
+# arriba— y no de una medición.
+# LOS TRES PELDAÑOS ALTOS SON LOS QUE YA HABÍA, y no es casualidad: son los que
+# sostienen comportamiento documentado, así que la escala se eligió para caer
+# encima de ellos y no al revés.
+#
+#     alto   10  el acuerdo incumplido · marca el acantilado de la mesa
+#     grave  12  operar con el Comité sentado · 45 → 33 → 21 en dos operaciones
+#     maximo 22  firmar la asistencia sin delimitar, y nada más
+#
+# Redondear cualquiera de los tres movía estrategias enteras al otro lado del
+# umbral de credibilidad 30, donde los acuerdos se caen por tirada — y eso hacía
+# BAILAR las muertes con la semilla, que es justo lo que `PENDIENTES.md` declara
+# que nunca debe pasar.
+GRAVEDAD = {
+    "minimo":   2.0,    # se nota en el acta y no en la calle
+    "leve":     3.0,
+    "moderado": 5.0,
+    "serio":    8.0,
+    "alto":    10.0,
+    "grave":   12.0,
+    "maximo":  22.0,    # un solo caso: firmar la asistencia sin delimitar
+}
+
+
+def _costo(**peldanos: str) -> dict[str, float]:
+    """
+    Traduce peldaños a deltas de reserva. `-` delante = cuesta; sin nada, repone.
+
+        _costo(legitimidad="-serio", respaldo_internacional="-serio")
+
+    Devuelve flotantes, de modo que `Reservas.aplicar` no cambia y ningún módulo
+    de fuera se entera de que la escala existe.
+    """
+    fuera = {p.lstrip("-") for p in peldanos.values()} - set(GRAVEDAD)
+    if fuera:
+        raise KeyError(f"peldaño de gravedad desconocido: {sorted(fuera)}")
+    return {
+        reserva: (-1.0 if peldano.startswith("-") else 1.0) * GRAVEDAD[peldano.lstrip("-")]
+        for reserva, peldano in peldanos.items()
+    }
+
+
+# El multiplicador del rédito de una constitutiva adoptada DESPUÉS de un
+# incidente. No es un costo de reserva —es una escala— y por eso ya no vive
+# dentro de `COSTO_RESERVAS`, donde obligaba a todo el que recorriera el
+# diccionario a acordarse de que una de las entradas no era un diccionario.
+#
+# NO LO LEE NADIE, y hasta ahora eso era invisible: escondido entre veintinueve
+# diccionarios, ninguna prueba podía distinguirlo de un costo vivo. Sacarlo a la
+# luz lo convierte en una huérfana DECLARADA, que es lo que la prueba
+# `test_ninguna_constante_de_parameters_queda_sin_leer` existe para exigir.
+#
+# Lo que habría que decidir: que constituirse tarde rinda menos que constituirse
+# a tiempo es una idea del diseño original que nunca se conectó. O se conecta
+# —y entonces adoptar el registro escrito tras el primer incidente vale la mitad—
+# o se retira. Mientras tanto, no gobierna nada.
+MULTIPLICADOR_CONSTITUTIVA_REACTIVA = 0.5
+
 COSTO_RESERVAS = {
-    "incidente_con_victima": {"legitimidad": -9.0, "respaldo_internacional": -7.0},
-    "imagen_viral": {"legitimidad": -6.0, "respaldo_internacional": -5.0},
-    "cifra_desmentida": {"legitimidad": -4.0},
-    "operacion_dia_de_mesa": {"credibilidad_mesa": -12.0},
-    "operacion_no_informada": {"cohesion_mesa": -8.0},
-    "corredor_humanitario_negado": {"respaldo_internacional": -12.0, "legitimidad": -5.0},
-    "acuerdo_verificable_cumplido": {
-        "legitimidad": 5.0, "credibilidad_mesa": 8.0, "cohesion_mesa": 3.0,
-    },
-    "acuerdo_incumplido": {"credibilidad_mesa": -10.0, "legitimidad": -3.0},
-    "apertura_concertada": {"legitimidad": 2.0},
-    "sin_registro_escrito": {"cohesion_mesa": -8.0},
-    "sin_protocolo_voceria": {"cohesion_mesa": -5.0},
-    "sin_criterio_priorizacion": {"cohesion_mesa": -3.0},
-    "turno_sin_decision": {"legitimidad": -3.0},
-    "decision_con_responsable": {"cohesion_mesa": 2.0},
-    "escolta_lograda": {"legitimidad": 3.0},
-    "escolta_atacada": {"legitimidad": -6.0, "respaldo_internacional": -4.0},
+    "incidente_con_victima": _costo(legitimidad="-serio", respaldo_internacional="-serio"),
+    "imagen_viral": _costo(legitimidad="-moderado", respaldo_internacional="-moderado"),
+    "cifra_desmentida": _costo(legitimidad="-leve"),
+    "operacion_dia_de_mesa": _costo(credibilidad_mesa="-grave"),
+    "operacion_no_informada": _costo(cohesion_mesa="-serio"),
+    "corredor_humanitario_negado": _costo(
+        respaldo_internacional="-grave", legitimidad="-moderado"),
+    "acuerdo_verificable_cumplido": _costo(
+        legitimidad="moderado", credibilidad_mesa="serio", cohesion_mesa="leve"),
+    # `alto` y no `grave`: es el peldaño que decide si la mesa cruza el umbral de
+    # credibilidad 30, y moverlo cambia qué estrategias sobreviven.
+    "acuerdo_incumplido": _costo(credibilidad_mesa="-alto", legitimidad="-leve"),
+    "apertura_concertada": _costo(legitimidad="minimo"),
+    "sin_registro_escrito": _costo(cohesion_mesa="-serio"),
+    "sin_protocolo_voceria": _costo(cohesion_mesa="-moderado"),
+    "sin_criterio_priorizacion": _costo(cohesion_mesa="-leve"),
+    "turno_sin_decision": _costo(legitimidad="-leve"),
+    "decision_con_responsable": _costo(cohesion_mesa="minimo"),
+    "escolta_lograda": _costo(legitimidad="leve"),
+    "escolta_atacada": _costo(legitimidad="-moderado", respaldo_internacional="-leve"),
     # LAS CUATRO SALIDAS DE VERIFICAR UNA DENUNCIA, y son cuatro y no dos desde
     # que el que verifica es el sector del que se denuncia. Lo que separa cada
     # par es si hay protocolo común de verificación adoptado: sin él, la mesa
@@ -285,10 +455,12 @@ COSTO_RESERVAS = {
     # que el estallido; fuera de él no ahorra nada. Y desmentir sin protocolo no
     # da credibilidad —se lee como una absolución— aunque sigue evitando que se
     # desplace fuerza a algo que no pasó, que es lo que conserva la legitimidad.
-    "denuncia_veraz_confirmada": {"respaldo_internacional": -6.0, "legitimidad": -3.0},
-    "denuncia_veraz_sin_protocolo": {"respaldo_internacional": -11.0, "legitimidad": -7.0},
-    "denuncia_falsa_desmentida": {"legitimidad": 3.0, "credibilidad_mesa": 2.0},
-    "denuncia_falsa_sin_protocolo": {"legitimidad": 1.0},
+    "denuncia_veraz_confirmada": _costo(
+        respaldo_internacional="-moderado", legitimidad="-leve"),
+    "denuncia_veraz_sin_protocolo": _costo(
+        respaldo_internacional="-grave", legitimidad="-serio"),
+    "denuncia_falsa_desmentida": _costo(legitimidad="leve", credibilidad_mesa="minimo"),
+    "denuncia_falsa_sin_protocolo": _costo(legitimidad="minimo"),
     # EL PRECIO DE ATARSE LAS MANOS UNO MISMO. El estandar completo lo pedia un
     # tercero y lo concedia el Gobierno; sin ese rol lo adopta el propio sector,
     # y encender los tres mitigadores el primer dia sin costo desequilibraria el
@@ -296,25 +468,83 @@ COSTO_RESERVAS = {
     # que se paga cuando quien manda la fuerza se limita delante de la mesa.
     #
     # SIN CALIBRAR: los dos numeros son provisionales y salen de C5.
-    "estandar_autoimpuesto": {"respaldo_internacional": 8.0, "cohesion_mesa": -6.0},
-    "constitutiva_reactiva": 0.5,   # multiplicador del rédito si se adopta tras incidente
+    "estandar_autoimpuesto": _costo(respaldo_internacional="serio", cohesion_mesa="-moderado"),
     # --- el frente agroalimentario ---
     # Reordenar un criterio de priorización que la mesa ya adoptó no es lo mismo
     # que llegar antes de que exista: en el primer caso hay un ministro que ve
     # deshacerse su propio orden delante de todos.
-    "clase_alimentaria_sobre_criterio": {"cohesion_mesa": -5.0},
-    "clase_alimentaria": {"cohesion_mesa": -2.0},
+    "clase_alimentaria_sobre_criterio": _costo(cohesion_mesa="-moderado"),
+    "clase_alimentaria": _costo(cohesion_mesa="-minimo"),
     # La mesa técnica rural es un segundo canal. Cuando el Interior tiene una
     # vocería única fijada o un acuerdo nacional vivo, abrirlo se lo quita.
-    "canal_rural_paralelo": {"cohesion_mesa": -4.0},
+    "canal_rural_paralelo": _costo(cohesion_mesa="-leve"),
     # Publicar la pérdida traslada el costo del cierre a la población: gana
     # legitimidad y le entrega a quien pide mano dura su mejor argumento.
-    "balance_perdida_publicado": {"legitimidad": 2.0, "cohesion_mesa": -3.0},
-    "cifra_sectorial_disputada": {"credibilidad_mesa": -5.0},
-    "cifra_sectorial_verificada": {"respaldo_internacional": 2.0},
+    "balance_perdida_publicado": _costo(legitimidad="minimo", cohesion_mesa="-leve"),
+    "cifra_sectorial_disputada": _costo(credibilidad_mesa="-moderado"),
+    "cifra_sectorial_verificada": _costo(respaldo_internacional="minimo"),
     # Un esquema de cupos produce ganadores y perdedores entre productores, y
     # hace rendir la escolta que ya está puesta.
-    "acopio_por_cupos": {"legitimidad": -2.0, "cohesion_mesa": 2.0},
+    "acopio_por_cupos": _costo(legitimidad="-minimo", cohesion_mesa="minimo"),
+
+    # -----------------------------------------------------------------------
+    # LOS VEINTIDÓS QUE ESTABAN ESCRITOS DENTRO DE UNA ACCIÓN
+    # -----------------------------------------------------------------------
+    #
+    # Hasta ahora `actions.py` llamaba a `reservas.aplicar({...})` con el
+    # diccionario escrito ahí mismo, veintidós veces. Eso incumplía la regla de
+    # la cabecera de este archivo —«si un número gobierna el motor, vive aquí y
+    # en ningún otro sitio»— y hacía imposible contestar «¿cuánto cuesta una
+    # decisión seria?» sin abrir dos archivos y leer cincuenta y seis sitios.
+    #
+    # Ninguna acción cobra sobre una reserva distinta de la que cobraba, ni
+    # cambia de signo, ni deja de cobrar: solo se redondeó la magnitud al
+    # peldaño más cercano.
+
+    # --- Presidente ---
+    "lineas_rojas_sin_margen": _costo(credibilidad_mesa="-serio"),
+    "asistencia_militar_firmada": _costo(credibilidad_mesa="-grave"),
+    "asistencia_militar_delimitada": _costo(
+        respaldo_internacional="-serio", legitimidad="-moderado"),
+    # El único «máximo» del repertorio, y es deliberado: entrega a la narrativa
+    # de represión su mejor argumento.
+    "asistencia_militar_sin_delimitar": _costo(
+        respaldo_internacional="-maximo", legitimidad="-grave"),
+    "alcaldes_con_prioridad": _costo(cohesion_mesa="leve", legitimidad="minimo"),
+    "alcaldes_sin_prioridad": _costo(cohesion_mesa="minimo"),
+    "presidente_acompana_mesa": _costo(credibilidad_mesa="moderado", legitimidad="leve"),
+    "presidente_acompana_operacion": _costo(legitimidad="-minimo", cohesion_mesa="leve"),
+    "presidente_sin_acompanar": _costo(legitimidad="minimo"),
+
+    # --- Interior ---
+    "contraprestacion_tramitada": _costo(credibilidad_mesa="moderado", legitimidad="leve"),
+    "contraprestacion_fallida": _costo(credibilidad_mesa="-serio", legitimidad="-leve"),
+    "corredor_humanitario_requerido": _costo(respaldo_internacional="moderado"),
+
+    # --- Alcalde ---
+    "parte_municipal_en_protocolo": _costo(legitimidad="minimo", respaldo_internacional="leve"),
+
+    # --- Defensa ---
+    "operacion_sin_concertar_epicentro": _costo(
+        legitimidad="-serio", cohesion_mesa="-leve"),
+    "evidencia_con_solidez": _costo(cohesion_mesa="leve", credibilidad_mesa="minimo"),
+    "evidencia_sin_solidez": _costo(legitimidad="-leve", credibilidad_mesa="-moderado"),
+
+    # --- Policía ---
+    "esmad_concentrado": _costo(cohesion_mesa="-leve"),
+
+    # --- Transporte ---
+    "gremios_compensados": _costo(legitimidad="minimo", credibilidad_mesa="-leve"),
+    "caravana_organizada": _costo(legitimidad="leve"),
+    "paso_seguro_contra_lineas_rojas": _costo(cohesion_mesa="-leve"),
+    "apertura_anunciada_sin_sostener": _costo(legitimidad="-leve"),
+    "apertura_anunciada_verificada": _costo(legitimidad="leve", credibilidad_mesa="minimo"),
+
+    # --- Agricultura ---
+    # Se aplica con el factor de decaimiento del paquete: el segundo alivio en
+    # la misma región rinde la mitad que el primero.
+    "instrumentos_sectoriales": _costo(legitimidad="leve"),
+    "calendario_entregado": _costo(cohesion_mesa="leve"),
 }
 
 # La cohesión se cobra SOLO en turnos de decisión. Cobrarla también de noche y en
@@ -439,10 +669,21 @@ SESGO_FUENTE = {
 EQUIPOS_TERRENO_TOTALES = 3
 
 # control_voceria: Interior lo sobreestima; Cali lo estima bien en su jurisdicción
+#
+# LA CLAVE DECÍA `defensoria` Y NADIE LA LEÍA. Quedó del rol que se retiró, y
+# `information._rol_de()` devuelve `defensa` para la inteligencia y para los
+# equipos de terreno — de modo que el `.get()` no encontraba nada y devolvía
+# 0,0. Consecuencia medida, y silenciosa: **las dos fuentes del Ministerio de
+# Defensa eran las únicas del ejercicio que leían la vocería exactamente bien**,
+# sin que nada en el diseño dijera que debían.
+#
+# No hubo excepción, ni traza, ni error: el motor entregaba un número
+# perfectamente plausible. Ahora la clave se llama como el rol que la usa, y
+# `estimar_nodo` falla ruidosamente si algún día vuelve a faltar una.
 SESGO_CONTROL_VOCERIA = {
     "interior": 0.20,
     "alcalde_cali": 0.03,
-    "defensoria": 0.05,
+    "defensa": 0.05,
     # En el campo sí sabe quién manda: es su interlocución de años y casi no se
     # equivoca. Lo que no ve es QUIÉN ESTÁ DETRÁS de quien manda, y eso es el
     # otro sesgo, el de arriba.
@@ -464,6 +705,12 @@ TURNOS_DENUNCIA_SIN_VERIFICAR_ESTALLA = 2
 # que la sala tiene que cumplir en el turno siguiente o pagarlo.
 TURNOS_PARA_CUMPLIR_ACUERDO = 2
 CAUDAL_ACUERDO_NACIONAL = 0.35        # cuánto abre un acuerdo nacional en cada punto pactado
+
+# CONTRA QUÉ VOCERÍA SE MIDE ESE CAUDAL. Un punto con esta vocería recibe el
+# caudal íntegro; por encima abre más y por debajo, menos. Estaba escrito a mano
+# —un `/ 0.6` suelto en `ConvocarMesaNacional`— y era el único número del motor
+# que gobernaba comportamiento fuera de este archivo.
+VOCERIA_DE_REFERENCIA_ACUERDO = 0.6
 NODOS_POR_ACUERDO_NACIONAL = 3
 
 # Contraprestación legislativa: baja la intensidad, y si no se tramita, cuesta

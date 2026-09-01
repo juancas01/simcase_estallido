@@ -108,6 +108,20 @@ def step(estado: Estado, horas: float) -> dict:
         for attr in ("dias_autonomia_combustible", "dias_autonomia_alimentos"):
             setattr(region, attr, max(-1.0, getattr(region, attr)))
 
+        # EL TECHO, que no existía. Sin él los contadores solo tenían suelo: una
+        # región con dos corredores abiertos ganaba cuatro días netos por
+        # jornada y terminaba el ejercicio con veintiún días de oxígeno, con el
+        # semáforo clavado en verde y el reloj de la crisis apagado. El tope es
+        # el estado inicial (`Region.techo_autonomia`): abrir corredores sirve
+        # para dejar de perder y recuperar lo perdido, no para acumular reserva
+        # estratégica en cinco días de paro.
+        for clase, attr in (("combustible", "dias_autonomia_combustible"),
+                            ("alimentos", "dias_autonomia_alimentos"),
+                            ("oxigeno", "dias_autonomia_oxigeno")):
+            techo = region.techo_autonomia.get(clase)
+            if techo is not None:
+                setattr(region, attr, min(techo, getattr(region, attr)))
+
         # Por debajo de cero, el oxígeno no produce escasez: produce un contador
         # que ninguna deliberación discute.
         if region.dias_autonomia_oxigeno < 0:

@@ -1,5 +1,5 @@
 """
-mobilization.py — El adversario reflexivo (`docs/COMO_FUNCIONA.md` §4).
+mobilization.py — El adversario reflexivo.
 
 Es el motor que define el caso. Si solo se implementa uno, es este.
 
@@ -42,18 +42,23 @@ def registrar_evento(estado: Estado, evento: str, region_id: str | None = None) 
     """
     Aplica el efecto de un evento sobre la intensidad. Devuelve el delta aplicado.
 
-    Los eventos positivos (que suben la movilización) llevan rendimientos
-    decrecientes; los negativos no, porque un acuerdo verificable no vale menos
-    por ser el segundo.
+    **TODOS decaen, y antes solo decaían los que suben.** La exención de los
+    negativos estaba razonada así: «un acuerdo verificable no vale menos por ser
+    el segundo». Era el agujero central del motor — repetir la misma buena
+    noticia bajaba la intensidad sin límite, y una sola acción repetida seis
+    veces por jornada ganaba el ejercicio entero.
+
+    Con la regla simétrica hay una sola frase que aprender —la calle se satura
+    de lo que sea que se repita— y este módulo pierde una rama.
     """
     if evento in P.DELTA_INTENSIDAD:
-        delta = _delta_con_rendimientos_decrecientes(
-            estado, evento, P.DELTA_INTENSIDAD[evento]
-        )
+        base = P.DELTA_INTENSIDAD[evento]
     elif evento in P.DELTA_INTENSIDAD_NEGATIVO:
-        delta = P.DELTA_INTENSIDAD_NEGATIVO[evento]
+        base = P.DELTA_INTENSIDAD_NEGATIVO[evento]
     else:
         raise KeyError(f"evento de movilización desconocido: {evento}")
+
+    delta = _delta_con_rendimientos_decrecientes(estado, evento, base)
 
     estado.intensidad_nacional = _clamp(estado.intensidad_nacional + delta)
 
@@ -187,6 +192,23 @@ def _generar_nodo(estado: Estado, region_id: str, rng: random.Random) -> Nodo | 
     if nodo_id is None:
         return None
 
+    # LAS TRES PROPORCIONES SE SORTEAN Y SOLO SE GUARDAN DOS.
+    #
+    # `Composicion` almacena la protesta legítima y la estructura organizada, y
+    # deriva el vandalismo como residuo — pero **sortearlo sigue haciendo falta**,
+    # porque es lo que fija el peso relativo de las otras dos al repartir el
+    # total. Sortear solo dos daría otra distribución: la protesta legítima
+    # saldría sistemáticamente más alta, y como es la que multiplica el costo de
+    # operar sobre población civil, encarecería en silencio cada operación sobre
+    # un cierre espontáneo.
+    #
+    # Un cierre que aparece a mitad de partida es sobre todo gente que salió esa
+    # tarde: mucha protesta y casi ninguna estructura.
+    protesta = rng.uniform(0.6, 0.9)
+    vandalismo = rng.uniform(0.05, 0.25)
+    organizada = rng.uniform(0.0, 0.15)
+    total = protesta + vandalismo + organizada
+
     return Nodo(
         nodo_id=nodo_id,
         # «Cierre espontáneo 006» son veintiún caracteres y en el mapa se parte
@@ -203,9 +225,7 @@ def _generar_nodo(estado: Estado, region_id: str, rng: random.Random) -> Nodo | 
         masa_presente=150,
         apoyo_local=rng.uniform(0.5, 0.85),
         control_voceria=rng.uniform(0.1, 0.4),   # los nuevos no tienen vocería
-        composicion_real=Composicion(
-            rng.uniform(0.6, 0.9), rng.uniform(0.05, 0.25), rng.uniform(0.0, 0.15)
-        ).normalizada(),
+        composicion_real=Composicion(protesta / total, organizada / total),
         # Y CON SITIO EN EL MAPA. Sin posición aterrizaban todos en el (0,0),
         # amontonados en una esquina del esquema y encima de la línea de otro
         # corredor: un punto nuevo que no se ve no cuenta nada.

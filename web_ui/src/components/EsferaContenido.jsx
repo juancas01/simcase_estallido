@@ -94,42 +94,22 @@ export default function EsferaContenido({ datos }) {
         )}
       </div>
 
-      <div className="tarjeta">
-        <h2>Posiciones</h2>
-        <table>
-          <tbody>
-            <tr>
-              <td>Comité Nacional del Paro</td>
-              <td style={{ textAlign: 'right' }}>
-                <span className={`chip chip-${datos.comite_disponible ? 'bien' : 'mal'}`}>
-                  {datos.comite_disponible ? 'Disponible' : 'Suspendida'}
-                </span>
-              </td>
-            </tr>
-            <tr>
-              <td>Gremios camioneros</td>
-              <td style={{ textAlign: 'right' }}>
-                <span className={`chip chip-${
-                  datos.posicion_gremios === 'fuera' ? 'bien'
-                    : datos.posicion_gremios === 'evaluando' ? 'medio' : 'mal'}`}>
-                  {rotulo(POSICION_GREMIOS, datos.posicion_gremios)}
-                </span>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                Respaldo internacional
-                <Ayuda etiqueta="Definición de respaldo internacional">
-                  {D.respaldo_internacional}
-                </Ayuda>
-              </td>
-              <td className="num" style={{ textAlign: 'right' }}>
-                {Math.round(datos.respaldo_internacional)}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      {/* AQUÍ HABÍA UNA TABLA DE «POSICIONES» — Comité, gremios y respaldo
+          internacional— y se retiró por dos razones a la vez.
+
+          La primera es que sus tres filas están ahora en la franja de estado,
+          a la vista de toda la sala y sin depender de que nadie despliegue
+          esta barra. Un dato en dos sitios de la MISMA pantalla no es
+          redundancia útil: es la duda de si son el mismo dato.
+
+          La segunda es más grave. El respaldo internacional salía aquí como
+          una cifra cruda de cero a cien, a diez centímetros de la franja donde
+          esa misma magnitud sale en palabra. El tablero entero está construido
+          sobre que un nivel se interpreta y un número se optimiza, y esta
+          tabla era la única que lo desmentía.
+
+          Y de fondo: esta barra es para LO QUE SE DICE. Dónde está sentado el
+          Comité es un hecho de estado, no una posición pública. */}
     </>
   )
 }

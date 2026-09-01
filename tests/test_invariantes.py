@@ -28,6 +28,7 @@ from src.engine.actions import (
     FijarPrioridadCombustible, ConvocarMesaNacional,
     InstalarMesaConVoceros, DisponerESMAD, OfrecerContraprestacion,
     DesplazarseAlEpicentro, PresentarEvidenciaInteligencia,
+    OrganizarCaravana, RequerirCorredoresHumanitarios,
 )
 
 
@@ -95,10 +96,12 @@ def test_operar_sobre_protesta_legitima_cuesta_mas(estado):
     PRIMERA vía. Un punto que es 90 % protesta legítima cuesta casi el doble que
     uno donde la mitad es otra cosa: es fuerza sobre población civil.
     """
+    # Dos números: protesta legítima y estructura organizada. El vandalismo
+    # oportunista es el residuo y ningún cálculo lo consulta.
     civil = estado.nodos["N010"]
-    civil.composicion_real = Composicion(0.95, 0.04, 0.01)
+    civil.composicion_real = Composicion(0.95, 0.01)
     mixto = estado.nodos["N003"]
-    mixto.composicion_real = Composicion(0.50, 0.20, 0.30)
+    mixto.composicion_real = Composicion(0.50, 0.30)
 
     assert force.multiplicador_costo_civil(civil) > force.multiplicador_costo_civil(mixto)
     assert force.multiplicador_costo_civil(mixto) == pytest.approx(1.0)
@@ -113,7 +116,7 @@ def test_concertar_donde_hay_estructura_produce_acuerdos_que_se_rompen(estado):
     fragiles = 0
     for _ in range(200):
         nodo = estado.nodos["N003"]
-        nodo.composicion_real = Composicion(0.20, 0.10, 0.70)
+        nodo.composicion_real = Composicion(0.20, 0.70)
         nodo.turnos_en_negociacion = 1
         r = aperture.avanzar_concertacion(nodo, 1, rng)
         fragiles += bool(r and r.fragil)
@@ -122,7 +125,7 @@ def test_concertar_donde_hay_estructura_produce_acuerdos_que_se_rompen(estado):
     limpios = 0
     for _ in range(200):
         nodo = estado.nodos["N010"]
-        nodo.composicion_real = Composicion(0.97, 0.02, 0.01)
+        nodo.composicion_real = Composicion(0.97, 0.01)
         nodo.turnos_en_negociacion = 1
         r = aperture.avanzar_concertacion(nodo, 1, rng)
         limpios += bool(r and not r.fragil)
@@ -141,7 +144,7 @@ def test_la_mezcla_real_cambia_el_resultado_de_la_corrida():
         e = cargar_estado()
         if mutar:
             for n in e.nodos.values():
-                n.composicion_real = Composicion(0.0, 0.0, 1.0)
+                n.composicion_real = Composicion(0.0, 1.0)
         m = MotorCrisis(e, semilla=P.SEMILLA_POR_DEFECTO)
         for t in range(1, 4):
             for nodo in sorted(e.nodos.values(), key=lambda x: -x.control_voceria)[:3]:
@@ -243,7 +246,9 @@ def test_la_probabilidad_de_incidente_nunca_excede_uno(estado):
 def test_los_mitigadores_reducen_el_riesgo(estado):
     nodo = estado.nodos["N003"]
     sin = force.evaluar_riesgo(estado, nodo, "esmad").p_incidente
-    for b in ("reglas_escritas", "identificacion_agentes", "registro_av"):
+    # Dos banderas y eran tres: `identificacion_agentes` vive dentro de
+    # `reglas_escritas`, cuyo multiplicador absorbió el suyo.
+    for b in ("reglas_escritas", "registro_av"):
         estado.banderas.activar(b, 1)
     con = force.evaluar_riesgo(
         estado, nodo, "esmad", concertado_con_alcaldia=True
@@ -260,7 +265,9 @@ def test_el_estandar_no_rescata_a_quien_opera_sin_cuidado(estado):
     nodo.dureza = 0.95
     nodo.masa_presente = 2000
     estado.franja = "noche"
-    for b in ("reglas_escritas", "identificacion_agentes", "registro_av"):
+    # Dos banderas y eran tres: `identificacion_agentes` vive dentro de
+    # `reglas_escritas`, cuyo multiplicador absorbió el suyo.
+    for b in ("reglas_escritas", "registro_av"):
         estado.banderas.activar(b, 1)
     ev = force.evaluar_riesgo(
         estado, nodo, "militar", concertado_con_alcaldia=True
@@ -306,7 +313,12 @@ def test_acompanar_una_operacion_ya_no_gasta_ni_descuenta(motor):
     campos = {f.name for f in dataclasses.fields(OperarNodo)}
     assert "dupla_presente" not in campos
     assert "dupla_presente" not in P.MITIGADORES
-    assert len(P.MITIGADORES) == 5
+    # Cuatro, y fueron seis. El sexto era el acompañamiento —se fue con el
+    # tercero que lo justificaba— y el quinto era `identificacion_agentes`, que
+    # nunca se encendía sola: vive dentro de `reglas_escritas`, cuyo factor
+    # absorbió el suyo. Lo que la prueba vigila es que el acompañamiento no
+    # vuelva por la puerta de atrás.
+    assert len(P.MITIGADORES) == 4
 
     e = motor.estado
     antes = e.equipos_disponibles
@@ -482,13 +494,67 @@ def test_el_alcalde_no_puede_pactar_fuera_de_su_jurisdiccion(estado):
 
 
 def test_sin_escolta_no_hay_caravana(estado):
-    """Es la condición material de todo el frente logístico."""
+    """
+    Es la condición material de todo el frente logístico.
+
+    Y es un AVISO y no un rechazo, porque los escuadrones pueden quedar libres
+    con una orden anterior del mismo plan — concentrar el ESMAD, redesplegar.
+    Quién puede lograrlo se dice igual: es lo que devuelve la conversación a la
+    mesa. El requisito duro vive en `force.escoltar`, al ejecutar.
+    """
     for u in estado.unidades:
         if u.tipo == "esmad":
             u.asignacion = "contencion"
     v = Escoltar(corredor_id="C-HOS").validar(estado)
-    assert not v.ok
+    assert v.ok and v.parcial
+    assert "escuadrones" in v.motivo
     assert v.habilitada_por
+
+
+def test_la_escolta_y_lo_que_la_necesita_van_en_el_mismo_plan(motor):
+    """
+    **La regresión de la ventana escoltada.** Hasta aquí la caravana y el acopio
+    exigían la escolta AL ENCOLAR, y la escolta solo existe AL EJECUTAR: la
+    asigna `Escoltar` dentro del plan y la libera `paso_fatiga` al cerrar cada
+    paso. En el momento de encolar nunca había una — las dos acciones quedaban
+    fuera de la cola SIEMPRE, aunque la escolta viniera una línea antes en el
+    mismo plan. Eran inalcanzables, y la estrategia agroalimentaria de
+    referencia llevó su acopio en el bolsillo desde el día en que se escribió.
+
+    Lo que esta prueba clava: **el orden del dictado es el orden de ejecución**,
+    y una acción puede apoyarse en lo que la anterior del mismo plan dejó.
+    """
+    e = motor.estado
+    corredor = next(c for c in e.corredores.values()
+                    if "humanitario" in c.clases_prioridad)
+    for nid in corredor.nodos:
+        n = e.nodos.get(nid)
+        if n is not None:
+            n.caudal = 0.9
+            n.modo_apertura = "desgaste"
+
+    assert motor.encolar(Escoltar(corredor_id=corredor.corredor_id,
+                                  clase_carga="humanitario")).ok
+    v = motor.encolar(actions.OrganizarCaravana(corredor_id=corredor.corredor_id))
+    assert v.ok, v.motivo            # se encola CON AVISO, no rechazada
+
+    r = motor.paso(franja="dia")
+    por_nombre = dict(r.resultados)
+    nombres_en_orden = [nombre for nombre, _ in r.resultados]
+    assert nombres_en_orden.index("Escoltar") < nombres_en_orden.index(
+        "OrganizarCaravana")
+    assert por_nombre["OrganizarCaravana"].ok          # ← la regresión
+    assert any(ev.get("tipo") == "caravana" for ev in r.eventos)
+
+    # Y al día siguiente, sin escolta en el plan, la caravana falla LIMPIO
+    # — y no tumba lo que venga con ella.
+    motor.encolar(actions.OrganizarCaravana(corredor_id=corredor.corredor_id))
+    motor.encolar(FijarReglasEmpleoSector())
+    r2 = motor.paso(franja="dia")
+    por_nombre2 = dict(r2.resultados)
+    assert not por_nombre2["OrganizarCaravana"].ok
+    assert "escolta" in por_nombre2["OrganizarCaravana"].mensaje.lower()
+    assert por_nombre2["FijarReglasEmpleoSector"].ok
 
 
 def test_una_accion_devuelve_quien_puede_habilitarla(estado):
@@ -895,6 +961,68 @@ def test_confirmar_la_denuncia_propia_sin_protocolo_cuesta_mas(estado):
 
     assert sin.reservas.respaldo_internacional < con.reservas.respaldo_internacional
     assert sin.reservas.legitimidad < con.reservas.legitimidad
+
+
+def test_las_dos_de_policia_dejan_de_ser_el_mismo_boton(estado):
+    """
+    **Un rol con dos botones para la misma luz, y ya no.**
+
+    `ClasificarParteOperacional` y `AdoptarProtocoloVerificacion` encendían las
+    DOS `protocolo_verificacion` — mismas bandera, rol y efecto, sin costo ni
+    validación que las distinguiera: la segunda que se pidiera no hacía nada.
+    Esto era distinto de las tres mesas, donde tres roles hacen algo parecido
+    desde sitios distintos. Aquí era un solo rol con el mismo botón dos veces.
+
+    La salida es la C, la que el propio caso sugiere: son dos cosas distintas
+    que estaban fundidas. Clasificar el parte es un acto UNILATERAL —la Policía
+    decide cómo publica lo suyo— y retira el costo de que su propia cifra se
+    dispute. Adoptar el protocolo único es un acto DE MESA —obliga a todos— y es
+    lo que `verificar_denuncia` exige para que la palabra del que verifica
+    cuente. Esta prueba clava el reparto: si alguien vuelve a hacer que una
+    encienda lo de la otra, el segundo botón reaparece.
+    """
+    import copy
+    import random as _r
+
+    e = copy.deepcopy(estado)
+
+    # Cada acción enciende SOLO la suya.
+    actions.ClasificarParteOperacional().ejecutar(e, _r.Random(0))
+    assert e.banderas.parte_clasificado
+    assert not e.banderas.protocolo_verificacion
+
+    e2 = copy.deepcopy(estado)
+    actions.AdoptarProtocoloVerificacion().ejecutar(e2, _r.Random(0))
+    assert e2.banderas.protocolo_verificacion
+    assert not e2.banderas.parte_clasificado
+
+    # El efecto de clasificar: la propia cifra disputada deja de costar.
+    sin = copy.deepcopy(estado)
+    con = copy.deepcopy(estado)
+    con.banderas.activar("parte_clasificado", 0)
+    legit_sin = sin.reservas.legitimidad
+    legit_con = con.reservas.legitimidad
+    information.costo_de_no_clasificar(sin)
+    information.costo_de_no_clasificar(con)
+    assert sin.reservas.legitimidad < legit_sin          # sin clasificar, cuesta
+    assert con.reservas.legitimidad == legit_con         # clasificado, no cuesta
+
+    # ...y clasificar NO compra el efecto del protocolo: la palabra del que
+    # verifica una denuncia sigue sin valer lo mismo.
+    veraz = next(d for d in estado.denuncias if d.veraz)
+    solo_parte = copy.deepcopy(estado)
+    solo_parte.banderas.activar("parte_clasificado", 0)
+    information.verificar_denuncia(solo_parte, veraz.denuncia_id)
+    con_protocolo = copy.deepcopy(estado)
+    con_protocolo.banderas.activar("protocolo_verificacion", 0)
+    information.verificar_denuncia(con_protocolo, veraz.denuncia_id)
+    assert (solo_parte.reservas.respaldo_internacional
+            < con_protocolo.reservas.respaldo_internacional)
+
+    # Y las dos decisiones son dos filas del cuadro del Presidente.
+    from src.engine.views import CONSTITUTIVAS
+    banderas_cuadro = {b for b, _, _ in CONSTITUTIVAS}
+    assert {"parte_clasificado", "protocolo_verificacion"} <= banderas_cuadro
 
 
 def test_el_estandar_completo_lo_adopta_ahora_el_propio_sector(motor):
@@ -1367,11 +1495,16 @@ def test_una_accion_trabada_dice_quien_la_destraba(estado):
     Es lo que empuja la conversación de vuelta a la mesa: quien lee «falta
     escolta · Director General de la Policía» sabe a quién pedírselo, y eso pasa
     en voz alta y no en un menú.
+
+    CONDICIONADA Y NO BLOQUEADA, porque la escolta se pide en el mismo plan que
+    la caravana: existe una orden —de otro rol— que la habilita hoy mismo. La
+    palabra que el semáforo elige importa: «bloqueada» dice que no hay nada que
+    hacer hoy, y aquí sí lo hay.
     """
     caravana = next(a for a in catalogo_por_rol(estado)["Transporte"]
                     if a["accion"] == "OrganizarCaravana")
     d = caravana["disponibilidad"]
-    assert d["estado"] == "bloqueada"
+    assert d["estado"] == "condicionada"
     assert "escolta" in d["requisito"].lower()
     assert any("Policía" in q for q in d["habilitada_por"])
 
@@ -1566,7 +1699,7 @@ def test_la_lectura_publica_no_deja_deducir_la_mezcla_real(estado):
     """
     antes = [territory.lectura_nodo(n) for n in estado.nodos.values()]
     for n in estado.nodos.values():
-        n.composicion_real = Composicion(0.05, 0.05, 0.90).normalizada()
+        n.composicion_real = Composicion(0.05, 0.90).normalizada()
     assert [territory.lectura_nodo(n) for n in estado.nodos.values()] == antes
 
 
@@ -1843,14 +1976,14 @@ def test_la_guia_viaja_con_el_catalogo_de_cada_rol(estado):
 
 def test_la_guia_que_se_reparte_esta_al_dia():
     """
-    **`docs/GUIA_DE_ACCIONES.md` se genera y no se escribe**, y esta prueba es
-    la que hace que eso signifique algo.
+    **La guía de acciones se genera y no se escribe**, y esta prueba es la que
+    hace que eso signifique algo.
 
-    Es el documento que se imprime y se pone delante de los participantes. Un
-    cuarto sitio con las treinta y cuatro acciones copiadas a mano es un cuarto
-    sitio que se desincroniza —y este se desincroniza en el peor momento, que es
-    cuando alguien pide en voz alta lo que dice el papel y la consola contesta
-    otra cosa.
+    Es el documento que se imprime y se pone delante de los participantes. El
+    archivo ya no vive en el repositorio —se genera cuando hace falta, con
+    `scripts/repertorio.py`— así que lo que se vigila es lo que siempre importó:
+    que el generador lea el catálogo del motor y que no quede ninguna acción
+    fuera. Y si alguien regeneró el archivo para una sesión, que coincida.
 
     Si falla, no hay nada que arreglar a mano:
 
@@ -1865,13 +1998,20 @@ def test_la_guia_que_se_reparte_esta_al_dia():
     repertorio = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(repertorio)
 
-    escrito = (raiz / "docs" / "GUIA_DE_ACCIONES.md").read_text(encoding="utf-8")
-    # Se compara por líneas y no por el texto entero: el final de línea
-    # depende de con qué se clonó el repositorio, y eso no es una
-    # desincronización.
-    assert escrito.splitlines() == repertorio.documento().splitlines(), (
-        "docs/GUIA_DE_ACCIONES.md no coincide con el catálogo del motor. "
-        "Correr: uv run python scripts/repertorio.py")
+    documento = repertorio.documento()
+    for cls in actions.CATALOGO:
+        assert cls.__name__ in documento, cls.__name__
+        assert cls.ejemplo_consola and cls.ejemplo_consola in documento, cls.__name__
+
+    # Y si el archivo está —alguien lo regeneró para repartirlo—, que diga lo
+    # mismo que el motor. Se compara por líneas: el final de línea depende de
+    # con qué se clonó el repositorio, y eso no es una desincronización.
+    en_disco = raiz / "docs" / "GUIA_DE_ACCIONES.md"
+    if en_disco.exists():
+        escrito = en_disco.read_text(encoding="utf-8")
+        assert escrito.splitlines() == documento.splitlines(), (
+            "docs/GUIA_DE_ACCIONES.md no coincide con el catálogo del motor. "
+            "Correr: uv run python scripts/repertorio.py")
 
 
 # ===========================================================================
@@ -2257,8 +2397,12 @@ def test_la_cifra_del_campo_se_disputa_sin_protocolo_de_verificacion(estado):
 def test_el_despacho_concentrado_necesita_escolta_y_corredor_alimentario(estado):
     """
     No pide escolta: hace rendir la que ya hay. Un rol sin fuerza propia no puede
-    tener una acción que se ejecute sola — si la tuviera, dejaría de empujar la
+    tener una acción que se ejecuta sola — si la tuviera, dejaría de empujar la
     conversación de vuelta a la mesa, que es para lo que existe.
+
+    Las dos dependencias son un AVISO al validar y un requisito duro al
+    ejecutar: la clase alimentaria la fija la constitutiva de Agricultura y la
+    escolta la pone la Policía, las dos pueden venir ANTES en el mismo plan.
     """
     alimentario = next(c for c in estado.corredores.values()
                        if "alimentario" in c.clases_prioridad)
@@ -2266,13 +2410,19 @@ def test_el_despacho_concentrado_necesita_escolta_y_corredor_alimentario(estado)
                 if "alimentario" not in c.clases_prioridad)
 
     v = actions.AcordarAcopioYVentanas(corredor_id=otro.corredor_id).validar(estado)
-    assert not v.ok and "alimentaria" in " ".join(v.requisitos_faltantes)
+    assert v.ok and v.parcial and "alimentaria" in v.motivo
 
     v = actions.AcordarAcopioYVentanas(
         corredor_id=alimentario.corredor_id).validar(estado)
-    assert not v.ok
-    assert "escolta policial" in v.requisitos_faltantes
+    assert v.ok and v.parcial
+    assert "escolta" in v.motivo.lower()
     assert any("Policía" in q for q in v.habilitada_por)
+
+    # Y al ejecutar, sin nada de eso en el plan, el fallo es limpio y con nombre.
+    import random as _r
+    r = actions.AcordarAcopioYVentanas(
+        corredor_id=alimentario.corredor_id).ejecutar(estado, _r.Random(0))
+    assert not r.ok and "escolta" in r.mensaje.lower()
 
 
 def test_la_pregunta_de_las_mesas_llega_solo_a_quien_puede_convocarlas(motor):
@@ -2402,22 +2552,168 @@ def test_ninguna_constante_de_parameters_queda_sin_leer():
         if f.name != "parameters.py" and "__pycache__" not in str(f)
     )
 
+    # USAR UNA CONSTANTE PARA CONSTRUIR OTRA TAMBIÉN ES LEERLA. `GRAVEDAD` es la
+    # escala con la que `_costo()` arma `COSTO_RESERVAS`, aquí mismo: nadie de
+    # fuera la nombra y sin embargo gobierna los cincuenta y seis costos del
+    # ejercicio. Mirando solo el resto del repositorio salía huérfana, que es
+    # exactamente lo contrario de lo que es.
+    #
+    # Se descuenta la línea que la DEFINE para no contarla como su propio uso.
+    propio = "\n".join(
+        l for l in par.splitlines()
+        if not re.match(r"^([A-Z][A-Z0-9_]{2,})\s*[:=]", l)
+    )
+
     # Las que se sabe que no las lee el motor, y por qué.
     DECLARADAS = {
-        # Reparto de la sesión en la sala: los minutos de instalación y de
-        # debriefing no los conduce el reloj del ejercicio, que solo corre las
-        # cinco jornadas. Viven aquí porque son del mismo cuadro de tiempos.
-        "MIN_INSTALACION", "MIN_DEBRIEFING",
-        # El redespliegue militar inmoviliza por unidad y no por instalación,
-        # así que su gemela policial se usa y esta no. Ver la revisión general.
-        "CUSTODIA_MILITARES_POR_INSTALACION",
+        # Que constituirse tarde rinda menos que constituirse a tiempo es una
+        # idea del diseño original que nunca se conectó. Vivía escondida DENTRO
+        # de `COSTO_RESERVAS` —la única entrada que no era un diccionario—, así
+        # que esta prueba no podía verla. Sacarla la convirtió en una huérfana
+        # declarada, que es lo que esta lista existe para exigir. O se conecta o
+        # se retira; mientras tanto, no gobierna nada.
+        "MULTIPLICADOR_CONSTITUTIVA_REACTIVA",
     }
 
     huerfanas = {
         c for c in set(re.findall(r"^([A-Z][A-Z0-9_]{2,})\s*[:=]", par, re.M))
         if not re.search(r"\b%s\b" % re.escape(c), resto)
+        and not re.search(r"\b%s\b" % re.escape(c), propio)
     } - DECLARADAS
     assert not huerfanas, f"constantes sin leer y sin declarar: {sorted(huerfanas)}"
+
+
+def test_ninguna_CLAVE_de_los_diccionarios_de_calibracion_queda_sin_leer():
+    """
+    **El punto ciego del guardián de arriba, y lo que se coló por él.**
+
+    La prueba anterior solo mira las constantes de MÓDULO. Pero el grueso de la
+    calibración no vive en constantes: vive en las claves de tres diccionarios
+    —cincuenta y seis costos de reserva y trece deltas de intensidad—, y ahí una
+    entrada muerta es indistinguible de una viva. Se colaron dos:
+
+      · `COSTO_RESERVAS["corredor_humanitario_negado"]` — −12 de respaldo
+        internacional y −5 de legitimidad, declarados, calibrados, documentados
+        **y jamás aplicados**. Era el precio de negar el paso humanitario, que es
+        la mitad del sentido de la acción del Interior que lo exige: sin él,
+        requerir el corredor era un bono de respaldo a cambio de nada.
+      · `DELTA_INTENSIDAD_NEGATIVO["turno_sin_incidentes"]` — el único canal de
+        desescalada automática del motor, que no registraba nadie.
+
+    Un guardián con el alcance a medias es peor que no tenerlo: hace creer que la
+    clase de fallo está cubierta. Este mira las claves.
+    """
+    import pathlib
+    import re
+
+    from src.engine import parameters as P
+
+    raiz = pathlib.Path(__file__).resolve().parent.parent
+    resto = "\n".join(
+        f.read_text(encoding="utf-8")
+        for f in list((raiz / "src").rglob("*.py")) + list((raiz / "scripts").rglob("*.py"))
+        if f.name != "parameters.py" and "__pycache__" not in str(f)
+    )
+
+    # Las claves declaradas huérfanas, y por qué. Vacía hoy: aparecer aquí tiene
+    # que ser una decisión escrita, no un descuido que nadie puede ver.
+    DECLARADAS: set[str] = set()
+
+    huerfanas = sorted(
+        clave
+        for diccionario in (P.COSTO_RESERVAS, P.DELTA_INTENSIDAD,
+                            P.DELTA_INTENSIDAD_NEGATIVO)
+        for clave in diccionario
+        if not re.search(r"[\"']%s[\"']" % re.escape(clave), resto)
+    )
+    assert not set(huerfanas) - DECLARADAS, (
+        f"claves de calibración que no lee nadie y no están declaradas: {huerfanas}")
+
+
+def test_ninguna_accion_escribe_su_propio_costo_de_reserva():
+    """
+    **Si un número gobierna el motor, vive en `parameters.py` y en ningún otro
+    sitio.** Es la regla de la cabecera de ese archivo, y se incumplía veintidós
+    veces: `actions.py` llamaba a `reservas.aplicar({...})` con el diccionario
+    escrito ahí mismo.
+
+    El costo era doble. Uno, para saber cuánto vale una decisión había que abrir
+    dos archivos y leer cincuenta y seis sitios. Dos, y peor: el precio de una
+    acción no se podía comparar con el de la de al lado, así que el diseño acabó
+    usando **todos los enteros del 1 al 12** sin que nadie pudiera defender por
+    qué un hecho costaba 7 y no 6.
+
+    Ahora una acción elige una GRAVEDAD, no una cifra. Esta prueba impide que la
+    próxima acción vuelva a inventarse la suya.
+    """
+    import pathlib
+    import re
+
+    raiz = pathlib.Path(__file__).resolve().parent.parent
+    culpables = []
+    for f in (raiz / "src").rglob("*.py"):
+        if f.name == "parameters.py" or "__pycache__" in str(f):
+            continue
+        for i, linea in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+            if re.search(r"reservas\.aplicar\(\s*\{", linea):
+                culpables.append(f"{f.relative_to(raiz)}:{i}")
+    assert not culpables, (
+        "costos de reserva escritos a mano fuera de parameters.py: " + str(culpables))
+
+
+def test_toda_fuente_tiene_declarado_su_sesgo_de_voceria():
+    """
+    **El fallo que esta prueba habría cazado, y era silencioso.**
+
+    `SESGO_CONTROL_VOCERIA` tenía la clave `defensoria`, del rol que se retiró, y
+    `_rol_de()` devuelve `defensa`. El `.get(..., 0.0)` no encontraba nada y
+    devolvía cero: **la inteligencia de Defensa y sus equipos de terreno eran las
+    únicas fuentes del ejercicio que leían la vocería exactamente bien**, sin que
+    nada en el diseño dijera que debían.
+
+    No hubo excepción, ni traza, ni error de consola. El motor entregaba un
+    número perfectamente plausible durante toda la corrida.
+    """
+    from src.engine import information
+
+    for fuente in list(information.FUENTES) + ["interlocucion_rural"]:
+        rol = information._rol_de(fuente)
+        assert rol in P.SESGO_CONTROL_VOCERIA, (
+            f"la fuente «{fuente}» se resuelve al rol «{rol}», que no tiene "
+            f"sesgo de vocería declarado")
+
+    # Y que ninguna quede leyendo la verdad por accidente.
+    assert P.SESGO_CONTROL_VOCERIA[information._rol_de("inteligencia_defensa")] != 0.0
+
+
+def test_las_tres_mesas_registran_el_mismo_incumplimiento(estado):
+    """
+    **La divergencia que dejó un bloque copiado tres veces.**
+
+    El desenlace de una mesa que rinde estaba escrito una vez por rol —Interior,
+    Alcalde y Agricultura— y la copia del Alcalde no registraba el evento
+    `acuerdo_incumplido` en `eventos_turno`. Un incumplimiento en la ciudad del
+    epicentro ocurría, se cobraba en reservas y **no se dibujaba en su propio
+    mapa**. Nadie decidió esa diferencia: se perdió al copiar.
+
+    Las tres acciones siguen siendo tres, con su jurisdicción y su contraparte.
+    Lo que comparten es qué pasa cuando la mesa rinde.
+    """
+    import random as _r
+    from src.engine import aperture
+
+    nodo = estado.nodos["N003"]
+    nodo.composicion_real = Composicion(0.05, 0.95)   # se rompe casi seguro
+    nodo.turnos_en_negociacion = 1
+    r = aperture.avanzar_concertacion(nodo, 1, _r.Random(1))
+    assert r is not None and r.fragil, "con 95 % de estructura debe salir frágil"
+
+    estado.eventos_turno = []
+    aperture.liquidar_concertacion(estado, nodo, r, nota_fragil=" .")
+    tipos = [e.get("tipo") for e in estado.eventos_turno]
+    assert "apertura" in tipos
+    assert "acuerdo_incumplido" in tipos, (
+        "un acuerdo que se rompe tiene que dejar huella en el mapa")
 
 
 def test_las_treinta_y_nueve_acciones_se_pueden_pedir_por_la_consola():
@@ -2489,16 +2785,16 @@ def test_ningun_ejemplo_de_la_guia_se_rechaza_en_la_primera_jornada(estado):
     - `AcordarPasosSeguros` pedía el paso en el punto con MENOS vocería del
       escenario, que es justo donde no hay con quién acordarlo.
 
-    Las dos que quedan no son un defecto de la ficha: son la interdependencia
-    del ejercicio. La escolta la pone la Policía, y hasta que la pone, ni la
-    caravana de Transporte ni el acopio de Agricultura pueden salir. Por eso
-    están declaradas aquí y no silenciadas.
+    Las dos que salieron al barrer las treinta y nueve —la caravana y el acopio,
+    que sin escolta no salen— ya no se rechazan: se encolan CON AVISO, porque la
+    escolta puede venir antes en el mismo plan. La interdependencia no se
+    silenció: se volvió decible en el plan que se lee en voz alta.
     """
     from src.agents import herramientas, nlu
 
-    NECESITAN_ESCOLTA = {"OrganizarCaravana", "AcordarAcopioYVentanas"}
+    CONDICIONADAS = {"OrganizarCaravana", "AcordarAcopioYVentanas"}
 
-    rechazadas = {}
+    rechazadas, condicionadas = {}, set()
     for cls in actions.CATALOGO:
         # Por el cauce entero: el intérprete cita el nombre TAL CUAL y quien lo
         # resuelve es `_a_accion_plan`. Comprobarlo antes de resolver mediría
@@ -2510,11 +2806,11 @@ def test_ningun_ejemplo_de_la_guia_se_rechaza_en_la_primera_jornada(estado):
         v = spec["construir"](ap.argumentos).validar(estado)
         if not v.ok:
             rechazadas[cls.__name__] = v.motivo
+        elif v.parcial:
+            condicionadas.add(cls.__name__)
 
-    inesperadas = {k: v for k, v in rechazadas.items()
-                   if k not in NECESITAN_ESCOLTA}
-    assert not inesperadas, f"ejemplos que se rechazan en t=0: {inesperadas}"
-    assert set(rechazadas) == NECESITAN_ESCOLTA, sorted(rechazadas)
+    assert not rechazadas, f"ejemplos que se rechazan en t=0: {rechazadas}"
+    assert CONDICIONADAS <= condicionadas, sorted(condicionadas)
 
 
 def test_las_ocho_llaves_nuevas_no_le_roban_la_orden_a_su_vecina(estado):
@@ -2624,3 +2920,189 @@ def test_validar_no_muta_el_estado(estado):
         (cls.sonda(e) or cls()).validar(e)
         cls.disponibilidad(e)
         assert huella(e) == antes, f"{cls.__name__} muta el estado al validarse"
+
+
+# ===========================================================================
+# UNA ORDEN NO SE DICTA DOS VECES EN LA MISMA JORNADA
+#
+# El motor no tenía ninguna noción de «esto ya se pidió hoy»: la cola era una
+# lista y `encolar` solo miraba el tope de doce. Medido antes de la regla, con
+# seis sesiones de mesa nacional por jornada durante cinco jornadas:
+#
+#     legitimidad 100 · credibilidad 100 · cohesión 82 · presión en la calle 0
+#     los diez puntos abiertos · treinta acuerdos cumplidos
+#
+# Una acción repetida ganaba el ejercicio. Estas pruebas clavan la regla y las
+# dos cosas que NO debe romper.
+# ===========================================================================
+
+def test_la_misma_orden_no_entra_dos_veces_en_la_jornada(motor):
+    """Sesionar la mesa nacional seis veces en un día no es sesionar seis veces."""
+    admitidas = [motor.encolar(ConvocarMesaNacional()).ok for _ in range(6)]
+    assert admitidas == [True] + [False] * 5
+    assert len(motor.cola_inmediata) == 1
+
+
+def test_la_misma_accion_sobre_objetivos_distintos_si_entra(motor):
+    """
+    La regla es «la misma orden», no «la misma acción». Operar dos puntos en una
+    jornada son dos decisiones, y el ejercicio se apoya en que se puedan tomar.
+    """
+    cerrados = [n.nodo_id for n in motor.estado.nodos.values() if not n.abierto][:2]
+    assert all(motor.encolar(OperarNodo(nodo_id=n)).ok for n in cerrados)
+    assert not motor.encolar(OperarNodo(nodo_id=cerrados[0])).ok, "el mismo punto no"
+
+
+def test_la_llave_se_vacia_con_la_jornada(motor):
+    """
+    Es una regla POR JORNADA y no para siempre. Como la cola se vacía en cada
+    paso, no hace falta contador: mañana la mesa nacional se vuelve a poder
+    convocar, que es justo lo que el caso quiere.
+    """
+    assert motor.encolar(ConvocarMesaNacional()).ok
+    motor.paso(franja="dia")
+    assert motor.encolar(ConvocarMesaNacional()).ok
+
+
+def test_los_eventos_que_bajan_la_intensidad_tambien_decaen(estado):
+    """
+    **La asimetría era el agujero central del motor.**
+
+    Los eventos que suben la intensidad llevaban rendimientos decrecientes y los
+    que la bajan estaban exentos, con este argumento escrito: «un acuerdo
+    verificable no vale menos por ser el segundo». Mientras lo malo se amortigua
+    y lo bueno no, repetir la misma buena noticia es un sumidero infinito.
+
+    Fuera del motor tampoco se sostenía: la sexta sesión de la mesa nacional en
+    un día no desinfla la calle como la primera, igual que el sexto muerto no la
+    enciende como el primero. Es la misma saturación, en las dos direcciones.
+    """
+    primero = mobilization.registrar_evento(estado, "acuerdo_verificable")
+    segundo = mobilization.registrar_evento(estado, "acuerdo_verificable")
+    assert primero < 0 and segundo < 0, "los dos siguen bajando la intensidad"
+    assert abs(segundo) < abs(primero), "pero el segundo mueve menos que el primero"
+    assert abs(segundo) == pytest.approx(abs(primero) * P.DECAIMIENTO_REPETICION)
+
+
+# ===========================================================================
+# EL RELOJ DE LA CRISIS NO SE APAGA NI SE HEREDA CERRADO
+# ===========================================================================
+
+def test_la_autonomia_no_supera_lo_que_la_region_tenia_antes_del_paro(estado):
+    """
+    Los contadores solo tenían suelo. Los corredores entregan 2,6 días por día
+    de flujo y el país consume 1, así que una región con dos corredores abiertos
+    ganaba cuatro días netos por jornada: medido con los diez puntos abiertos
+    desde el minuto cero, Bellaflor terminaba con **veintiún días de oxígeno** y
+    el semáforo clavado en verde. El driver del caso dejaba de existir.
+    """
+    for n in estado.nodos.values():
+        n.caudal = 1.0
+    motor = MotorCrisis(estado, semilla=20210511)
+    for i in range(P.VENTANAS_TOTALES):
+        motor.paso(franja="dia" if i % 2 == 0 else "noche")
+
+    for r in estado.regiones.values():
+        for clase, attr in (("combustible", "dias_autonomia_combustible"),
+                            ("alimentos", "dias_autonomia_alimentos"),
+                            ("oxigeno", "dias_autonomia_oxigeno")):
+            assert getattr(r, attr) <= r.techo_autonomia[clase] + 1e-9, (
+                f"{r.nombre} acumuló más {clase} del que tenía antes del paro")
+
+
+def test_toda_region_tiene_una_via_de_reposicion_de_cada_clase(estado):
+    """
+    **La invariante tenía el alcance a medias, que es peor que no tenerla.**
+
+    Solo exigía un corredor `humanitario` por región, y la clase que faltaba
+    producía justo el fallo que esto existe para impedir: ningún corredor que
+    tocara Las Cumbres ni Alto Verde llevaba combustible, así que su contador
+    **solo podía bajar**. Comprobado abriendo los diez puntos al cien por cien
+    desde el minuto cero: las dos llegaban igual al suelo en la jornada 4 — y por
+    debajo de un día de combustible el oxígeno se descuenta cada ventana, «sin
+    diésel no hay plantas de emergencia».
+
+    Un castigo permanente que no decidía la sala sino el archivo de escenario.
+    """
+    for clase in ("humanitario", "combustible", "alimentario"):
+        for r in estado.regiones.values():
+            assert estado.corredores_que_sirven(r.region_id, clase), (
+                f"{r.nombre} no tiene corredor de clase {clase}: su contador "
+                f"solo podría bajar, hiciera lo que hiciera la sala")
+
+
+# ===========================================================================
+# LA VENTANA ESCOLTADA VALE PARA SU CORREDOR
+# ===========================================================================
+
+def test_la_escolta_de_otro_corredor_no_abre_esta_ventana(estado):
+    """
+    Esto miraba si había ALGUNA unidad en escolta, en todo el país. Dos fugas que
+    nadie decidió: una escolta en el corredor hospitalario abría la ventana del
+    corredor del Sur, y **el desplazamiento del Presidente al epicentro la abría
+    también**, porque sus dos escuadrones de protección se marcan igual.
+    """
+    import copy as _copy
+
+    for n in estado.nodos.values():
+        n.caudal = 1.0
+
+    def caravana_sale(primera):
+        e = _copy.deepcopy(estado)
+        m = MotorCrisis(e, semilla=1)
+        m.encolar(primera)
+        m.encolar(OrganizarCaravana(corredor_id="C-SUR"))
+        r = m.paso(franja="dia")
+        return [x for nombre, x in r.resultados
+                if nombre == "OrganizarCaravana"][0].ok
+
+    assert not caravana_sale(DesplazarseAlEpicentro(acompana="mesa")), (
+        "la escolta del Presidente no es una escolta de carga")
+    assert not caravana_sale(Escoltar(corredor_id="C-HOS")), (
+        "una escolta en otro corredor no abre esta ventana")
+    assert caravana_sale(
+        Escoltar(corredor_id="C-SUR", clase_carga="alimentario")), (
+        "la del propio corredor sí, y es la única que debe")
+
+
+def test_el_corredor_humanitario_negado_se_cobra_y_se_cobra_una_vez(motor):
+    """
+    `COSTO_RESERVAS["corredor_humanitario_negado"]` era la huérfana más cara del
+    archivo: −12 de respaldo y −5 de legitimidad declarados **y jamás
+    aplicados**. Sin ellos, exigir el paso era un bono de respaldo a cambio de
+    nada, repetible, y la acción entera consistía en pedirla.
+
+    Y no bastaba con conectar el costo: la orden normal no nombra corredor —lo
+    elige `ejecutar`— y `validar` miraba el campo vacío, así que cada jornada el
+    requerimiento nuevo pisaba al viejo antes de que venciera.
+    """
+    e = motor.estado
+    assert motor.encolar(RequerirCorredoresHumanitarios()).ok
+    motor.cerrar_jornada()
+    exigidos = [c for c in e.corredores.values() if c.requerido_en_turno is not None]
+    assert len(exigidos) == 1, "el plazo queda corriendo sobre un corredor"
+
+    assert not motor.encolar(RequerirCorredoresHumanitarios()).ok, (
+        "no se vuelve a exigir mientras el plazo corre")
+
+    antes = e.reservas.respaldo_internacional
+    motor.cerrar_jornada()
+    assert e.reservas.respaldo_internacional < antes, "sigue cerrado: se cobra"
+    assert all(c.requerido_en_turno is None for c in e.corredores.values()), (
+        "y el plazo se apaga, para que no se cobre dos veces")
+
+
+def test_la_verificacion_se_fecha_en_jornadas_y_no_en_pasos_del_motor(motor):
+    """
+    El motor escribía `estado.turno` —el contador de ventanas, que llega a
+    nueve— y el mapa lo pinta como «constatado en la jornada N». En un ejercicio
+    de cinco jornadas la pared decía **«jornada 9»**.
+    """
+    for _ in range(4):
+        motor.cerrar_jornada()
+    motor.encolar(DesplegarEquiposTerreno(nodos=["N003"]))
+    motor.paso(franja="dia")
+
+    n = motor.estado.nodos["N003"]
+    assert n.ultima_verificacion_turno == motor.estado.turno_decision
+    assert n.ultima_verificacion_turno <= P.TURNOS_DECISION

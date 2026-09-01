@@ -14,7 +14,7 @@ lunes por la mañana:
 | **[3 · Decisiones que no son mías](#parte-3--decisiones-que-no-son-mías)** | no son técnicas | el equipo docente |
 
 > **Los identificadores no cambian aunque el documento se reordene.** Están
-> citados desde el código (`PENDIENTE(B1)`), desde `COMO_FUNCIONA.md` y desde
+> citados desde el código (`PENDIENTE(B1)`), desde `CONTEXTO.md` y desde
 > aquí mismo. Renumerarlos por estética rompería la navegación en los dos
 > sentidos que este documento promete — y ya se rompió una vez.
 
@@ -45,13 +45,13 @@ lunes por la mañana:
 | **A7** | ¿la consola puede decir qué punto bloquea un corredor? | — | esperando · es el dato exclusivo de Transporte |
 | **B9** | **ninguna prueba mira lo que la interfaz dibuja** | no | **no existe** · un fallo de una línea vació las siete vistas y la suite pasó entera |
 | **B11** | la lista agroalimentaria no se comprueba después | no | se concede la clase y nadie mira si se cumplió |
-| **B12** | tres constantes y tres campos que nadie lee | no | declarados y con prueba que impide que crezcan |
+| **B12** | tres constantes y tres campos que nadie lee | no | **cerrado por la simplificación del motor (S1–S11, ya aplicadas)** · retirados; quedó una huérfana declarada |
 | **B13** | dos números del reparto de carteras sin calibrar | no | provisionales y declarados · van con **C5** |
+| **B14** | **la lectura de la corrida — el cómo y el qué** | no | **propuesta escrita**, sin implementar · depende de **B1**, se presenta en **B7** |
 
-Lo que **sí** funciona está en el README, sección «Estado actual»; el
-ejercicio explicado del juego al motor, en
-[`docs/COMO_FUNCIONA.md`](docs/COMO_FUNCIONA.md); y dónde vive cada cosa del
-repositorio, en [`docs/EL_CODIGO.md`](docs/EL_CODIGO.md).
+Lo que **sí** funciona está en el README, sección «Estado actual»; y dónde
+mirar según la pregunta —el mapa del código y las claves del motor—, en
+[`CONTEXTO.md`](CONTEXTO.md), que es el punto de entrada del repositorio.
 
 ---
 
@@ -483,15 +483,14 @@ que ninguna estrategia pura gane. El criterio es **por comportamiento, no por
 realismo**: no hay respuesta empírica a cuánta legitimidad cuesta un muerto, y no
 la va a haber.
 
-**La medición vive en un solo sitio:**
-[`COMO_FUNCIONA.md` §12](docs/COMO_FUNCIONA.md#12-los-siete-arreglos-medidos),
-que es donde está la tabla de `--comparar` con su lectura. Se reproduce con
+**La medición vive en un solo sitio: la tabla de esta misma entrada (C5)**,
+con su lectura. Se reproduce con
 `uv run python scripts/correr_ejercicio.py --comparar`.
 
 **Los dos problemas que estaban medidos ya no lo están** —la cohesión saturada en
 0 y las muertes idénticas en cuatro de cinco estrategias— y no eran de
 coeficientes: eran piezas que faltaban. Ver
-[`historial/resueltos.md` §2](docs/historial/resueltos.md#2--del-diagnóstico-del-motor-anterior).
+la revisión general del motor (histórico en git: `docs/historial/`).
 
 Quedan **cuatro cosas que solo se ven con personas dentro**:
 
@@ -544,19 +543,43 @@ que se rehaga no sirve para detectar regresiones. Cambiaron tres cosas a la vez:
 | geografía | esquema sobre una silueta | **red vial real, corredores ruteados** |
 | `masa_base` | dos puntos la tenían medida | **ocho la estrenan** |
 
-Y el resultado se mueve en la dirección que más importa:
+> **REMEDIDA tras la revisión del motor.** Entraron cuatro reglas que mueven la
+> tabla: una orden no se dicta dos veces en la misma jornada, los eventos que
+> BAJAN la intensidad decaen igual que los que la suben, la autonomía tiene
+> techo, y todo corredor exigido se cobra si no se abre. Semilla `20210511`,
+> comprobada con `1`, `7`, `42` y `99999`.
 
 ```
   estrategia         netas  reap  muert  legit  cohes  credib   resp
   ---------------------------------------------------------------------
-  solo_fuerza            4     3     64      3      0      21     14
-  solo_mesa              9     0     15     65     56      49     49  ← domina
-  constituida            0     3     48     49     74      21     59
-  humanitaria            2     0     13     35     28      45     48
-  logistica              2     0     13     52     40      36     45
-  agroalimentaria        5     0     33     72     23      45     49
-  pasiva                 1     0     64     23     28      45     43
+  solo_fuerza            4     3     64     10      0      21     15
+  solo_mesa              9     0     15     62     56      38     50
+  constituida            0     3     48     50     69      21     58
+  humanitaria            2     0     13     34     23      45     38
+  logistica              2     0     13     54     40      36     47
+  agroalimentaria        5     0     33     68     27      45     50
+  pasiva                 1     0     64     25     28      45     45
 ```
+
+> **LA NOTA ANTERIOR AFIRMABA DOS COSAS QUE NO SE SOSTIENEN, y las dos eran el
+> criterio con el que esta tabla detecta regresiones.** Quedan escritas aquí
+> porque lo que hay que decidir es qué hacer con ellas, no volver a descubrirlas.
+>
+> 1 · **«`cohes` y `muert` no se movieron con la semilla».** Sí se mueven, y con
+> semillas que la nota no probó: `solo_mesa` pasa de 15 muertes a **29** con la
+> semilla `42`; `agroalimentaria`, de 33 a **64**; `logistica`, de 13 a **28**
+> con `99999`. Mientras `muert` dependa del dado, esta columna no puede servir
+> de detector de regresiones — y es la columna que más pesa en el debriefing.
+>
+> 2 · **«ninguna estrategia domina».** `solo_mesa` domina en las cinco semillas
+> probadas: primera en aperturas netas, mínimo de muertes, primera o segunda en
+> las cuatro reservas. Las reglas nuevas no la tocaron —la sala que negocia pide
+> mesas sobre puntos DISTINTOS, que es exactamente lo que la llave de jornada
+> permite— y no debían tocarla: cerrar el exploit de repetir la misma orden y
+> calibrar el peso de la vía de concertación son dos problemas distintos.
+>
+> El segundo sigue siendo la entrada `C4` de más abajo, y se decide midiendo con
+> gente dentro.
 
 > **La estrategia agroalimentaria es nueva y NO domina**, que es lo que había
 > que comprobar al añadir el noveno rol: abre cinco caminos, deja treinta y tres
@@ -630,7 +653,7 @@ jornada siguiente, el reparto correcto es 12/3 y no 13/2. Se cambia en
 
 ### B13 · Dos números del paso de nueve roles a siete, sin calibrar
 
-De [«De nueve roles a siete»](docs/historial/resueltos.md#11--de-nueve-roles-a-siete).
+De «De nueve roles a siete» (histórico en git: `docs/historial/`).
 Los dos están puestos, funcionan y **son provisionales**: se eligieron por
 coherencia con lo que había, no midiendo. Van con `C5`, que este cambio obliga a
 rehacer de todos modos.
@@ -650,11 +673,63 @@ no.
 > baja de 74 a 68 de cohesión y `humanitaria` de 28 a 22. Ninguna estrategia
 > pasó a dominar, que era el riesgo.
 
+### B14 · La lectura de la corrida — cómo destrabaron y a quién atendieron
+
+**Dónde:** [`docs/LA_MEDICION.md`](docs/LA_MEDICION.md) es la propuesta completa ·
+`src/engine/lectura.py` y `GET /api/lectura` están **por escribir** · depende de
+**B1** y se presenta dentro de **B7**
+
+Dos preguntas que el ejercicio hoy no responde y que son el material del
+debriefing: **por qué vía se destrabó el país** y **a quién se atendió**
+mientras tanto.
+
+Seis vías en dos familias. **Tres abren el punto** y son las tres del campo
+`modo_apertura`, que la sala ya lee en el mapa: **despejar**, **concertar**,
+**desgastar**. **Tres no abren ninguno** y el motor no las nombra en ningún
+sitio: **sortear** —el cierre sigue en pie y lo bloqueado pasa igual—,
+**constituir** —cambia lo que cuesta todo lo demás— y **encuadrar** —cambia lo
+que el país cree que está pasando—. Y cuatro públicos: empresa, gremios,
+ciudadanía y comunidad internacional.
+
+**Nada de esto se ve durante la sesión, y esa es la condición de que mida algo.**
+Un marcador visible deja de medir la conducta y pasa a producirla. Se calcula al
+cierre desde el pliego y la traza, **sin ningún campo nuevo en `Estado`**, que es
+lo que impide que se cuele en una vista por un descuido de serialización.
+
+Lo que hay que decidir antes de escribir una línea está en §10 de la propuesta.
+Dos cosas de ahí no son técnicas y son del equipo docente: **si se les anuncia en
+el briefing que habrá una lectura** (anunciar los ejes los hace jugables) y **si
+se revela la capa 1 en el debriefing**.
+
+> **Y un hallazgo del propio diseño, dicho en la propuesta y no escondido:** en
+> el repertorio actual, atender a la empresa es casi siempre operar por la
+> fuerza —seis de las diez acciones que la atienden—. Los dos ejes **no son
+> independientes**, y eso hay que reportarlo como hallazgo del caso en vez de
+> tocar el repertorio para que la medición salga más limpia.
+
+**Estorba, y es de esta misma revisión:** `codigo` dejó de ser único dentro de un
+rol tras el reparto de las dos carteras —Interior tiene dos `A1` y dos `A4`;
+Policía dos `A2`; Transporte dos `A2` y dos `A3`; Agricultura dos `A4`—, porque
+cada acción heredada se trajo el código de su rol anterior. No rompe nada hoy
+—nada indexa por `(rol, codigo)`— pero cualquier informe que cite acciones por
+código confunde dos filas.
+
 ### B12 · Lo que quedó escrito y nadie lee
 
-De la [revisión general del motor](docs/historial/resueltos.md#9--revisión-general-del-motor).
+De la revisión general del motor (histórico en git: `docs/historial/`).
 Cuatro defectos se corrigieron ahí; esto es lo que se decidió **no** tocar,
 porque tocarlo sería cambiar el diseño y no arreglar un error.
+
+> **CERRADO por la simplificación del motor (S1–S11).** Las tres
+> constantes y los tres campos se retiraron: los minutos de instalación y de
+> debriefing se fueron a la guía del facilitador, la custodia militar por
+> instalación dejó de existir hasta que alguien decida que la aritmética
+> Interior–Defensa debe cambiar, y `nodo_unico`, `turno_firmado` y `resultado`
+> ya no se escriben. Quedó **una huérfana declarada** —
+> `MULTIPLICADOR_CONSTITUTIVA_REACTIVA`, que siempre estuvo escondida DENTRO de
+> `COSTO_RESERVAS`— y la prueba que vigilaba la lista original sigue vigilando
+> esa. Lo de abajo se deja como estaba, porque describe el problema que la
+> decisión original tenía delante.
 
 **Tres constantes de `parameters.py`:**
 
@@ -892,7 +967,7 @@ una escolta.
 ---
 ## Lo que ya no está pendiente
 
-**Se movió entero a [`docs/historial/resueltos.md`](docs/historial/resueltos.md).**
+**Se movió entero al historial** (en git: `docs/historial/resueltos.md`).
 Un documento que lleva la cuenta de lo que falta no puede tener dentro
 doscientas líneas de lo que ya no falta.
 

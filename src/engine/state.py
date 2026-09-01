@@ -4,15 +4,18 @@ state.py — Las estructuras de estado del mundo.
 De qué está hecho el país dentro del ejercicio. Tres niveles espaciales, porque
 los siete roles no deciden sobre lo mismo:
 
-    PUNTO DE CIERRE   un bloqueo concreto            24    Policía · Interior · Alcalde
-    CORREDOR          una secuencia de puntos         5    Transporte · Defensa
-    REGIÓN            un departamento o área          4    Agricultura · Interior
+    PUNTO DE CIERRE   un bloqueo concreto            10    Policía · Interior · Alcalde
+    CORREDOR          una secuencia de puntos          4    Transporte · Defensa
+    REGIÓN            un departamento o área           4    Agricultura · Interior
+
+Las cifras son las del escenario que corre hoy (`data/escenario/`), no un tope:
+la movilización genera cierres nuevos por su cuenta cuando la intensidad sube.
 
 DESVIACIÓN DELIBERADA RESPECTO DE MACONDO
 -----------------------------------------
 La guía de arquitectura recomienda arrays paralelos de NumPy. Aquí se usan
-objetos, a propósito: 24 nodos y no 657, lógica ramificada y no aritmética
-uniforme, y 12 pasos por ejercicio y no 288.
+objetos, a propósito: diez nodos y no 657, lógica ramificada y no aritmética
+uniforme, y nueve ventanas por ejercicio y no 288.
 
 La regla que SÍ se conserva: identificador estable y opaco (`nodo_id`), y los
 nombres legibles fuera del motor.
@@ -41,27 +44,45 @@ class Composicion:
     Qué hay realmente en un punto de cierre. El Estado NUNCA lo ve.
 
     Desde la v2 esta mezcla SÍ tiene consecuencias, por dos vías y solo dos
-    (`docs/COMO_FUNCIONA.md` §8):
+    (ver `CONTEXTO.md`, «Claves del motor»):
 
       1 · operar sobre un punto mayoritariamente de protesta legítima cuesta más
       2 · concertar donde hay estructura organizada produce un acuerdo que se rompe
 
-    Sigue sin salir jamás del motor: `vista_publica()` y las nueve vistas por rol
+    Sigue sin salir jamás del motor: `vista_publica()` y las siete vistas por rol
     solo entregan estimaciones sesgadas.
+
+    SON DOS NÚMEROS Y UN RESIDUO, Y ERAN TRES NÚMEROS. El vandalismo oportunista
+    no entra en ningún cálculo del motor —las dos vías de arriba miran la
+    protesta legítima y la estructura organizada, y las cuatro fuentes estiman
+    la segunda—, así que guardarlo como una tercera variable independiente solo
+    servía para que pudiera no sumar 1 y hubiera que normalizarlo.
+
+    Sigue existiendo como lectura: es narrativamente real y el debriefing revela
+    la capa 1. Pero es lo que queda, no una tercera perilla.
     """
     protesta_legitima: float
-    vandalismo_oportunista: float
     estructura_organizada: float
 
+    @property
+    def vandalismo_oportunista(self) -> float:
+        """Lo que no es ninguna de las dos. Ningún cálculo del motor lo consulta."""
+        return max(0.0, 1.0 - self.protesta_legitima - self.estructura_organizada)
+
     def normalizada(self) -> "Composicion":
-        t = self.protesta_legitima + self.vandalismo_oportunista + self.estructura_organizada
+        """
+        Escala las dos a que sumen como mucho 1.
+
+        Con dos números el caso degenerado es distinto: ya no es «no suman 1»
+        —el residuo absorbe cualquier hueco— sino «suman MÁS de 1», que sí es un
+        dato mal puesto y hay que escalar.
+        """
+        t = self.protesta_legitima + self.estructura_organizada
         if t <= 0:
-            return Composicion(1.0, 0.0, 0.0)
-        return Composicion(
-            self.protesta_legitima / t,
-            self.vandalismo_oportunista / t,
-            self.estructura_organizada / t,
-        )
+            return Composicion(1.0, 0.0)
+        if t <= 1.0:
+            return Composicion(self.protesta_legitima, self.estructura_organizada)
+        return Composicion(self.protesta_legitima / t, self.estructura_organizada / t)
 
 
 @dataclass
@@ -131,7 +152,7 @@ class Nodo:
 
     # --- capa 1: la verdad. No se serializa hacia ninguna interfaz. ---
     composicion_real: Composicion = field(
-        default_factory=lambda: Composicion(0.75, 0.15, 0.10)
+        default_factory=lambda: Composicion(0.75, 0.10)
     )
 
     # --- trazabilidad de la observación ---
@@ -167,6 +188,22 @@ class Corredor:
     anunciado_en_turno: int | None = None
     anunciado_verificado: bool = False      # si se anunció como hecho verificado
 
+    # LA JORNADA EN QUE SE LE EXIGIÓ PASO HUMANITARIO PERMANENTE, y el plazo que
+    # corre desde entonces. `None` = no hay requerimiento vivo.
+    #
+    # Existe porque `COSTO_RESERVAS["corredor_humanitario_negado"]` era la
+    # huérfana más cara del archivo: −12 de respaldo internacional y −5 de
+    # legitimidad declarados, calibrados, documentados **y jamás aplicados**. Sin
+    # ella, requerir el corredor era +5 de respaldo a cambio de nada, repetible,
+    # y la acción entera consistía en pedirla.
+    #
+    # Con el plazo, es lo que la ficha del rol dice que es: una apuesta. Se
+    # formaliza la exigencia y se cobra el respaldo ahora; si el corredor sigue
+    # cerrado al cerrar la jornada siguiente, el incumplimiento queda con fecha
+    # y se paga —lo cobra `MotorCrisis._cobrar_corredores_negados`, que además
+    # apaga el plazo, de modo que cada requerimiento se cobra UNA vez.
+    requerido_en_turno: int | None = None
+
     def caudal_efectivo(self, nodos: dict[str, Nodo]) -> float:
         """Un corredor es tan bueno como su peor punto."""
         if not self.nodos:
@@ -199,6 +236,27 @@ class Region:
     nodos_secundarios_activos: int = 100
     muertes_evitables: int = 0          # acumulador; solo crece
     panico: float = 0.0                 # sube si se difunde el calendario
+
+    # EL TECHO DE LOS TRES CONTADORES: lo que la región tenía ANTES del paro.
+    #
+    # No lo había, y por eso el reloj de la crisis se podía apagar. Los
+    # corredores entregan 2,6 días por día de flujo y el país consume 1, de modo
+    # que una región con dos corredores abiertos ganaba cuatro días netos por
+    # jornada: medido con los diez puntos abiertos desde el minuto cero,
+    # Bellaflor terminaba con **veintiún días de oxígeno**. A partir de ahí el
+    # semáforo se queda verde para siempre y el driver del caso deja de existir.
+    #
+    # El techo no es un número inventado: es el estado inicial. Abrir corredores
+    # sirve para dejar de perder y para recuperar lo perdido — no para acumular
+    # una reserva estratégica en cinco días de paro.
+    techo_autonomia: dict[str, float] = field(init=False, default_factory=dict)
+
+    def __post_init__(self) -> None:
+        self.techo_autonomia = {
+            "combustible": self.dias_autonomia_combustible,
+            "alimentos": self.dias_autonomia_alimentos,
+            "oxigeno": self.dias_autonomia_oxigeno,
+        }
 
     @property
     def semaforo(self) -> str:
@@ -337,17 +395,41 @@ class Reservas:
 
 @dataclass
 class Banderas:
-    """Lo que la mesa constituyó. Ninguna es obligatoria; todas están tarifadas."""
-    reglas_escritas: bool = False
-    identificacion_agentes: bool = False
+    """
+    Lo que la mesa constituyó. Ninguna es obligatoria; todas están tarifadas.
+
+    ERAN QUINCE Y SON CATORCE. Se retiraron dos que no distinguían nada:
+
+      · `identificacion_agentes` — ninguna acción la encendía sola y ningún
+        cálculo la consultaba fuera de su multiplicador. Vive dentro de
+        `reglas_escritas`, cuyo factor absorbió el suyo (ver `P.MITIGADORES`).
+      · `nodo_unico` — la escribía `FijarRegistroEscrito` en la línea siguiente a
+        `registro_escrito` y NO LA LEÍA NADIE: ni un costo, ni una validación, ni
+        un rótulo, ni ninguna superficie del tablero. Era el mismo hecho con dos
+        nombres.
+
+    Y entró una, que es la salida C de las dos acciones gemelas de Policía:
+    `ClasificarParteOperacional` y `AdoptarProtocoloVerificacion` encendían las
+    DOS esta misma bandera — un rol con dos botones para la misma luz, de modo
+    que la segunda que se pidiera no hacía nada. Ahora son decisiones distintas:
+
+      · `parte_clasificado` — la Policía decide cómo publica LO SUYO: separar lo
+        confirmado, lo estimado y lo que sigue en verificación. Retira el costo
+        de que su propia cifra se dispute
+        (`information.costo_de_no_clasificar`).
+      · `protocolo_verificacion` — un acto de mesa que obliga a todos. Es lo que
+        `information.verificar_denuncia` exige para que la palabra del que
+        verifica cuente, y lo que deja publicar «dentro del protocolo común».
+    """
+    reglas_escritas: bool = False       # reglas escritas E identificación de agentes
     registro_av: bool = False
     registro_escrito: bool = False
     protocolo_voceria: bool = False
     protocolo_verificacion: bool = False
+    parte_clasificado: bool = False     # la Policía clasificó su propio parte
     criterio_priorizacion: bool = False
     lineas_rojas_fijadas: bool = False
     plazo_suspensivo: bool = False
-    nodo_unico: bool = False
     concertacion_previa_cali: bool = False   # el Alcalde condicionó el empleo de la fuerza
     prioridad_combustible_fijada: bool = False
     clase_alimentaria: bool = False          # Agricultura fijó la clase agroalimentaria
@@ -367,10 +449,9 @@ class Banderas:
         return True
 
     def mitigadores_activos(self) -> dict[str, bool]:
-        """Los tres persistentes. Los otros tres son parámetros de cada operación."""
+        """Los dos persistentes. Los otros dos son parámetros de cada operación."""
         return {
             "reglas_escritas": self.reglas_escritas,
-            "identificacion_agentes": self.identificacion_agentes,
             "registro_av": self.registro_av,
         }
 
@@ -430,11 +511,14 @@ class Acuerdo:
     """
     acuerdo_id: str
     nodos: list[str]
-    turno_firmado: int
     turno_limite: int
     cumplido: bool = False
     roto: bool = False
     motivo_ruptura: str | None = None
+
+    # `turno_firmado` se escribía al crear el acuerdo y no lo leía nadie: el
+    # vencimiento lo resuelve `revisar_acuerdos` comparando contra
+    # `turno_limite`, que es el único dato del que depende algo.
 
 
 # ---------------------------------------------------------------------------
@@ -443,13 +527,23 @@ class Acuerdo:
 
 @dataclass
 class Decision:
+    """
+    Un renglón del pliego: quién ordenó qué, cuándo y bajo la responsabilidad de
+    quién.
+
+    `resultado` —una cadena, «ok» o «falló»— se escribía aquí y no la leía
+    ninguna superficie: el pliego del Presidente muestra rol, acción y
+    responsable. Se retira. Si el debriefing (`B7`) acaba necesitando el
+    desenlace de cada decisión, lo que hará falta es el archivo de la corrida
+    (`B1`), que guarda además la ventana y los deltas — no un campo suelto que
+    solo dice si la orden se ejecutó.
+    """
     turno: int
     franja: Franja
     rol: str
     accion: str
     descripcion: str
     responsable_nominado: str | None
-    resultado: str
 
     @property
     def atribuible(self) -> bool:
@@ -708,7 +802,7 @@ class Estado:
         El TABLERO GENERAL: lo que ve toda la sala.
 
         Responde QUÉ ESTÁ PASANDO. El cuánto, el dónde exactamente y el desde
-        cuándo son las nueve vistas privadas (`views.py`).
+        cuándo son las siete vistas privadas (`views.py`).
 
         NUNCA incluye `composicion_real` ni la veracidad de una denuncia. Si eso
         se filtrara, el dilema central del caso desaparecería.
@@ -766,6 +860,11 @@ class Estado:
                     "nombre": c.nombre,
                     "caudal": round(c.caudal_efectivo(self.nodos), 2),
                     "poblacion": c.poblacion_aguas_abajo,
+                    # El costo diario es público: es la mitad del criterio de
+                    # priorización que Transporte adopta delante de la mesa, y
+                    # sin él el tablero no puede mostrar cuánto pierde el país
+                    # cada día con los corredores estrangulados.
+                    "costo_diario": c.costo_diario_mm_cop,
                     "clases": sorted(c.clases_prioridad),
                     "anunciado_abierto": c.anunciado_abierto,
                     "nodos": list(c.nodos),

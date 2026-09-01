@@ -101,7 +101,7 @@
     {
       "corredor_id": "C-SUR",
       "nombre": "Corredor del Sur",
-      "_papel": "Alimentos para el sur. Ninguno de sus dos puntos esta en la ciudad: es el corredor que la sala olvida.",
+      "_papel": "Alimentos y combustible para el sur. Ninguno de sus dos puntos esta en la ciudad: es el corredor que la sala olvida. Es la UNICA via de combustible de Las Cumbres y Alto Verde, y por eso lleva la clase: sin ella el contador de esas dos regiones solo podia bajar, hiciera lo que hiciera la sala.",
       "nodos": [
         "N005",
         "N008"
@@ -110,6 +110,7 @@
       "costo_diario_mm_cop": 27000,
       "clases_prioridad": [
         "alimentario",
+        "combustible",
         "humanitario",
         "general"
       ]
@@ -127,11 +128,7 @@
       "apoyo_local": 0.69,
       "dias_sostenido": 13,
       "masa_base": 260,
-      "composicion_real": [
-        0.51,
-        0.2,
-        0.29
-      ],
+      "composicion_real": [0.51, 0.29],
       "x": 55.27,
       "y": 45.56,
       "proximidad_infra_critica": true
@@ -147,11 +144,7 @@
       "apoyo_local": 0.81,
       "dias_sostenido": 12,
       "masa_base": 180,
-      "composicion_real": [
-        0.62,
-        0.2,
-        0.18
-      ],
+      "composicion_real": [0.62, 0.18],
       "x": 60.41,
       "y": 37.59
     },
@@ -166,11 +159,7 @@
       "apoyo_local": 0.88,
       "dias_sostenido": 15,
       "masa_base": 420,
-      "composicion_real": [
-        0.47,
-        0.2,
-        0.33
-      ],
+      "composicion_real": [0.47, 0.33],
       "x": 57.17,
       "y": 42.53
     },
@@ -185,11 +174,7 @@
       "apoyo_local": 0.89,
       "dias_sostenido": 15,
       "masa_base": 340,
-      "composicion_real": [
-        0.53,
-        0.19,
-        0.28
-      ],
+      "composicion_real": [0.53, 0.28],
       "x": 41.2,
       "y": 38.46
     },
@@ -204,11 +189,7 @@
       "apoyo_local": 0.38,
       "dias_sostenido": 2,
       "masa_base": 150,
-      "composicion_real": [
-        0.92,
-        0.06,
-        0.02
-      ],
+      "composicion_real": [0.92, 0.02],
       "x": 52.4,
       "y": 35.88
     },
@@ -223,11 +204,7 @@
       "apoyo_local": 0.57,
       "dias_sostenido": 6,
       "masa_base": 160,
-      "composicion_real": [
-        0.84,
-        0.1,
-        0.06
-      ],
+      "composicion_real": [0.84, 0.06],
       "x": 64.66,
       "y": 17.83,
       "proximidad_infra_critica": true
@@ -243,11 +220,7 @@
       "apoyo_local": 0.66,
       "dias_sostenido": 7,
       "masa_base": 200,
-      "composicion_real": [
-        0.84,
-        0.1,
-        0.06
-      ],
+      "composicion_real": [0.84, 0.06],
       "x": 72.35,
       "y": 25.14
     },
@@ -262,11 +235,7 @@
       "apoyo_local": 0.72,
       "dias_sostenido": 8,
       "masa_base": 240,
-      "composicion_real": [
-        0.72,
-        0.16,
-        0.12
-      ],
+      "composicion_real": [0.72, 0.12],
       "x": 56.76,
       "y": 68.32
     },
@@ -281,11 +250,7 @@
       "apoyo_local": 0.62,
       "dias_sostenido": 6,
       "masa_base": 190,
-      "composicion_real": [
-        0.88,
-        0.08,
-        0.04
-      ],
+      "composicion_real": [0.88, 0.04],
       "x": 62.76,
       "y": 83.66
     },
@@ -300,11 +265,7 @@
       "apoyo_local": 0.55,
       "dias_sostenido": 4,
       "masa_base": 130,
-      "composicion_real": [
-        0.89,
-        0.07,
-        0.04
-      ],
+      "composicion_real": [0.89, 0.04],
       "x": 31.76,
       "y": 67.72
     }

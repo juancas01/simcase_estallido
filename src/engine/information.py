@@ -4,7 +4,7 @@ information.py — La verdad, las estimaciones y la versión.
 Tres capas distintas, y el ejercicio vive en la distancia entre ellas:
 
     CAPA 1 · verdad         solo el motor la conoce; NUNCA sale al ejercicio
-    CAPA 2 · estimaciones   el tablero (grano grueso) + nueve vistas (grano fino)
+    CAPA 2 · estimaciones   el tablero (grano grueso) + siete vistas (grano fino)
     CAPA 3 · versión        lo que cada actor afirma públicamente
 
 EL ERROR DOBLE
@@ -111,7 +111,18 @@ def estimar_nodo(nodo: Nodo, fuente: str, turno: int, semilla: int) -> Estimacio
 
     est = min(1.0, max(0.0, real.estructura_organizada + sesgo + ruido))
 
-    sesgo_voc = P.SESGO_CONTROL_VOCERIA.get(_rol_de(fuente), 0.0)
+    # SIN `.get(..., 0.0)`, Y ES EL ARREGLO. Mientras hubo un valor por defecto,
+    # una clave mal escrita —`defensoria` por `defensa`— apagaba el sesgo de dos
+    # fuentes enteras sin producir ningún síntoma: el motor devolvía un número
+    # plausible y nadie tenía motivo para sospechar. Ahora falta una clave y el
+    # motor lo dice.
+    rol = _rol_de(fuente)
+    if rol not in P.SESGO_CONTROL_VOCERIA:
+        raise KeyError(
+            f"la fuente «{fuente}» se resuelve al rol «{rol}», que no tiene "
+            f"sesgo de vocería declarado en SESGO_CONTROL_VOCERIA."
+        )
+    sesgo_voc = P.SESGO_CONTROL_VOCERIA[rol]
     voc = min(1.0, max(0.0, nodo.control_voceria + sesgo_voc + rng.gauss(0, 0.04)))
 
     # NINGUNA FUENTE VUELVE A SER «CONFIRMADA». El grado lo concedía el equipo de
@@ -368,7 +379,7 @@ def _generar_paquete(estado: Estado, rng: random.Random) -> None:
             veraz=veraz,
             turno_aparicion=estado.turno_decision,
         ))
-    estado.eventos_turno.append({"tipo": "denuncias_nuevas", "n": 2})
+    estado.eventos_turno.append({"tipo": "denuncias_nuevas", "n": n})
 
 
 # ---------------------------------------------------------------------------
@@ -378,13 +389,21 @@ def _generar_paquete(estado: Estado, rng: random.Random) -> None:
 def costo_de_no_clasificar(estado: Estado) -> None:
     """
     La distancia entre lo afirmado y lo verificado se cobra en legitimidad, CON
-    DESCUENTO si el actor clasificó su dato como confirmado, estimado o en
+    DESCUENTO si la Policía clasificó su parte en confirmado, estimado y en
     verificación.
 
     Es lo que hace racional la acción del Director de Policía de publicar el
     parte clasificado, que en el papel parece transparencia sin recompensa.
+
+    LEE `parte_clasificado` Y NO `protocolo_verificacion`, y es la mitad del
+    reparto que separó las dos acciones gemelas de Policía. Que la propia cifra
+    de quien publica no se dispute es efecto de clasificarla — un acto
+    unilateral de la Policía sobre lo suyo. El protocolo único es otra cosa: un
+    acto de mesa que obliga a todos, y lo que habilita es la palabra del que
+    verifica una denuncia (`verificar_denuncia`). Antes las dos acciones
+    encendían las dos cosas, y por eso una sobraba.
     """
-    if estado.banderas.protocolo_verificacion:
+    if estado.banderas.parte_clasificado:
         return
     estado.reservas.aplicar(P.COSTO_RESERVAS["cifra_desmentida"])
     estado.eventos_turno.append({"tipo": "cifra_desmentida"})

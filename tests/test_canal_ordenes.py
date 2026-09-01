@@ -505,6 +505,42 @@ def test_lo_que_no_se_ejecuta_se_reporta(consola):
     assert r["omitidas"][0]["estado"] == "ambigua"
 
 
+def test_una_orden_que_el_motor_rechaza_se_omite_y_no_tumba_la_consola(consola):
+    """
+    **La rama que ninguna prueba tocaba, y era la única que reventaba.**
+
+    Las omisiones que sí estaban cubiertas —`ambigua`, `falta_dato`— las decide
+    el canal antes de llegar al motor. Esta es la otra: la orden sale del canal
+    marcada «lista» y es `MotorCrisis.encolar` quien la rechaza. Ahí la consola
+    leía `v.mensaje`, que es el campo de `Resultado` y no el de `Validacion`, y
+    devolvía un 500 en vez de una omisión.
+
+    Se llega por dos caminos y los dos son de sala: que `validar()` cambie de
+    opinión entre interpretar y confirmar, y —seguro— la orden que pasa el tope
+    de la cola, que es donde `encolar` rechaza por su cuenta sin que ninguna
+    capa anterior lo haya visto venir.
+    """
+    import src.api.main as main
+    from src.engine import parameters as P
+    from src.engine.actions import DesplegarEquiposTerreno
+
+    main.motor.cola_inmediata.extend(
+        DesplegarEquiposTerreno(nodos=["N003"])
+        for _ in range(P.TOPE_ACCIONES_POR_PLAN)
+    )
+
+    p = consola.post("/api/consola/interpretar",
+                     json={"texto": "verificar el Puente Amarillo"}).json()
+    assert p["acciones"][0]["estado"] == "lista", "el canal no ve el tope"
+
+    r = consola.post("/api/consola/encolar", json={"plan_id": p["plan_id"]})
+    assert r.status_code == 200, "la consola no puede caerse por una orden de más"
+    r = r.json()
+    assert r["acciones_encoladas"] == 0
+    assert r["omitidas"][0]["estado"] == "no_viable"
+    assert r["omitidas"][0]["motivo"], "y se dice por qué, no un hueco"
+
+
 def test_una_consulta_no_ejecuta_nada(consola):
     p = consola.post("/api/consola/interpretar",
                      json={"texto": "como esta el abastecimiento?"}).json()
@@ -817,8 +853,25 @@ def test_una_cantidad_dictada_en_letras_tambien_cuenta(estado):
 
 
 def test_un_margen_dicho_no_se_sustituye(estado):
-    a = solo(estado, "fijar lineas rojas con margen 0.3")
-    assert a.argumentos["margen"] == 0.3
+    """
+    ERA UN DECIMAL Y SON DOS PALABRAS. El motor comparaba `margen` una sola vez
+    contra 0,25, así que «0,3» y «1,0» hacían lo mismo: la consola pedía un
+    número del que solo dos valores significaban algo distinto, y el plan se lo
+    leía de vuelta a la sala como si fuera un dial.
+
+    Lo que la prueba sigue exigiendo es lo mismo: **lo que la sala dijo no se
+    sustituye por el valor por defecto.**
+    """
+    a = solo(estado, "fijar lineas rojas sin margen")
+    assert a.argumentos["margen"] == "estrecho"
+    assert "SIN margen" in a.en_claro()
+
+
+def test_el_margen_por_defecto_es_amplio_y_se_dice(estado):
+    """Y si no se dice nada, queda el amplio — y la sala tiene que oírlo."""
+    a = solo(estado, "fijar las lineas rojas del Ejecutivo")
+    assert a.argumentos["margen"] == "amplio"
+    assert "con margen" in a.en_claro()
 
 
 def test_el_valor_por_defecto_viaja_en_el_plan_y_se_dice(estado):

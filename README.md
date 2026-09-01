@@ -24,33 +24,24 @@ puede cerrar dos, y eso sale de la aritmética del motor, no de un guion.
 
 ## Los documentos
 
-**Cinco vigentes, uno de referencia y una carpeta de historial.** Cada hecho vive
-en un solo sitio; los demás documentos apuntan a él.
-
-### Por dónde empezar
-
-Los tres primeros no piden saber programar.
+**Tres vigentes.** Cada hecho vive en un solo sitio; los demás apuntan a él.
 
 | | Lea | Para qué |
 |---|---|---|
-| **1** | [`docs/propuesta.md`](docs/propuesta.md) | **El diseño del juego.** Qué se simula y hasta dónde, qué ve cada uno de los siete, qué puede hacer y cómo se afectan entre sí. Incluye el modelo del mundo y un glosario. **Empiece por aquí si no conoce el caso** |
-| **2** | [`docs/COMO_FUNCIONA.md`](docs/COMO_FUNCIONA.md) | **Del juego al motor.** Cada sección tiene la misma forma: qué pasa en la sala, qué cálculo lo produce, y en qué archivo está. **Es el documento central**, y el hogar de todos los números |
-| **3** | [`PENDIENTES.md`](PENDIENTES.md) | **Qué falta.** Separado por lo que se hace sin convocar a nadie, lo que necesita personas en una sala, y lo que decide el equipo docente. **Es el único sitio donde se lleva la cuenta** |
-| **4** | [`docs/EL_CODIGO.md`](docs/EL_CODIGO.md) | **Cómo está organizado el repositorio.** Dónde vive cada cosa, cómo añadir una acción o un punto, qué convenciones hay. Este sí pide saber programar |
+| **1** | [`CONTEXTO.md`](CONTEXTO.md) | **El punto de entrada.** El mapa del repositorio —qué pregunta se responde dónde—, las claves del motor y la historia de los documentos que se retiraron. **Empiece por aquí** |
+| **2** | [`PENDIENTES.md`](PENDIENTES.md) | **Qué falta.** Separado por lo que se hace sin convocar a nadie, lo que necesita personas en una sala, y lo que decide el equipo docente. **Es el único sitio donde se lleva la cuenta** |
+| **3** | [`docs/LA_MEDICION.md`](docs/LA_MEDICION.md) | Propuesta del debriefing y la «lectura de la corrida» (B14), sin implementar |
 
-Y dos **de consulta, que no se leen seguidos**:
+La explicación del juego al motor y el catálogo de acciones **viven en el
+código**: cada módulo y cada acción lleva escrito en su comentario qué hace y
+por qué, y todos los números están en `parameters.py`. La hoja que se imprime
+y se reparte en la sala se regenera con
+`uv run python scripts/repertorio.py`.
 
-| Lea | Para qué |
-|---|---|
-| [`docs/GUIA_DE_ACCIONES.md`](docs/GUIA_DE_ACCIONES.md) | **Las 37 acciones en lenguaje corriente y sin una sola cifra.** Cómo se llama cada una, qué hace, qué hace falta antes y la frase que la pide. Es la guía que cada titular tiene en pantalla, con las siete carteras a la vez: **esto es lo que se imprime y se reparte en la sala** |
-| [`docs/LAS_ACCIONES.md`](docs/LAS_ACCIONES.md) | **Las mismas 39, con los números.** Qué escribe cada una en el estado y cuánto cobra. Se abre por el rol o por la acción que se está discutiendo |
-
-### Y dos más, según lo que busque
-
-| Lea | Para qué |
-|---|---|
-| [`docs/guia_arquitectura_simulaciones.md`](docs/guia_arquitectura_simulaciones.md) | Montar **otro** caso con esta arquitectura. Describe la forma, no el caso: sirve igual para un sismo, un brote o una falla de infraestructura. De aquí sale el principio que ordena todo el repositorio — *el LLM traduce; el motor decide, valida, ejecuta y reporta* — y los ocho modos de falla del canal de órdenes |
-| [`docs/historial/`](docs/historial/) | De dónde salieron las decisiones actuales. **No está obsoleto: está superado.** La [propuesta inicial](docs/historial/propuesta_inicial.md) con sus razonamientos largos, [cómo funcionaba el primer motor](docs/historial/como_funciona_motor_v1.md), el [diagnóstico](docs/historial/mapa_de_palancas.md) del que salió esta versión, y [lo que ya no está pendiente](docs/historial/resueltos.md) |
+> **El historial no se borra: se archiva.** La propuesta inicial, el diseño
+> original, el diagnóstico del primer motor y lo resuelto están en el historial
+> de git (`git show HEAD:docs/propuesta.md`). La lista completa de lo retirado
+> y de dónde quedó cada cosa, en [`CONTEXTO.md`](CONTEXTO.md).
 
 ---
 
@@ -81,11 +72,20 @@ cd ..
 uv run python -m src.api.main        # http://localhost:8000
 ```
 
+**Dos superficies. Ni una más.**
+
 | Superficie | Ruta | Para quién |
 |---|---|---|
-| Tablero de situación | `/tablero` | **proyectar** — con la esfera pública en su barra lateral |
-| Vista privada | `/vista/Interior`, `/vista/Agricultura`… | el dispositivo de cada uno |
+| Tablero de situación | `/` | **proyectar** — la sala entera, la cartera de cada rol en su pestaña y la esfera pública en su barra lateral |
 | Consola | `/consola` | quien transcribe · no proyectar |
+
+> **No hay portada ni vistas privadas.** Hubo un menú en `/` con una tarjeta por
+> superficie y siete pantallas `/vista/{rol}`, una por cartera. El menú era una
+> pantalla que solo servía para salir de ella, y las siete vistas repartían por
+> la sala la información que la mesa necesita junta: quien deliberaba miraba su
+> dispositivo y el de nadie más. Ahora cada cartera es **una pestaña del
+> tablero**, al lado de la vista de sala, y cualquier enlace viejo —`/tablero`,
+> `/esfera`, `/vista/Interior`— aterriza en el tablero sin rebotar por un menú.
 
 > **La esfera pública no tiene ruta propia, y es a propósito.** La distancia
 > entre lo que el Estado tiene por cierto y lo que se dice solo se percibe
@@ -146,8 +146,8 @@ scripts/             corredor sin interfaz, y la guía que se reparte
 tests/               los verificadores · ninguno llama a un modelo
 ```
 
-El detalle —tamaños, por qué cada cosa está donde está, y cómo añadirle algo—
-está en [`docs/EL_CODIGO.md`](docs/EL_CODIGO.md).
+El detalle —qué pregunta se resuelve en qué módulo, y las claves del motor—
+está en [`CONTEXTO.md`](CONTEXTO.md).
 
 ---
 
@@ -271,8 +271,8 @@ cerrado.** Lo que hay que volver a ajustar es cuánto cuesta la mesa.
 
 La lectura completa, con el antes y el después de los dos problemas que estaban
 medidos —la cohesión saturada en 0 y las muertes idénticas en cuatro de cinco
-estrategias—, está en
-[`docs/COMO_FUNCIONA.md` §12](docs/COMO_FUNCIONA.md#12-los-siete-arreglos-medidos).
+estrategias—, está en [`PENDIENTES.md`](PENDIENTES.md), entrada C5, que es
+donde vive la medición.
 
 ---
 

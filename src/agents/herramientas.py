@@ -60,7 +60,6 @@ HERRAMIENTAS: dict[str, dict] = {
             tipo_unidad=a.get("tipo_unidad", "esmad"),
             concertado_con_alcaldia=bool(a.get("concertado_con_alcaldia")),
             responsable_nominado=a.get("responsable_nominado"),
-            de_noche=bool(a.get("de_noche")),
         ),
         "por_defecto": {"tipo_unidad": "esmad"},
         "esquema": {
@@ -68,7 +67,6 @@ HERRAMIENTAS: dict[str, dict] = {
             "tipo_unidad": ("string", "esmad, policia o militar"),
             "concertado_con_alcaldia": ("boolean", "si se concertó con la Alcaldía"),
             "responsable_nominado": ("string", "quién firma la orden"),
-            "de_noche": ("boolean", "si se ordena operar de noche"),
         },
         "requeridos": ["nodo_id"],
     },
@@ -459,10 +457,17 @@ HERRAMIENTAS: dict[str, dict] = {
         "rol": "Presidente",
         "descripcion": "Líneas rojas del Ejecutivo y marco de lo negociable",
         "entidades": {},
+        # DOS VALORES Y NO UN DECIMAL. `margen` era un `number` de 0 a 1 que el
+        # motor comparaba una sola vez contra 0,25: la sala dictaba «margen 0.3»
+        # y el plan se lo leía de vuelta como un decimal que no significaba nada.
+        # Ahora se dice con las palabras con que se decide.
         "construir": lambda a: A.FijarLineasRojas(
-            margen=float(a.get("margen", 0.5))),
-        "por_defecto": {"margen": 0.5},
-        "esquema": {"margen": ("number", "0 = sin margen, 1 = todo negociable")},
+            margen=str(a.get("margen", "amplio"))),
+        "por_defecto": {"margen": "amplio"},
+        "esquema": {"margen": ("string",
+                               "estrecho = nada es negociable; amplio = queda "
+                               "espacio para que Interior pacte",
+                               ["estrecho", "amplio"])},
         "requeridos": [],
     },
     "exigir_protocolo_voceria": {
@@ -634,6 +639,17 @@ ENUMS: dict[str, dict[str, str]] = {
         "proteccion estatica": "infraestructura",
         "proyeccion_aerea": "proyeccion_aerea", "proyeccion aerea": "proyeccion_aerea",
         "aerea": "proyeccion_aerea",
+    },
+    # Cuánto espacio le deja el Presidente al Ministro del Interior para pactar.
+    # ERA UN DECIMAL DE 0 A 1 y el motor lo comparaba una sola vez contra 0,25,
+    # de modo que «0,25» y «1,0» hacían exactamente lo mismo: un continuo del que
+    # se distinguían dos valores. Aquí entra la forma en que la sala lo dice.
+    "margen": {
+        "estrecho": "estrecho", "estrecha": "estrecho", "sin margen": "estrecho",
+        "ninguno": "estrecho", "nada es negociable": "estrecho",
+        "duras": "estrecho", "dura": "estrecho", "cerrado": "estrecho",
+        "amplio": "amplio", "amplia": "amplio", "con margen": "amplio",
+        "todo es negociable": "amplio", "abierto": "amplio", "flexible": "amplio",
     },
 }
 
@@ -893,7 +909,7 @@ DISPARADORES: list[tuple[str, list[str], list[str]]] = [
     ("fijar_clase_alimentaria", ["clase de prioridad agroalimentaria",
                                  "prioridad agroalimentaria", "clase alimentaria",
                                  "prioridad de los alimentos"], []),
-    # --- Las ocho que no tenían llave (`historial/resueltos.md` §10) --------
+    # --- Las ocho que no tenían llave (histórico en git: historial/) -------
     #
     # Existían en el motor, estaban probadas y el corredor sin interfaz las
     # ejecutaba. Lo que no existía era su puerta: la consola es la ÚNICA entrada
@@ -1016,8 +1032,6 @@ def interpretar_sin_modelo(estado: Estado, texto: str) -> list[dict]:
         # una cifra en lugar de una unidad.
         args.update(_numeros_de_la_clausula(spec, t_clausula))
 
-        if "de noche" in t_clausula or "nocturn" in t_clausula:
-            args["de_noche"] = True
         if "delimit" in t or "con limites" in t:
             args["delimitada"] = True
 

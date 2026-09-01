@@ -1,11 +1,12 @@
 /* ---------------------------------------------------------------------------
    SIMCASE · Estallido Social — sistema visual
 
-   Cuatro superficies, dos de ellas PROYECTADAS a una sala:
+   Dos superficies, una de ellas PROYECTADA a la sala:
 
-     /tablero       proyectado · lo que el Estado tiene por cierto,
-                    con la esfera pública —lo que se dice— en su barra lateral
-     /vista/{rol}   el dispositivo de cada uno · su cartera en alta resolución
+     /tablero       proyectado · todo lo que la mesa necesita para deliberar:
+                    reloj, métricas globales, territorio con su panel,
+                    carteras de cada rol y pliego — con la esfera pública
+                    —lo que se dice— en su barra lateral
      /consola       donde se transcriben las órdenes
 
    Todo se diseña para leerse a distancia: tipografía grande, contraste alto,
@@ -299,16 +300,19 @@ a { color: var(--acento); }
   min-width: 0;    /* sin esto, una tabla ancha empuja la barra fuera de pantalla */
 }
 
+/* Ni `sticky` ni `max-height: 100vh`: los dos eran de cuando esta barra vivía
+   en una página que se desplazaba. Dentro de la pantalla fija su alto lo fija
+   el `stretch` del contenedor, y un tope de `100vh` ahí es una promesa mayor
+   que el hueco que hay —cabecera y pestañas ya se llevaron su parte— que se
+   cobra desbordando por abajo. */
 .lateral {
   width: clamp(300px, 26vw, 420px);
   flex: none;
+  min-height: 0;
   border-left: 1px solid var(--borde);
   background: var(--fondo);
   display: flex;
   flex-direction: column;
-  max-height: 100vh;
-  position: sticky;
-  top: 0;
 }
 
 .lateral-cabecera {
@@ -348,17 +352,29 @@ a { color: var(--acento); }
 }
 
 /* En pantallas estrechas la barra pasa debajo, no se pierde. Sigue sin ser una
-   pestaña: se sigue viendo con solo bajar. */
+   pestaña: se sigue viendo con solo bajar.
+
+   PERO NO EN EL TABLERO. Ahí la pantalla no se desplaza y lo que se apila por
+   debajo del borde no queda «más abajo»: queda cortado por el `overflow:
+   hidden`, y la esfera pública desaparece sin decirlo. En el tablero la barra
+   se estrecha y se queda al lado; el botón de la cabecera es el que la retira,
+   y esa retirada sí es visible y reversible. */
 @media (max-width: 1100px) {
   .con-lateral { flex-direction: column; }
   .lateral {
     width: auto;
-    max-height: none;
-    position: static;
     border-left: none;
     border-top: 2px solid var(--borde);
   }
   .lateral-cuerpo { overflow-y: visible; }
+
+  .pantalla-fija .con-lateral { flex-direction: row; }
+  .pantalla-fija .lateral {
+    width: clamp(230px, 27vw, 320px);
+    border-left: 1px solid var(--borde);
+    border-top: none;
+  }
+  .pantalla-fija .lateral-cuerpo { overflow-y: auto; }
 }
 
 /* ---------------------------------------------------------------------------
@@ -407,7 +423,11 @@ a { color: var(--acento); }
   position: fixed;
   z-index: 60;
   width: max-content;
-  max-width: min(30rem, calc(100vw - 2rem));
+  /* MÁS ESTRECHO QUE ANTES. Treinta rem daban para un globo de cuatro
+     párrafos con su tabla de umbrales, y esos globos ya no existen: ahora son
+     dos frases, y dos frases en una caja de treinta rem salen en una sola
+     línea larguísima que el ojo no sabe recorrer. */
+  max-width: min(22rem, calc(100vw - 2rem));
   padding: 0.7rem 0.9rem;
   border: 1px solid var(--borde);
   border-radius: 7px;
@@ -431,21 +451,9 @@ a { color: var(--acento); }
 .ayuda-globo strong { color: var(--texto); font-weight: 650; }
 .ayuda-globo code { font-family: var(--mono); font-size: 0.94em; color: var(--texto); }
 
-/* Una definición con umbrales se lee mejor tabulada que en prosa. */
-.ayuda-globo dl {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.15rem 0.7rem;
-  margin: 0.45rem 0 0;
-}
-.ayuda-globo dt {
-  font-family: var(--mono);
-  font-size: 0.94em;
-  color: var(--texto);
-  white-space: nowrap;
-}
-.ayuda-globo dd { margin: 0; }
-
+/* Ya no hay definiciones con umbrales: un globo es una frase o dos, en prosa.
+   Aquí vivían las reglas de la lista tabulada —`dl`, `dt`, `dd`— que las
+   dibujaban, y con las tablas de umbrales se fueron ellas. */
 .ayuda-globo::after {
   content: "";
   position: absolute;
@@ -632,9 +640,14 @@ a { color: var(--acento); }
    EL TERRITORIO — mapa acotado, y la tabla de al lado como leyenda
    --------------------------------------------------------------------------- */
 
+/* EL MAPA CEDE ANCHO A LA TABLA. Eran 700 px de lienzo, y ese reparto venía de
+   cuando la columna del mapa cargaba además con la ficha del punto y la clave
+   de formas: necesitaba sitio para tres cosas. Ahora solo lleva el lienzo, y
+   quien lo necesita es la tabla de al lado, que desde que despliega el detalle
+   dentro de sus propias filas tiene mucho más que enseñar en cada renglón. */
 .territorio {
   display: grid;
-  grid-template-columns: minmax(0, 700px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 560px) minmax(0, 1fr);
   gap: 1.5rem;
   align-items: start;
 }
@@ -674,16 +687,32 @@ a { color: var(--acento); }
 .mapa-svg circle,
 .mapa-svg rect { transition: fill-opacity 0.25s ease, opacity 0.25s ease; }
 
+/* LA CLAVE DEL MAPA, EN UNA LÍNEA. Eran dos filas y en una pantalla que no se
+   desplaza las dos filas se pagaban en alto del lienzo, que es lo único de
+   esta columna que se mira desde el fondo de la sala. Los dos grupos van
+   seguidos con una barra fina entre ellos. */
 .mapa-formas {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.2rem 0.7rem;
-  margin-top: 0.5rem;
-  padding-top: 0.5rem;
+  gap: 0.15rem 0.6rem;
+  margin-top: 0.45rem;
+  padding-top: 0.45rem;
   border-top: 1px solid var(--borde-suave);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
+  line-height: 1.5;
   color: var(--texto-3);
+}
+.mapa-formas .eyebrow { font-size: 0.6rem; letter-spacing: 0.08em; }
+
+/* El corte entre los dos grupos: una barra, no un punto medio. Un separador
+   con altura dice «aquí empieza otra cosa»; un `·` se lee como un elemento
+   más de la lista. */
+.mapa-formas-corte {
+  width: 1px;
+  height: 0.85rem;
+  background: var(--borde);
+  margin: 0 0.15rem;
 }
 
 /* La tinta del corredor, la misma del mapa. */
@@ -697,49 +726,24 @@ a { color: var(--acento); }
 }
 
 /* ---------------------------------------------------------------------------
-   LA FICHA DEL MAPA — las seis lecturas, en palabras
+   EL DETALLE DE UNA FILA — las seis lecturas, en palabras
 
    Un punto y una región dicen exactamente las mismas seis cosas, con el mismo
-   formato y en el mismo sitio: la sala aprende a leer UNA ficha, no dos. Y la
-   ficha ocupa un hueco fijo, aunque esté vacía, para que el mapa no dé un salto
-   cada vez que el ratón entra y sale de una región.
+   formato: la sala aprende a leer UNA lista, no dos.
+
+   AQUÍ NO HAY TARJETA. Lo hubo: `.ficha` era una caja con borde, fondo propio y
+   nueve rem de alto reservado, primero bajo el mapa y después al pie del panel.
+   Toda esa carrocería existía para separar la ficha de lo que tenía alrededor —
+   y ya no hace falta separarla de nada, porque ahora está DENTRO de la fila a
+   la que pertenece. Lo que queda es el contenido: un subtítulo, sus chips y la
+   rejilla de lecturas.
    --------------------------------------------------------------------------- */
 
-.ficha,
-.ficha-vacia {
-  margin-top: 0.75rem;
-  min-height: 9.2rem;
-  padding: 0.75rem 0.9rem;
-  border: 1px solid var(--borde-suave);
-  border-radius: 9px;
-  background: var(--superficie-2);
-  transition: border-color 0.25s ease, background 0.25s ease;
-}
-.ficha-vacia {
-  display: flex;
-  align-items: center;
-  margin-bottom: 0;
-  font-size: 0.82rem;
-  color: var(--texto-3);
-}
-/* Fijada con un clic: en una pantalla proyectada, quien mueve el ratón no es
-   quien habla, y lo que la mesa está discutiendo tiene que quedarse quieto. */
-.ficha.fijada { border-color: var(--acento); background: var(--acento-suave); }
-
-.ficha-cabeza { display: flex; align-items: baseline; gap: 0.55rem; }
-.ficha-nombre {
-  font-size: 0.96rem;
-  font-weight: 620;
-  color: var(--texto);
-  letter-spacing: -0.005em;
-}
 .ficha-sub {
-  margin-top: 0.22rem;
   font-size: 0.775rem;
   line-height: 1.45;
   color: var(--texto-3);
 }
-.ficha-soltar { margin-left: auto; padding: 0.1rem 0.45rem; font-size: 0.7rem; }
 
 /* Qué se está haciendo en la región, contado. Va entre el subtítulo y las seis
    lecturas: es la respuesta a «¿y aquí quién está haciendo algo?», que el
@@ -754,16 +758,31 @@ a { color: var(--acento); }
 /* El aro punteado de la leyenda: una mesa instalada que hoy no ha sesionado. */
 .mapa-formas .aro.punteado { border-style: dashed; }
 
+/* DOS PAREJAS POR LÍNEA CUANDO CABE. Dentro de la fila desplegada el detalle
+   dispone del ancho ENTERO de la tabla, no de media columna: seis lecturas en
+   una sola pila desperdiciarían la mitad derecha y alargarían el despliegue
+   hasta empujar las filas siguientes fuera de la vista. En dos parejas ocupa
+   tres renglones en vez de seis. */
 .ficha-lecturas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  align-items: center;
+  gap: 0.28rem 1.6rem;
+  margin: 0.55rem 0 0;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--borde-suave);
+}
+
+/* Cada lectura es su propia rejillita de tres —rótulo, palabra, peldaños—. Con
+   `display: contents` las tres piezas se fundían con la rejilla exterior y se
+   repartían entre columnas de parejas distintas. */
+.ficha-fila {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) 68px;
   align-items: center;
-  gap: 0.28rem 0.8rem;
-  margin: 0.7rem 0 0;
-  padding-top: 0.65rem;
-  border-top: 1px solid var(--borde-suave);
+  gap: 0.8rem;
+  min-width: 0;
 }
-.ficha-fila { display: contents; }
 .ficha-fila dt {
   font-size: 0.735rem;
   color: var(--texto-3);
@@ -788,7 +807,7 @@ a { color: var(--acento); }
 }
 
 @media (max-width: 520px) {
-  .ficha-lecturas { grid-template-columns: auto minmax(0, 1fr); }
+  .ficha-fila { grid-template-columns: auto minmax(0, 1fr); }
   .ficha-escala { display: none; }
 }
 
@@ -895,108 +914,26 @@ tr.aviso > td:first-child { padding-left: 0.65rem; }
 }
 
 /* ---------------------------------------------------------------------------
-   LA PORTADA · LA REJILLA DE LOS OCHO ROLES
+   EL PASO DE UNA SUPERFICIE A LA OTRA
 
-   La portada es un lanzador: ocho destinos equivalentes entre los que hay que
-   escoger el propio en dos segundos. Y con `auto-fit` no lo eran.
+   Aquí vivía la PORTADA: la rejilla de tarjetas de rol, el menú desplegable de
+   accesos a las vistas privadas y sus ocho destinos. No queda nada de eso —hay
+   dos superficies, y cada una lleva a la otra con un enlace— y su hoja de
+   estilo se fue con ella. CSS que nadie aplica es CSS que alguien tendrá que
+   leer para averiguar que no se aplica.
 
-   Con ocho tarjetas, `repeat(auto-fit, minmax(240px, 1fr))` reparte en tres
-   columnas y deja una última fila de dos. La fila coja se lee como jerarquía
-   —esos dos parecen otra cosa— y las alturas cambian de fila en fila según el
-   cargo envuelva a una línea o a dos: «Ministro de Defensa» contra «Delegado de
-   la Defensoría del Pueblo». Ocho destinos equivalentes con ocho cajas
-   distintas.
-
-   De modo que la rejilla se fija en cuatro columnas —dos filas exactas— y
-   `grid-auto-rows: 1fr` iguala también la altura ENTRE filas, no solo dentro de
-   cada una. El texto va centrado en los dos ejes: con cajas de altura fija, un
-   cargo de una línea alineado arriba deja un hueco que parece un error.
+   Lo que queda es el enlace, y va en la línea de la versalita, ENCIMA del
+   título: una línea que ya existía, de modo que no le quita altura a los
+   datos. En blanco y en negrita a propósito — no se confunde con el nombre de
+   la pantalla, y quien nunca ha visto el sistema lo encuentra sin que nadie se
+   lo señale.
    --------------------------------------------------------------------------- */
 
-/* Las secciones de una sola tarjeta ancha: tablero y consola. */
-.rejilla-portada {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 0.6rem;
-}
-
-/* TRES COLUMNAS Y NO CUATRO, y no es una cuestión de que quepan: con nueve
-   roles y el catálogo en orden de frente, cada fila de tres es exactamente un
-   frente —estrategia, seguridad, logística—. La rejilla dibuja la arquitectura
-   del ejercicio sin necesidad de rotularla. Con cuatro columnas salían 4+4+1 y
-   la última fila era un huérfano. */
-/* SIETE Y NO NUEVE. Con nueve eran tres filas de tres y la rejilla era
-   cuadrada; con siete la última fila queda coja se pongan como se pongan. Se
-   deja en tres columnas —3 · 3 · 1— porque agrupa por frente igual que la
-   lista de `views.ROLES`, y una fila corta al final se lee como lo que es:
-   dos carteras que ya no están. */
-.rejilla-roles {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-auto-rows: 1fr;
-  gap: 0.6rem;
-}
-
-@media (max-width: 880px) {
-  .rejilla-roles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-@media (max-width: 400px) {
-  .rejilla-roles { grid-template-columns: 1fr; }
-}
-
-.tarjeta-rol {
-  display: flex;
-  flex-direction: column;
+.nav-superficies {
+  display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  min-height: 5.4rem;
-  padding: 0.85rem 0.7rem;
-  text-align: center;
-  text-wrap: balance;
-  text-decoration: none;
-  color: inherit;
+  gap: 1.1rem;
 }
-
-.tarjeta-rol:hover { border-color: var(--acento); }
-
-/* El frente queda anclado arriba y el cargo se centra en lo que sobra. Centrar
-   el bloque entero alineaba mal las versalitas: en las tarjetas cuyo cargo
-   envuelve a dos líneas subían, y la fila volvía a verse despareja aunque las
-   ocho cajas midieran exactamente lo mismo. */
-.tarjeta-rol-nombre {
-  flex: 1;
-  display: grid;
-  place-items: center;
-  font-weight: 600;
-  font-size: 0.9rem;
-  line-height: 1.3;
-}
-
-/* ---------------------------------------------------------------------------
-   EL ACCESO A LAS VISTAS PERSONALES
-
-   Un menú escondido dentro de un rótulo que ya estaba en la cabecera. No añade
-   ni un píxel a la pantalla proyectada: la versalita «Tablero de situación ·
-   para proyectar» es el tirador, y un chevrón de bajo contraste es la única
-   señal de que ahí hay algo que pulsar.
-
-   Una fila de ocho pestañas habría hecho lo contrario de lo que hace falta:
-   ocupar el sitio de los datos e invitar a proyectar una vista personal, que es
-   justo lo que borra la asimetría de información del ejercicio.
-   --------------------------------------------------------------------------- */
-
-.acceso { position: relative; display: inline-block; }
-
-/* --- el paso de una superficie a otra --------------------------------------
-
-   Un solo aspecto para las dos cosas que llevan de una pantalla a otra: el
-   tirador de las vistas privadas y los enlaces de vuelta al tablero y al menú.
-   Van en la línea de la versalita, encima del título: es una línea que ya
-   existía, de modo que no le quitan altura a los datos.
-
-   En blanco y en negrita a propósito. Están ENCIMA del título y no dentro de
-   él, así que no se confunden con el nombre de la pantalla, y quien nunca ha
-   visto el sistema los encuentra sin que nadie se los señale. */
 
 .enlace-superficie {
   display: inline-flex;
@@ -1018,79 +955,20 @@ tr.aviso > td:first-child { padding-left: 0.65rem; }
 }
 
 .enlace-superficie:hover { background: none; color: var(--acento); }
-.enlace-superficie:hover .acceso-chevron,
 .enlace-superficie:hover .enlace-flecha { color: var(--acento); }
 
-.enlace-flecha,
-.acceso-chevron {
+.enlace-flecha {
   font-size: 0.72rem;
   color: var(--texto-3);
 }
 
-.acceso-chevron { font-size: 0.62rem; transform: translateY(-0.05em); }
-
-.nav-superficies {
-  display: inline-flex;
-  align-items: center;
-  gap: 1.1rem;
-  flex-wrap: wrap;
-}
-
-/* La versalita de la cabecera y el control que la acompaña, en una sola línea. */
+/* La versalita de la cabecera y el enlace que la acompaña, en una sola línea. */
 .cabecera-rotulo {
   display: flex;
   align-items: center;
   gap: 0.9rem;
   flex-wrap: wrap;
   margin-bottom: 0.15rem;
-}
-
-.acceso-panel {
-  position: absolute;
-  top: calc(100% + 0.55rem);
-  left: 0;
-  z-index: 40;
-  width: 17rem;
-  padding: 0.8rem 0.85rem 0.6rem;
-  border: 1px solid var(--borde);
-  border-radius: 8px;
-  background: var(--superficie-2);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
-}
-
-.acceso-titulo { display: block; margin-bottom: 0.6rem; }
-
-.acceso-grupo { margin-bottom: 0.55rem; }
-
-.acceso-frente {
-  display: block;
-  font-size: 0.6rem;
-  color: var(--texto-3);
-  opacity: 0.75;
-  margin-bottom: 0.2rem;
-}
-
-.acceso-rol {
-  display: block;
-  padding: 0.3rem 0.45rem;
-  margin-left: -0.45rem;
-  border-radius: 5px;
-  font-size: 0.84rem;
-  color: var(--texto);
-  text-decoration: none;
-}
-
-.acceso-rol:hover { background: var(--superficie); color: var(--acento); }
-
-/* La advertencia va ANTES del clic. Esta pantalla se proyecta, y quien la pulsa
-   está cambiando lo que ve toda la sala. */
-.acceso-pie {
-  margin: 0.5rem 0 0;
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--borde);
-  font-size: 0.7rem;
-  line-height: 1.4;
-  color: var(--texto-3);
 }
 
 /* ---------------------------------------------------------------------------
@@ -1657,3 +1535,682 @@ tr.aviso > td:first-child { padding-left: 0.65rem; }
   font-weight: 400;
   color: var(--texto-3);
 }
+
+/* ---------------------------------------------------------------------------
+   LAS DOS INSTITUCIONES, UNA EN CADA ESQUINA
+   ---------------------------------------------------------------------------
+
+   La cabecera lleva un logo a cada lado: la Escuela de Gobierno a la
+   izquierda, el AI Lab a la derecha. Son la firma del ejercicio, y su sitio
+   natural es el borde superior — donde un encabezado institucional va en
+   cualquier documento proyectado, y no compitiendo con los datos.
+
+   Van en altura fija y con `object-fit`, porque las dos piezas entran con
+   proporciones distintas y ninguno de los dos formatos puede estirar la fila.
+*/
+
+.cabecera { align-items: center; }
+
+.cabecera-logo {
+  height: 2.15rem;
+  max-width: 9rem;
+  object-fit: contain;
+  opacity: 0.88;
+  flex: 0 0 auto;
+}
+
+.cabecera-centro { flex: 1 1 auto; min-width: 0; }
+
+.cabecera-derecha {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  flex: 0 0 auto;
+}
+
+/* El reloj y su globo de ayuda, pegados: son una sola cosa. */
+.cabecera-reloj {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* El mando de la esfera lleva un contador encima cuando está plegada, y ese
+   contador se posiciona respecto de él. */
+.mando-esfera {
+  position: relative;
+  white-space: nowrap;
+}
+
+/* La jornada y la fase, en la cabecera de la consola: el mismo hueco que en el
+   tablero ocupa el reloj, para que las dos cabeceras se lean igual. */
+.cabecera-jornada { text-align: right; }
+.cabecera-jornada .num { font-weight: 600; }
+
+/* ---------------------------------------------------------------------------
+   LA PANTALLA FIJA — nada de esta superficie se desplaza hacia abajo.
+   ---------------------------------------------------------------------------
+
+   La regla del tablero es que NUNCA hace falta scroll para ver algo: la
+   pantalla alta es un lienzo que se reparte, no una página que crece. El alto
+   de la ventana se agota entre cabecera, pestañas y contenido, y el contenido
+   reparte el suyo; lo que no cabe se desplaza POR DENTRO de su panel —una
+   tabla de nodos, una franja de consecuencias— que es donde el ojo ya está.
+
+   `.cuerpo-fijo` es la pieza: alto el que sobre, `min-height: 0` para que los
+   hijos puedan encoger, y `overflow: hidden` para que un dato con una fila de
+   más no empuje el mapa fuera de la ventana sin que nadie lo note.
+*/
+
+.pantalla-fija {
+  /* `dvh` y no `vh`: en un navegador con barra de herramientas retráctil,
+     `100vh` es el alto SIN la barra, así que el tablero se corta por abajo
+     exactamente donde está el mapa. `dvh` mide lo que de verdad se ve. */
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* La cabecera de esta pantalla NO ENVUELVE. Con `flex-wrap` puesto, un título
+   largo o un reloj ancho tiran el bloque de la derecha a una segunda línea, y
+   esa línea sale del alto que le tocaba al mapa —que es el único elemento que
+   cede, porque es el único que puede—. Aquí se aprieta el espaciado y se
+   recorta el logo antes que ganar un renglón. */
+.pantalla-fija > .cabecera {
+  flex-wrap: nowrap;
+  flex: 0 0 auto;
+  padding: 0.6rem 1.25rem;
+}
+.pantalla-fija > .cabecera h1 { font-size: 0.98rem; }
+.pantalla-fija .cabecera-logo { height: 1.85rem; max-width: 7.5rem; }
+
+.cuerpo-fijo {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow: hidden;
+  padding-bottom: 1rem;
+}
+
+/* ---------------------------------------------------------------------------
+   LAS PESTAÑAS DE ROL — la sala entera o la cartera de uno, al mismo nivel.
+   ---------------------------------------------------------------------------
+
+   La sala alterna entre la vista general y la de cada rol siguiendo la
+   conversación, y el clic tiene que costar lo mismo en cualquiera de las
+   ocho. El nombre corto viaja en la pestaña y el completo en su `title`.
+
+   Es la misma barrita inferior del acento que las pestañas del territorio:
+   un solo vocabulario visual para «esto es una pestaña».
+*/
+
+.pestanas-rol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  padding: 0 1.5rem;
+  border-bottom: 1px solid var(--borde);
+  background: var(--superficie);
+}
+
+.pestana-rol {
+  appearance: none;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  padding: 0.45rem 0.85rem;
+  color: var(--texto-3);
+  font: inherit;
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+.pestana-rol:hover { color: var(--texto-2); }
+.pestana-rol.activa {
+  color: var(--texto);
+  font-weight: 650;
+  border-bottom-color: var(--acento);
+}
+
+/* ---------------------------------------------------------------------------
+   LA CABECERA DE ESTADO — tres zonas rotuladas, no una tira de datos.
+   ---------------------------------------------------------------------------
+
+   La primera versión de esta franja era una sola línea flexible con cuatro
+   grupos de chips: al faltar sitio, cada grupo envolvía donde podía y el
+   resultado se leía como datos regados — había información y no había
+   orden. La regla que lo arregla es la de toda cabecera de indicadores:
+
+     UNA ZONA POR PREGUNTA, Y CADA ZONA CON SU NOMBRE ENCIMA.
+
+     El plazo ....... la jornada, la fecha y cuántas quedan
+     El marcador .... lo que se cuenta de verdad: personas, pesos, unidades
+     Lo que piensa .. encuadre y las cinco magnitudes, en palabra de color
+
+   Los separadores verticales hacen de artículo: donde empieza una pregunta
+   y termina la anterior se ve, no se deduce. Y los «sin cerrar» se fueron a
+   donde se consultan — el conteo de puntos sin verificar vive en la tabla de
+   nodos y el de decisiones sin responsable, en el pliego — porque un número
+   lejos de sus filas es ruido en dos sitios.
+*/
+
+/* CUATRO ZONAS, y el orden es una escala de lo concreto a lo abstracto:
+   cuánto queda, qué se ha conseguido, qué piensa el país de ello, y con quién
+   se puede seguir hablando. Las tres primeras miden el país; la cuarta mide la
+   conversación que lo conduce. */
+.franja-estado {
+  display: grid;
+  grid-template-columns:
+    minmax(140px, auto) minmax(0, 1.35fr) minmax(0, 1.25fr) minmax(0, 0.95fr);
+  gap: 0 1.4rem;
+  align-items: stretch;
+  padding: 0.55rem 0.9rem 0.6rem;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+}
+
+/* En dos columnas las zonas se emparejan en dos filas, y la segunda fila lleva
+   su propio filete arriba. La zona 4 conserva su separador izquierdo: sigue
+   habiendo una frontera entre ella y la 3, solo que ahora es vertical dentro
+   de la segunda fila. */
+@media (max-width: 1560px) {
+  .franja-estado { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); }
+  .franja-zona:nth-child(3),
+  .franja-zona:nth-child(4) {
+    border-top: 1px solid var(--borde-suave);
+    padding-top: 0.45rem;
+    margin-top: 0.15rem;
+  }
+  .franja-zona:nth-child(3) { border-left: none; padding-left: 0; }
+}
+@media (max-width: 680px) {
+  .franja-estado { grid-template-columns: 1fr; }
+  .franja-zona { border-left: none !important; padding-left: 0 !important; }
+}
+
+.franja-zona {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+  padding-left: 1.6rem;
+  border-left: 1px solid var(--borde-suave);
+}
+.franja-zona:first-child { border-left: none; padding-left: 0; }
+
+.franja-cifra {
+  font-size: 1.02rem;
+  font-weight: 650;
+  color: var(--texto);
+  line-height: 1.2;
+}
+
+.franja-linea {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--texto-2);
+}
+
+.franja-ultima {
+  font-style: normal;
+  color: var(--medio);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+/* El KPI: rótulo pequeño encima, valor debajo. Es el patrón que hace legible
+   una fila de indicadores — el ojo agrupa por columna y no tiene que leer
+   etiqueta a etiqueta para encontrar el valor. */
+.franja-kpis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 1rem;
+  align-items: flex-start;
+}
+
+.kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.kpi-rotulo {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--texto-3);
+  white-space: nowrap;
+}
+
+.kpi-valor {
+  font-family: var(--mono);
+  font-size: 1rem;
+  font-weight: 650;
+  color: var(--texto);
+  line-height: 1.15;
+}
+.kpi-valor.mal { color: var(--mal); }
+.kpi-valor.medio { color: var(--medio); }
+.kpi-valor.bien { color: var(--bien); }
+
+/* La palabra de color de una magnitud de opinión: mismo patrón que el número
+    — mismo sitio, mismo peso — para que las dos zonas se lean igual. */
+.kpi-palabra { font-family: var(--sans); font-size: 0.88rem; }
+
+.kpi-sub {
+  font-size: 0.72rem;
+  color: var(--texto-3);
+  line-height: 1.2;
+}
+/* El subrótulo que avisa: las regiones en rojo van bajo las muertes evitables
+   porque son de donde saldrán las siguientes. */
+.kpi-sub.mal { color: var(--mal); }
+
+.franja-de {
+  color: var(--texto-3);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+/* La unidad de una cifra: pegada al número y medio tono por debajo. Se lee el
+   número; la unidad solo tiene que estar ahí para que nadie se equivoque de
+   orden de magnitud. */
+.unidad {
+  color: var(--texto-3);
+  font-size: 0.72em;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+/* ---------------------------------------------------------------------------
+   EL TERRITORIO EN PANTALLA FIJA — la tarjeta se queda con el alto que sobre
+   y reparte: el mapa encoge hasta su proporción y el panel desplaza por
+   dentro. Ni la una ni el otro empujan nada hacia abajo.
+*/
+
+.tarjeta-territorio {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.tarjeta-territorio .territorio {
+  flex: 1 1 auto;
+  min-height: 0;
+  align-items: stretch;
+  gap: 1.1rem;
+}
+
+/* DOS COLUMNAS, PASE LO QUE PASE. La regla general apila mapa y panel por
+   debajo de 1250 px, y eso en una página que se desplaza está bien: se baja y
+   ahí está la tabla. Dentro del tablero fijo, apilar significa que la mitad
+   de abajo se la come el `overflow: hidden`. El mapa cede ancho —la columna
+   pasa de 700 a un reparto proporcional— y las dos siguen en pantalla. */
+@media (max-width: 1250px) {
+  .tarjeta-territorio .territorio {
+    grid-template-columns: minmax(0, 0.82fr) minmax(0, 1fr);
+    gap: 0.9rem;
+  }
+}
+@media (max-width: 900px) {
+  .tarjeta-territorio .territorio {
+    grid-template-columns: minmax(0, 0.68fr) minmax(0, 1fr);
+  }
+}
+
+/* EL LIENZO LLENA EL HUECO QUE SOBRA — Y SOLO ESE HUECO.
+   ---------------------------------------------------------------------------
+
+   Este es el bug que rompía el tablero, y vale la pena dejarlo escrito.
+
+   El patrón para meter una figura en una caja es el clásico: la caja se
+   declara `position: relative` y el lienzo la cubre entera con `inset: 0`,
+   que `preserveAspectRatio` centra. Correcto — salvo por CUÁL era la caja.
+   El bloque relativo era `.mapa-caja`, que envolvía a TODA la columna del
+   mapa: título, lienzo, ficha y leyenda. Un absoluto con `inset: 0` no se
+   detiene en el hermano de al lado: se estira hasta el borde de su bloque
+   contenedor y, por ser posicionado, se pinta ENCIMA de todo lo que no lo
+   está. Resultado: el título, la ficha del punto y la leyenda quedaban
+   asomando por debajo del dibujo.
+
+   La regla: **el bloque relativo tiene que abrazar al lienzo y a nada más.**
+   `.mapa` reparte la columna en flujo normal —título arriba, ficha y leyenda
+   abajo, ambas con su alto natural— y `.mapa-lienzo` se queda con lo que
+   sobre. Dentro de él, y solo dentro de él, el SVG se cubre a sí mismo. */
+
+.mapa {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.mapa-lienzo {
+  position: relative;
+  flex: 1 1 auto;
+  /* Un SUELO, no una medida. El único hijo del lienzo está posicionado en
+     absoluto, así que su contenido mide cero y el flex lo dejaría encogerse
+     hasta desaparecer si la ficha se pone larga. Ocho rem es el mínimo por
+     debajo del cual el mapa deja de ser un mapa y pasa a ser una mancha. */
+  min-height: 8rem;
+}
+
+.mapa-lienzo > .mapa-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+}
+
+/* El título mide lo suyo; TODO lo demás del alto es del lienzo.
+   Debajo del mapa colgaban la ficha del punto y la clave de formas: dos
+   bloques de alto fijo que le comían al dibujo un tercio largo de la columna,
+   y que además partían la lectura de un punto en dos —media en su fila de la
+   tabla, media en la ficha de enfrente—. Las dos se mudaron al panel de al
+   lado. Aquí queda el mapa, que es lo que esta columna sabe hacer. */
+.mapa-titulo { flex: 0 0 auto; }
+
+/* La noche no retira el mapa: las consecuencias son una franja con su propio
+   desplazamiento interno, y desaparecen solas al abrir la jornada. */
+.consecuencias-franja {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 26vh;
+  overflow-y: auto;
+}
+
+/* ---------------------------------------------------------------------------
+   EL PANEL DEL TERRITORIO — pestañas a la derecha del mapa
+   ---------------------------------------------------------------------------
+
+   Nodos, corredores y regiones son tres preguntas, y cada una es una pestaña.
+   La pestaña activa se marca con la barrita inferior del acento — no con un
+   fondo entero, que a lo ancho de una fila de pestañas leería como un botón
+   grande apagado.
+
+   La tabla vive en un recipiente con su propio desplazamiento: el mapa al lado
+   mide lo que mide, y la tabla de nodos tiene tantas filas como puntos haya.
+   Que el panel crezca hacia abajo empujaría el pliego fuera de la pantalla en
+   la primera jornada.
+*/
+
+.panel-territorio {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.pestanas {
+  display: flex;
+  gap: 0.2rem;
+  border-bottom: 1px solid var(--borde);
+  margin-bottom: 0.75rem;
+}
+
+.pestana {
+  appearance: none;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  padding: 0.4rem 0.7rem;
+  color: var(--texto-3);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.pestana:hover { color: var(--texto-2); }
+.pestana.activa {
+  color: var(--texto);
+  font-weight: 650;
+  border-bottom-color: var(--acento);
+}
+
+.panel-pestana {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-titulo {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
+}
+.panel-sub {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--texto-3);
+}
+
+.panel-tabla { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+
+/* La clave de formas cierra la pestaña de nodos: mide lo suyo y no le disputa
+   el alto a la tabla. */
+.panel-pestana .mapa-formas { flex: 0 0 auto; margin-top: 0.4rem; }
+
+/* ---------------------------------------------------------------------------
+   LA FILA DESPLEGADA — el detalle, dentro de la tabla
+
+   Ocupa el ancho entero justo debajo de la fila que lo abrió, y se distingue
+   de una fila normal por tres cosas: el fondo hundido, la franja del acento a
+   la izquierda —que la ata visualmente a su fila— y la falta de las líneas de
+   celda. No es una fila más de la lista: es el reverso de una.
+   --------------------------------------------------------------------------- */
+
+.fila-detalle > td {
+  padding: 0.5rem 0.9rem 0.75rem !important;
+  background: var(--superficie-2);
+  box-shadow: inset 3px 0 0 var(--acento);
+  border-bottom: 1px solid var(--borde) !important;
+  cursor: default;
+}
+
+/* El fondo de «fila mirada» no debe teñir el despliegue: se pinta sobre TODA la
+   fila, y aquí la fila es un panel entero. */
+.panel-tabla tr.fila-detalle.mirado > td { background: var(--superficie-2); }
+.panel-pie {
+  margin: 0.5rem 0 0;
+  font-size: 0.72rem;
+  color: var(--texto-3);
+}
+
+/* El conteo del panel lleva aviso cuando hay algo: la nota al pie de la tabla
+   se colorea sola si lo que cuenta es un cabo suelto. */
+.panel-sub.hay { color: var(--medio); font-weight: 600; }
+
+/* ---------------------------------------------------------------------------
+   LA TABLA Y EL MAPA SE SEÑALAN MUTUAMENTE
+
+   Tres estados, y los tres son la misma conversación vista desde la tabla:
+
+     .mirado   el ratón está encima —de la fila o del punto, da igual cuál—
+     .sel      alguien lo FIJÓ con un clic, y ahí se queda
+     (nada)    ninguna de las dos
+
+   `mirado` es más tenue que `sel` a propósito: mirar es buscar, fijar es
+   decidir. Si pesaran lo mismo, mover el ratón por la lista parecería estar
+   cambiando lo que la sala está discutiendo.
+   --------------------------------------------------------------------------- */
+
+/* Estas filas se pulsan —la de un nodo lo fija, la de una región acerca el
+   mapa— y el puntero es la única señal previa al clic de que ahí hay algo. */
+.panel-tabla.pulsable tbody tr { cursor: pointer; }
+.panel-tabla.pulsable tr.fila-detalle { cursor: default; }
+.panel-tabla tr.mirado > td { background: rgba(140, 170, 210, 0.07); }
+.panel-tabla tr.sel > td { background: var(--acento-suave); }
+.panel-tabla tr.sel > td:first-child { box-shadow: inset 3px 0 0 var(--acento); }
+
+/* ---------------------------------------------------------------------------
+   LA MARCA DEL PUNTO EN SU FILA
+
+   El mapa no rotula sus puntos al nivel de país —doce nombres largos sobre un
+   racimo de seis puntos en una misma ciudad no se leen—, así que la fila y el
+   punto no tenían ni una palabra en común. La marca es el puente: la fila
+   lleva dibujado su propio punto, con la misma forma, el mismo color y los
+   mismos aros. Se busca la forma, no el nombre.
+
+   Va en una columna estrecha y sin encabezado, y esa columna manda sobre el
+   realce de severidad: la franja de color de la fila se pinta en el primer
+   `td`, que ahora es este.
+   --------------------------------------------------------------------------- */
+
+.col-marca {
+  width: 1.6rem;
+  padding-right: 0 !important;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.marca-punto {
+  display: block;
+  margin: 0 auto;
+  overflow: visible;   /* el anillo de anoche se sale del cuadro */
+}
+
+/* El punto mirado crece un pelo. Es la única señal que se ve desde el fondo de
+   la sala sin leer nada. */
+.panel-tabla tr.mirado .marca-punto,
+.panel-tabla tr.sel .marca-punto { transform: scale(1.14); }
+.marca-punto { transition: transform 0.15s ease; }
+
+/* El código del punto, dentro de la subcelda: aquí no separa de nada por la
+   izquierda, va pegado al principio de la línea. */
+.celda-sub .punto-id { margin-left: 0; font-size: inherit; }
+
+.celda-sub {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  color: var(--texto-3);
+}
+
+/* ---------------------------------------------------------------------------
+   LA PESTAÑA DE UN ROL — alerta, detalle y semáforo, en una pantalla.
+   ---------------------------------------------------------------------------
+
+   La alerta es una franja, no una tarjeta: dice lo más urgente y se acabó.
+   El detalle reparte sus bloques en una rejilla que llena el alto disponible
+   y desplaza POR DENTRO si una cartera trae muchas tablas — la página, nunca.
+
+   EL SEMÁFORO VA AL PIE Y ES UNA FILA DE PUNTOS. La guía impresa explica cada
+   acción; la pantalla solo dice si HOY sale. Un punto de color y el nombre,
+   el reparo en el `title` para quien lo necesite, y las que aún no salen al
+   final para que no compitan por el ojo con las que sí.
+*/
+
+.rol-vista {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.rol-alerta {
+  border-left: 3px solid var(--acento);
+  background: var(--superficie);
+  border-radius: 4px;
+  padding: 0.55rem 0.9rem;
+  font-size: 0.92rem;
+}
+.rol-alerta p { margin: 0.15rem 0 0; color: var(--texto); }
+
+.rol-notificacion { padding: 0.55rem 0.9rem; }
+.rol-notificacion .notificacion-porque { display: none; }
+
+.rol-detalle {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.75rem 1.25rem;
+  align-content: start;
+  padding: 0.15rem 0.15rem 0.5rem;
+}
+
+.rol-bloque { min-width: 0; }
+
+.rol-bloque-simple .num {
+  font-size: 1.05rem;
+  font-weight: 650;
+  margin-top: 0.1rem;
+}
+
+/* Una tabla de cartera puede ser ancha; se desplaza dentro de su bloque. */
+.rol-bloque-tabla { grid-column: 1 / -1; }
+
+.rol-claves {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  margin-top: 0.15rem;
+  font-size: 0.88rem;
+}
+.rol-clave { color: var(--texto-3); margin-right: 0.3rem; }
+
+.rol-nota {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.78rem;
+  font-style: italic;
+  color: var(--medio);
+}
+
+.rol-repertorio {
+  flex: 0 0 auto;
+  border-top: 1px solid var(--borde);
+  padding-top: 0.55rem;
+}
+
+.rol-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.rol-acc {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--texto-2);
+  border: 1px solid var(--borde-suave);
+  border-radius: 999px;
+  padding: 0.14rem 0.6rem;
+  cursor: help;
+}
+
+.rol-acc-punto {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+
+/* El punto dice el estado; el texto acompaña. Lo que hoy no sale se apaga
+    un punto y no un rótulo gritando: el orden ya lo puso al final. */
+.rol-acc-disponible .rol-acc-punto { background: var(--bien); }
+.rol-acc-disponible { color: var(--texto); }
+.rol-acc-condicionada .rol-acc-punto { background: var(--medio); }
+.rol-acc-bloqueada .rol-acc-punto { background: var(--mal); }
+.rol-acc-bloqueada { color: var(--texto-3); }
+.rol-acc-hecha .rol-acc-punto { background: var(--texto-3); }
+.rol-acc-hecha { color: var(--texto-3); }

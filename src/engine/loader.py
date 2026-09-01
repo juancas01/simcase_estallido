@@ -53,7 +53,11 @@ def cargar_estado(ruta: str | Path | None = None) -> Estado:
         )
 
     for n in d["nodos"]:
-        comp = n.get("composicion_real", [0.75, 0.15, 0.10])
+        # DOS NÚMEROS: [protesta_legítima, estructura_organizada]. El vandalismo
+        # oportunista es el residuo y lo deriva `Composicion`, porque ningún
+        # cálculo del motor lo consulta. El escenario traía tres y el de en medio
+        # no gobernaba nada.
+        comp = n.get("composicion_real", [0.75, 0.10])
         estado.nodos[n["nodo_id"]] = Nodo(
             nodo_id=n["nodo_id"],
             nombre=n["nombre"],
@@ -253,11 +257,16 @@ def _verificar_invariantes(estado: Estado) -> None:
     for n in estado.nodos.values():
         if n.region_id not in estado.regiones:
             raise ValueError(f"Nodo {n.nodo_id} referencia región inexistente: {n.region_id}")
+        # CON DOS NÚMEROS Y UN RESIDUO, EL CASO MALO CAMBIÓ. Ya no es «no suman
+        # 1» —el vandalismo oportunista absorbe cualquier hueco— sino que las dos
+        # que sí gobiernan algo sumen MÁS de 1, que es un dato imposible.
         s = (n.composicion_real.protesta_legitima
-             + n.composicion_real.vandalismo_oportunista
              + n.composicion_real.estructura_organizada)
-        if abs(s - 1.0) > 1e-6:
-            raise ValueError(f"Nodo {n.nodo_id}: composicion_real no suma 1 ({s})")
+        if s > 1.0 + 1e-6:
+            raise ValueError(
+                f"Nodo {n.nodo_id}: protesta legítima y estructura organizada "
+                f"suman más de 1 ({s})"
+            )
 
     if any(v for k, v in vars(estado.banderas).items()
            if isinstance(v, bool)):
@@ -266,20 +275,34 @@ def _verificar_invariantes(estado: Estado) -> None:
         # hay ninguna: la mesa empieza sin constituir absolutamente nada.
         raise ValueError("En t=0 no debe haber ninguna bandera activa")
 
-    # INVARIANTE CRÍTICA: toda región debe tener al menos un corredor humanitario.
+    # INVARIANTE CRÍTICA: toda región debe tener al menos un corredor de CADA
+    # clase que le lleva algo — humanitario, combustible y alimentario.
     #
-    # Sin ella, una región sin vía de reposición de oxígeno acumula muertes
-    # evitables HAGA LO QUE HAGA la sala. Eso no es un dilema: es un guion que
-    # castiga. Se detectó midiendo —una región no tenía ninguno y las cinco
-    # estrategias daban exactamente las mismas 147 muertes—, y por eso la
-    # comprobación vive aquí.
-    for r in estado.regiones.values():
-        if not estado.corredores_que_sirven(r.region_id, "humanitario"):
-            raise ValueError(
-                f"La región {r.nombre} no tiene ningún corredor de clase "
-                f"'humanitario'. Sus muertes evitables serían inevitables por "
-                f"construcción."
-            )
+    # Sin ella, una región sin vía de reposición acumula escasez HAGA LO QUE
+    # HAGA la sala. Eso no es un dilema: es un guion que castiga. Se detectó
+    # midiendo —una región sin corredor humanitario, y las cinco estrategias
+    # daban exactamente las mismas 147 muertes—, y por eso la comprobación vive
+    # aquí.
+    #
+    # ERA UNA CLASE Y SON TRES, y la que faltaba producía justo el fallo que esto
+    # existe para impedir: ningún corredor que tocara Las Cumbres o Alto Verde
+    # llevaba combustible, así que su contador **solo podía bajar**. Comprobado
+    # abriendo los diez puntos al cien por cien desde el minuto cero: las dos
+    # regiones llegaban igual al suelo en la jornada 4 — y por debajo de un día
+    # de combustible `supply.step` les descuenta oxígeno cada ventana, «sin
+    # diésel no hay plantas de emergencia». Un castigo permanente que no decidía
+    # la sala sino el archivo de escenario.
+    #
+    # El guardián tenía el alcance a medias, que es peor que no tenerlo: hacía
+    # creer que la clase de fallo estaba cubierta.
+    for clase in ("humanitario", "combustible", "alimentario"):
+        for r in estado.regiones.values():
+            if not estado.corredores_que_sirven(r.region_id, clase):
+                raise ValueError(
+                    f"La región {r.nombre} no tiene ningún corredor de clase "
+                    f"'{clase}'. Su contador solo podría bajar, hiciera lo que "
+                    f"hiciera la sala."
+                )
 
     # INVARIANTE DEL PAQUETE DETONANTE: nunca una sola denuncia sin verificar.
     # Siempre al menos dos, con veracidad DISTINTA. Un ejercicio en el que la
@@ -297,6 +320,20 @@ def _verificar_invariantes(estado: Estado) -> None:
                 "Las denuncias iniciales deben tener veracidad DISTINTA: al menos "
                 "una cierta y una falsa, sin ninguna señal que las distinga."
             )
+
+        # Y APUNTAN A PUNTOS QUE EXISTEN. Los corredores y la infraestructura ya
+        # tenían su comprobación de referencias; las denuncias no, y son las
+        # únicas de las tres que el motor consulta EN CALIENTE: cuando una veraz
+        # estalla, `information.paso_denuncias` hace `estado.nodos[d.nodo_id]`
+        # para saber en qué región subir la movilización. Un identificador mal
+        # escrito en el escenario no fallaba al cargar — fallaba en la jornada 3,
+        # con la sala delante.
+        huerfanas = [f"{d.denuncia_id} apunta a {d.nodo_id}"
+                     for d in estado.denuncias
+                     if d.nodo_id and d.nodo_id not in estado.nodos]
+        if huerfanas:
+            raise ValueError(
+                "Denuncias sobre puntos inexistentes: " + "; ".join(huerfanas))
 
     if estado.region_epicentro and estado.region_epicentro not in estado.regiones:
         raise ValueError(f"region_epicentro desconocida: {estado.region_epicentro}")

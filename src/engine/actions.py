@@ -11,7 +11,7 @@ ERAN NUEVE ROLES Y TREINTA Y NUEVE ACCIONES. Salieron el Delegado de la
 Defensoría del Pueblo y el Ministro de Minas y Energía; siete de sus acciones
 encontraron heredero y dos se retiraron, porque «exigirle al Gobierno» y «poner
 en duda mi permanencia» son actos de quien no responde ante él. La historia
-completa está en `docs/historial/resueltos.md`.
+completa está en el historial de git (`docs/historial/`).
 
     constitutiva   cambia cómo funciona la mesa. Activa una bandera persistente.
                    Casi no cuesta y modifica TODO lo posterior.
@@ -52,7 +52,7 @@ from typing import Literal
 
 from src.engine import parameters as P
 from src.engine import force, aperture, supply, information
-from src.engine.state import Estado, Acuerdo
+from src.engine.state import Estado, Acuerdo, Corredor
 
 Clase = Literal["constitutiva", "operativa", "informativa"]
 
@@ -102,6 +102,80 @@ class Validacion:
     parcial: bool = False
 
 
+def ventana_escoltada(
+    estado: Estado, c: Corredor, *, aviso_sin_escolta: str
+) -> Validacion | None:
+    """
+    Las dos condiciones materiales que comparte todo lo que circula por un
+    corredor sin ser la Policía: **que haya una escolta puesta** —la da
+    `Escoltar`, que es de otro rol— y **que el corredor no esté bloqueado**.
+
+    SE COMPRUEBA AL EJECUTAR Y NO AL ENCOLAR, y no es un detalle de estilo.
+    La escolta la asigna `Escoltar` cuando se ejecuta, y `paso_fatiga` la
+    libera al cerrar CADA paso, de modo que la ventana existe únicamente
+    DENTRO de un plan: entre la escolta y el cierre de la jornada. Como
+    requisito de encolado era imposible de satisfacer — nunca hay una escolta
+    puesta en el momento de encolar — y la caravana y el acopio quedaban
+    fuera de la cola siempre, aunque la escolta viniera una línea antes en
+    el mismo plan. Eran acciones inalcanzables.
+
+    Por eso quien la llama la traduce en dos formatos: `validar` la convierte
+    en un AVISO (`parcial`) — el plan se lee en voz alta y la sala oye la
+    dependencia antes de confirmar — y `ejecutar` en un fallo limpio que no
+    tumba el resto del plan.
+
+    Lo único que cambia entre las dos acciones que la usan es QUÉ cosa es la
+    que no puede circular sin ventana, y eso viaja en `aviso_sin_escolta`.
+
+    `Escoltar` NO la usa, y no es un olvido: la escolta la pone él, así que
+    no puede exigirse a sí misma; y su corredor bloqueado no es un bloqueo
+    sino un AVISO — puede salir, la carga no pasa. Es la diferencia entre la
+    acción que abre la ventana y las que la necesitan abierta.
+
+    LA ESCOLTA VALE PARA SU CORREDOR Y NO PARA CUALQUIERA. Esto miraba si
+    había ALGUNA unidad en escolta, en todo el país, y `Escoltar` ya escribe
+    en cuál está (`ubicacion`). Con la comprobación global pasaban dos cosas
+    que nadie decidió: una escolta en el corredor hospitalario abría la
+    ventana del corredor del Sur, y —peor— **el desplazamiento del Presidente
+    al epicentro la abría también**, porque sus dos escuadrones de protección
+    se marcan igual. Se comprobó: caravana en marcha, suministro repuesto en
+    dos regiones, y la Policía sin haber escoltado nada.
+    """
+    if not any(u.asignacion == "escolta" and u.ubicacion == c.corredor_id
+               for u in estado.unidades):
+        return Validacion(
+            False,
+            aviso_sin_escolta,
+            requisitos_faltantes=["escolta policial"],
+            habilitada_por=["Director General de la Policía Nacional (escoltar)"],
+        )
+    bloqueo = c.punto_que_bloquea(estado.nodos)
+    if bloqueo:
+        return Validacion(
+            False,
+            f"{c.nombre} está bloqueado en {estado.nodos[bloqueo].nombre}.",
+            requisitos_faltantes=[f"abrir {estado.nodos[bloqueo].nombre}"],
+            habilitada_por=["Ministro de Defensa (operar)",
+                            "Ministro del Interior (concertar)"],
+        )
+    return None
+
+
+def _aviso_de_ventana(v: Validacion) -> Validacion:
+    """
+    La versión para `validar` de una ventana que hoy no está: no un rechazo
+    sino una CONDICIÓN, porque lo que falta puede venir de una orden anterior
+    del mismo plan. El plan se lee en voz alta precisamente para que esto se
+    oiga antes de confirmar. `habilitada_por` viaja igual que en el rechazo:
+    el semáforo del repertorio lo muestra, y es lo que devuelve la conversación
+    a la mesa.
+    """
+    return Validacion(True, parcial=True, motivo=(
+        f"{v.motivo} Puede venir de una orden anterior EN ESTE MISMO plan; "
+        f"pasada la jornada, la ventana ya no está."),
+        habilitada_por=v.habilitada_por)
+
+
 class Accion:
     codigo: str = "A0"
     rol: str = ""
@@ -123,7 +197,7 @@ class Accion:
     en_claro: str = ""
 
     # LOS TRES CAMPOS DE LA GUÍA DE ACCIONES, que se rellenan en `GUIA` al final
-    # del módulo y no aquí: puestos uno por clase, treinta y nueve enunciados
+    # del módulo y no aquí: puestos uno por clase, treinta y siete enunciados
     # de requisito repartidos por dos mil líneas no se pueden comparar entre sí,
     # y lo que hace legible una guía es justamente que sus filas estén escritas
     # con el mismo rasero.
@@ -156,6 +230,30 @@ class Accion:
     # prioridad del combustible, por ejemplo, se puede rehacer con otro orden y
     # por eso no la lleva.
     bandera_que_activa: str = ""
+
+    # QUÉ HACE ÚNICA A ESTA ORDEN DENTRO DE UNA JORNADA
+    # ------------------------------------------------
+    # El motor no tenía ninguna noción de «esto ya se pidió hoy»: la cola era
+    # una lista y `encolar` solo miraba el tope de doce. Seis sesiones de la
+    # mesa nacional en un mismo día eran seis sesiones, con sus seis acuerdos y
+    # sus seis descuentos de intensidad — y eso, repetido cinco jornadas, dejaba
+    # las cuatro reservas en cien y la calle en cero. Una acción repetida ganaba
+    # el ejercicio.
+    #
+    # Por defecto la llave es **el acto entero**: sesionar la mesa nacional seis
+    # veces en un día no es sesionar seis veces, igual que entregar el
+    # calendario dos veces no es entregarlo dos veces. Las que SÍ se repiten en
+    # una jornada es porque cada vez apuntan a otra cosa —otro punto, otro
+    # corredor, otra región— y lo declaran nombrando ese campo aquí.
+    #
+    # No hace falta contador ni parámetro nuevo: la cola se vacía en cada paso,
+    # así que «ya está en la cola» ES «ya se pidió en esta jornada».
+    objetivo: tuple[str, ...] = ()
+
+    def llave(self) -> tuple:
+        """La identidad de esta orden dentro de la jornada. Ver `objetivo`."""
+        return (type(self).__name__,
+                *(str(getattr(self, c, "")) for c in self.objetivo))
 
     def validar(self, estado: Estado) -> Validacion:
         return Validacion(ok=True)
@@ -190,8 +288,18 @@ class Accion:
                 estado.banderas, cls.bandera_que_activa, False):
             return Disponibilidad("hecha", "Ya está vigente en la mesa.")
         try:
-            ejemplar = cls.sonda(estado) or cls()
-            v = ejemplar.validar(estado)
+            ejemplar = cls.sonda(estado)
+            # SIN SONDA Y CON OBJETIVO, NO HAY NADA QUE PREGUNTAR. `sonda()`
+            # devuelve `None` en dos casos que no son el mismo: la acción no
+            # necesita objetivo —y entonces basta un ejemplar por defecto— o no
+            # queda ningún objetivo sobre el que pedirla. En el segundo, el
+            # ejemplar por defecto lleva el campo vacío y `validar()` contestaba
+            # «No existe el punto .», con el punto final pegado a la nada, en el
+            # repertorio de su titular.
+            if ejemplar is None and cls.objetivo:
+                return Disponibilidad("bloqueada", (
+                    "Hoy no queda ningún objetivo sobre el que pedirla."))
+            v = (ejemplar or cls()).validar(estado)
         except Exception:
             # Un semáforo roto no puede quitarle a nadie su repertorio: ante la
             # duda se muestra disponible y que el canal de órdenes decida.
@@ -230,8 +338,10 @@ class FijarRegistroEscrito(Accion):
     bandera_que_activa = "registro_escrito"
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
+        # `nodo_unico` se activaba aquí, en la línea siguiente, y no la leía
+        # nadie: ni un costo, ni una validación, ni un rótulo, ni el bloque de
+        # banderas que sirve el tablero. Era el mismo hecho con dos nombres.
         nuevo = estado.banderas.activar("registro_escrito", estado.turno)
-        estado.banderas.activar("nodo_unico", estado.turno)
         if not nuevo:
             return Resultado(True, "El registro escrito ya estaba vigente.")
         return Resultado(True, (
@@ -250,22 +360,45 @@ class FijarLineasRojas(Accion):
     en_claro = (
         "Anuncia qué está y qué no está sobre la mesa. Fija el terreno de lo "
         "negociable antes de que lo fije otro.")
-    margen: float = 0.5     # 0 = sin margen, 1 = todo negociable
+
+    # DOS VALORES Y NO UN DIAL, y es la corrección de una variable que aparentaba
+    # una precisión que el motor nunca tuvo. `margen` era un flotante de 0 a 1
+    # que viajaba por la consola, salía en el plan leído en voz alta y se
+    # comparaba UNA vez, contra 0,25: «0,25» y «1,0» se comportaban exactamente
+    # igual. Un continuo del que el motor distinguía dos valores.
+    #
+    #     Un nivel se interpreta. Un número se optimiza.
+    #
+    # Es la misma regla que el tablero aplica al territorio (`BANDAS_*`), y este
+    # era el único sitio del repertorio donde no se cumplía. Con un decimal
+    # delante, la sala busca el umbral; con dos palabras, decide.
+    margen: str = "amplio"          # estrecho | amplio
+
+    MARGENES = ("estrecho", "amplio")
 
     bandera_que_activa = "lineas_rojas_fijadas"
 
+    def validar(self, estado: Estado) -> Validacion:
+        if self.margen not in self.MARGENES:
+            return Validacion(False, (
+                f"«{self.margen}» no es un margen. Los que hay: "
+                f"{', '.join(self.MARGENES)}."
+            ))
+        return Validacion(True)
+
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         estado.banderas.activar("lineas_rojas_fijadas", estado.turno)
-        if self.margen < 0.25:
-            estado.reservas.aplicar({"credibilidad_mesa": -8.0})
+        if self.margen == "estrecho":
+            estado.reservas.aplicar(P.COSTO_RESERVAS["lineas_rojas_sin_margen"])
             return Resultado(True, (
                 "Líneas rojas fijadas SIN MARGEN. Cierran anticipadamente el "
                 "espacio del Ministro del Interior: cualquier acuerdo posterior "
                 "será una capitulación pública."
             ), {"margen": self.margen})
         return Resultado(True, (
-            "Líneas rojas fijadas. La posición del Gobierno queda ordenada y "
-            "cada acuerdo que traiga Interior deja de renegociarse en la sala."
+            "Líneas rojas fijadas con margen para negociar. La posición del "
+            "Gobierno queda ordenada y cada acuerdo que traiga Interior deja de "
+            "renegociarse en la sala."
         ), {"margen": self.margen})
 
 
@@ -292,8 +425,7 @@ class FirmarAsistenciaMilitar(Accion):
             estado.banderas.activar("asistencia_militar_delimitada", estado.turno)
             estado.banderas.activar("reglas_escritas", estado.turno)
             estado.reservas.aplicar(
-                {"respaldo_internacional": -8.0, "legitimidad": -5.0}
-            )
+                P.COSTO_RESERVAS["asistencia_militar_delimitada"])
             liberadas = [u for u in estado.unidades if u.asignacion == "custodia"][:6]
             for u in liberadas:
                 u.asignacion = "reserva"
@@ -305,8 +437,7 @@ class FirmarAsistenciaMilitar(Accion):
             )
         else:
             estado.reservas.aplicar(
-                {"respaldo_internacional": -22.0, "legitimidad": -15.0}
-            )
+                P.COSTO_RESERVAS["asistencia_militar_sin_delimitar"])
             mobilization.registrar_evento(estado, "militares_en_multitudes")
             estado.encuadre_dominante = "represion"
             msg = (
@@ -314,7 +445,7 @@ class FirmarAsistenciaMilitar(Accion):
                 "Entrega a la narrativa de represión su mejor argumento."
             )
 
-        estado.reservas.aplicar({"credibilidad_mesa": -12.0})
+        estado.reservas.aplicar(P.COSTO_RESERVAS["asistencia_militar_firmada"])
         return Resultado(True, msg, {"delimitada": self.delimitada})
 
 
@@ -334,13 +465,13 @@ class ConvocarAlcaldes(Accion):
         estado.banderas.activar("protocolo_voceria", estado.turno)
         if self.concede_prioridad:
             estado.banderas.activar("concertacion_previa_cali", estado.turno)
-            estado.reservas.aplicar({"cohesion_mesa": 4.0, "legitimidad": 2.0})
+            estado.reservas.aplicar(P.COSTO_RESERVAS["alcaldes_con_prioridad"])
             return Resultado(True, (
                 "Acuerdo con los alcaldes: corresponsabilidad territorial y "
                 "concertación previa del empleo de la fuerza. Baja la disputa de "
                 "vocería, al precio de comprometer prioridad de fuerza."
             ))
-        estado.reservas.aplicar({"cohesion_mesa": 2.0})
+        estado.reservas.aplicar(P.COSTO_RESERVAS["alcaldes_sin_prioridad"])
         return Resultado(True, (
             "Convocatoria atendida, sin conceder prioridad. Se alinea el mensaje, "
             "pero el mandatario del epicentro sale con un incumplimiento visible "
@@ -374,17 +505,17 @@ class DesplazarseAlEpicentro(Accion):
             u.ubicacion = "presidencia"
 
         if self.acompana == "mesa":
-            estado.reservas.aplicar({"credibilidad_mesa": 6.0, "legitimidad": 3.0})
+            estado.reservas.aplicar(P.COSTO_RESERVAS["presidente_acompana_mesa"])
             msg = ("El Presidente acompaña la mesa en el epicentro. Reduce la "
                    "crítica de lentitud y respalda el canal de diálogo.")
         elif self.acompana == "operacion":
-            estado.reservas.aplicar({"legitimidad": -2.0, "cohesion_mesa": 3.0})
+            estado.reservas.aplicar(P.COSTO_RESERVAS["presidente_acompana_operacion"])
             estado.encuadre_dominante = "represion"
             msg = ("El Presidente acompaña la operación. Asume la decisión como "
                    "propia —el sector deja de cargarla solo— y queda identificado "
                    "con ella.")
         else:
-            estado.reservas.aplicar({"legitimidad": 1.0})
+            estado.reservas.aplicar(P.COSTO_RESERVAS["presidente_sin_acompanar"])
             msg = ("El Presidente se desplaza sin acompañar ninguna de las dos. "
                    "Hace verificable la prioridad territorial sin comprometerse.")
 
@@ -461,7 +592,6 @@ class ConvocarMesaNacional(Accion):
         acuerdo = Acuerdo(
             acuerdo_id=f"AC-{len(estado.acuerdos) + 1:02d}",
             nodos=candidatos,
-            turno_firmado=estado.turno_decision,
             turno_limite=estado.turno_decision + P.TURNOS_PARA_CUMPLIR_ACUERDO,
         )
         estado.acuerdos.append(acuerdo)
@@ -471,7 +601,8 @@ class ConvocarMesaNacional(Accion):
             nodo = estado.nodos.get(nid)
             if nodo is None:
                 continue
-            caudal = P.CAUDAL_ACUERDO_NACIONAL * nodo.control_voceria / 0.6
+            caudal = (P.CAUDAL_ACUERDO_NACIONAL * nodo.control_voceria
+                      / P.VOCERIA_DE_REFERENCIA_ACUERDO)
             nodo.caudal = max(nodo.caudal, min(0.9, caudal))
             nodo.modo_apertura = "concertacion"
             abiertos.append(nid)
@@ -525,6 +656,8 @@ class AbrirMesaLocal(Accion):
     con_alcaldia: bool = False
 
 
+    objetivo = ("nodo_id",)
+
     @classmethod
     def sonda(cls, estado: Estado) -> "Accion | None":
         """El punto cerrado con mejor vocería, y con la Alcaldía de su lado: es
@@ -541,7 +674,8 @@ class AbrirMesaLocal(Accion):
             return Validacion(False, f"No existe el punto {self.nodo_id}.")
         if nodo.abierto:
             return Validacion(False, f"{nodo.nombre} ya está abierto.")
-        if not estado.comite_disponible and nodo.control_voceria > 0.5:
+        if (not estado.comite_disponible
+                and nodo.control_voceria > P.VOCERIA_QUE_RESPONDE_AL_COMITE):
             return Validacion(False, (
                 "El Comité del Paro suspendió su participación y la vocería de "
                 "este punto responde a él."
@@ -556,7 +690,6 @@ class AbrirMesaLocal(Accion):
         return Validacion(True)
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
-        from src.engine import mobilization
         nodo = estado.nodos[self.nodo_id]
         # Queda constancia de que HOY hubo sesión aquí. Sin esta marca, la
         # jornada siguiente no puede distinguir una mesa que trabajó de una que
@@ -570,24 +703,11 @@ class AbrirMesaLocal(Accion):
                 f"mañana: una mesa que no sesiona no avanza."
             ), {"en_curso": True, "mesa_instalada": True})
 
-        estado.eventos_turno.append(
-            {"tipo": "apertura", "nodo": nodo.nodo_id, "via": "concertacion"}
-        )
-        estado.reservas.aplicar(P.COSTO_RESERVAS["apertura_concertada"])
-        mobilization.registrar_evento(estado, "apertura_concertada", nodo.region_id)
-
-        msg = r.mensaje
-        if r.fragil:
-            # La SEGUNDA vía por la que la mezcla real de un punto tiene
-            # consecuencia: quien firmó no manda sobre quien sostiene el cierre.
-            nodo.caudal *= 0.4
-            estado.reservas.aplicar(P.COSTO_RESERVAS["acuerdo_incumplido"])
-            mobilization.registrar_evento(estado, "acuerdo_incumplido", nodo.region_id)
-            estado.eventos_turno.append(
-                {"tipo": "acuerdo_incumplido", "nodo": nodo.nodo_id}
-            )
-            msg += (" El acuerdo se incumplió en cuestión de horas: quien firmó "
-                    "no controla ese punto.")
+        # El desenlace es el mismo para las tres mesas del ejercicio y vive una
+        # sola vez; la nota es de este rol, porque aquí se pacta el pliego.
+        msg = aperture.liquidar_concertacion(estado, nodo, r, nota_fragil=(
+            " El acuerdo se incumplió en cuestión de horas: quien firmó no "
+            "controla ese punto."))
 
         return Resultado(True, msg, {"caudal": round(nodo.caudal, 2), "fragil": r.fragil})
 
@@ -615,13 +735,13 @@ class OfrecerContraprestacion(Accion):
         from src.engine import mobilization
         if rng.random() < P.P_CONGRESO_RESPONDE:
             mobilization.registrar_evento(estado, "contraprestacion_tramitada")
-            estado.reservas.aplicar({"credibilidad_mesa": 6.0, "legitimidad": 4.0})
+            estado.reservas.aplicar(P.COSTO_RESERVAS["contraprestacion_tramitada"])
             return Resultado(True, (
                 "El Congreso da trámite a la medida. Es el resultado verificable "
                 "que la mesa necesitaba: baja la presión en la calle sin gastar "
                 "un solo escuadrón."
             ), {"tramitada": True})
-        estado.reservas.aplicar({"credibilidad_mesa": -8.0, "legitimidad": -4.0})
+        estado.reservas.aplicar(P.COSTO_RESERVAS["contraprestacion_fallida"])
         return Resultado(True, (
             "El Congreso no responde en el plazo ofrecido. El incumplimiento se "
             "imputa al Gobierno entero y refuerza a quienes sostienen que solo la "
@@ -648,33 +768,72 @@ class RequerirCorredoresHumanitarios(Accion):
         "que más caro cuesta de cara al exterior.")
     corredor_id: str = ""
 
+    objetivo = ("corredor_id",)
+
+    def _objetivo(self, estado: Estado):
+        """
+        Sobre qué corredor recae el requerimiento. **Lo resuelven las dos, y
+        antes solo lo resolvía `ejecutar`.**
+
+        La orden normal no nombra corredor —«requerir corredores humanitarios»—
+        y el peor lo elegía el motor al ejecutar. `validar` miraba
+        `self.corredor_id`, que en ese caso está vacío, así que la comprobación
+        del plazo vivo no se disparaba nunca: cada jornada se volvía a exigir el
+        mismo corredor, el requerimiento nuevo pisaba al viejo antes de que
+        venciera, y el incumplimiento **no se cobraba jamás**. La bomba de
+        respaldo seguía en pie con el plazo puesto encima.
+        """
+        if self.corredor_id:
+            return estado.corredores.get(self.corredor_id)
+        humanitarios = [c for c in estado.corredores.values()
+                        if "humanitario" in c.clases_prioridad]
+        if not humanitarios:
+            return None
+        return min(humanitarios, key=lambda c: c.caudal_efectivo(estado.nodos))
+
     def validar(self, estado: Estado) -> Validacion:
         if self.corredor_id and self.corredor_id not in estado.corredores:
             return Validacion(False, f"No existe el corredor {self.corredor_id}.")
+        c = self._objetivo(estado)
+        if c is None:
+            return Validacion(False, "No hay ningún corredor humanitario que exigir.")
+        if c.requerido_en_turno is not None:
+            return Validacion(False, (
+                f"Ya hay un requerimiento vivo sobre {c.nombre} y su plazo está "
+                f"corriendo. Exigirlo otra vez no adelanta nada: lo que falta es "
+                f"abrirlo."
+            ), habilitada_por=["Ministro de Defensa (operar)",
+                               "Ministro del Interior (concertar)"])
         return Validacion(True)
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
-        humanitarios = [c for c in estado.corredores.values()
-                        if "humanitario" in c.clases_prioridad]
-        objetivo = (estado.corredores[self.corredor_id] if self.corredor_id
-                    else min(humanitarios,
-                             key=lambda c: c.caudal_efectivo(estado.nodos)))
+        objetivo = self._objetivo(estado)
+        if objetivo is None:
+            return Resultado(False, "No hay ningún corredor humanitario que exigir.")
 
         # Requerir baja el apoyo al cierre en sus puntos: la misión médica se
         # vuelve línea roja también para quienes sostienen el bloqueo.
         for nid in objetivo.nodos:
             n = estado.nodos.get(nid)
             if n:
-                n.apoyo_local = max(0.0, n.apoyo_local - 0.06)
+                n.apoyo_local = max(
+                    0.0, n.apoyo_local - P.DESGASTE_POR_CORREDOR_HUMANITARIO)
 
-        estado.reservas.aplicar({"respaldo_internacional": 5.0})
+        # EL PLAZO EMPIEZA A CORRER AQUÍ. Sin esto, «el incumplimiento queda con
+        # fecha» era una frase: el costo existía en `parameters.py` y no lo
+        # aplicaba nadie.
+        objetivo.requerido_en_turno = estado.turno_decision
+
+        estado.reservas.aplicar(P.COSTO_RESERVAS["corredor_humanitario_requerido"])
         estado.eventos_turno.append({"tipo": "corredor_humanitario_requerido",
                                      "corredor": objetivo.corredor_id})
         return Resultado(True, (
             f"Requerimiento formal de paso humanitario permanente por "
             f"{objetivo.nombre}, exigible al Estado y a quienes sostienen los "
-            f"cierres. Si se niega, el incumplimiento queda con fecha."
-        ), {"corredor": objetivo.corredor_id})
+            f"cierres. **Si al cerrar la jornada siguiente sigue cerrado**, el "
+            f"incumplimiento queda con fecha y lo paga quien lo exigió."
+        ), {"corredor": objetivo.corredor_id,
+            "vence_turno": estado.turno_decision + 1})
 
 
 @dataclass
@@ -702,6 +861,8 @@ class DeclararInfraestructuraCritica(Accion):
         "otra parte.")
     instalaciones: list[str] = field(default_factory=list)
 
+
+    objetivo = ("instalaciones",)
 
     @classmethod
     def sonda(cls, estado: Estado) -> "Accion | None":
@@ -858,6 +1019,8 @@ class InstalarMesaConVoceros(Accion):
     nodo_id: str = ""
 
 
+    objetivo = ("nodo_id",)
+
     @classmethod
     def sonda(cls, estado: Estado) -> "Accion | None":
         """Solo su jurisdicción: fuera de ella la acción no existe."""
@@ -882,7 +1045,6 @@ class InstalarMesaConVoceros(Accion):
         return Validacion(True)
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
-        from src.engine import mobilization
         nodo = estado.nodos[self.nodo_id]
         aperture.instalar_mesa(nodo, estado.turno_decision)
         r = aperture.avanzar_concertacion(nodo, estado.turno, rng)
@@ -893,19 +1055,14 @@ class InstalarMesaConVoceros(Accion):
                 f"instalarla mañana: una mesa que no sesiona no avanza."
             ), {"en_curso": True, "mesa_instalada": True})
 
-        estado.eventos_turno.append(
-            {"tipo": "apertura", "nodo": nodo.nodo_id, "via": "concertacion"}
-        )
-        estado.reservas.aplicar(P.COSTO_RESERVAS["apertura_concertada"])
-        mobilization.registrar_evento(estado, "apertura_concertada", nodo.region_id)
-
-        msg = r.mensaje
-        if r.fragil:
-            nodo.caudal *= 0.4
-            estado.reservas.aplicar(P.COSTO_RESERVAS["acuerdo_incumplido"])
-            mobilization.registrar_evento(estado, "acuerdo_incumplido", nodo.region_id)
-            msg += (" El acuerdo se incumplió: los voceros con quienes se pactó "
-                    "no controlan ese punto.")
+        # ESTA ERA LA MESA QUE HABÍA DIVERGIDO. Su copia del bloque de desenlace
+        # no registraba el evento `acuerdo_incumplido` en `eventos_turno`, de
+        # modo que un incumplimiento en la ciudad del Alcalde ocurría, se cobraba
+        # y **no se dibujaba en su propio mapa**. Con el desenlace en un solo
+        # sitio, las tres mesas registran lo mismo.
+        msg = aperture.liquidar_concertacion(estado, nodo, r, nota_fragil=(
+            " El acuerdo se incumplió: los voceros con quienes se pactó no "
+            "controlan ese punto."))
         return Resultado(True, msg, {"caudal": round(nodo.caudal, 2)})
 
 
@@ -951,7 +1108,16 @@ class PublicarParteMunicipal(Accion):
     El parte verificado de su ciudad, y la disputa de la cifra nacional.
 
     Mejora la calidad de la información del sistema — pero si contradice al parte
-    operacional sin protocolo común, profundiza la guerra de cifras.
+    operacional y la cifra policial no está clasificada, profundiza la guerra de
+    cifras.
+
+    LEE LAS DOS BANDERAS DE POLICÍA, Y CADA UNA SU COSA. Que la disputa no
+    acabe en desmentido es efecto de que el parte nacional esté clasificado
+    (`parte_clasificado`): una cifra con su grado —confirmado, estimado, en
+    verificación— puede diferir de otra sin que ninguna de las dos «quede
+    desmentida». Y publicar «dentro del protocolo común», con su mejora de
+    información, es efecto del protocolo (`protocolo_verificacion`). Antes las
+    dos cosas venían del mismo interruptor.
     """
     codigo = "A2"
     rol = "Alcalde"
@@ -966,17 +1132,26 @@ class PublicarParteMunicipal(Accion):
         nodos = estado.nodos_de_region(estado.region_epicentro)
         for n in nodos:
             if n.ultima_verificacion_turno is None:
-                information.marcar_verificado(estado, n, "parte_municipal", estado.turno)
+                information.marcar_verificado(
+                    estado, n, "parte_municipal", estado.turno_decision)
 
-        if self.disputa_cifra and not estado.banderas.protocolo_verificacion:
+        if self.disputa_cifra and not estado.banderas.parte_clasificado:
             information.costo_de_no_clasificar(estado)
             return Resultado(True, (
                 f"Parte municipal publicado sobre {len(nodos)} puntos. Al disputar "
-                f"la cifra nacional SIN protocolo común, la guerra de números se "
-                f"profundiza y el desmentido cuesta legitimidad."
+                f"la cifra nacional SIN que el parte policial esté clasificado, la "
+                f"guerra de números se profundiza y el desmentido cuesta legitimidad."
             ), {"puntos": len(nodos)})
 
-        estado.reservas.aplicar({"legitimidad": 2.0, "respaldo_internacional": 3.0})
+        if self.disputa_cifra and not estado.banderas.protocolo_verificacion:
+            return Resultado(True, (
+                f"Parte municipal publicado sobre {len(nodos)} puntos. Difiere del "
+                f"parte nacional, que ya está clasificado con su grado: la "
+                f"discrepancia se lee como dos conteos y no como un desmentido. "
+                f"Falta el protocolo común que los una."
+            ), {"puntos": len(nodos)})
+
+        estado.reservas.aplicar(P.COSTO_RESERVAS["parte_municipal_en_protocolo"])
         return Resultado(True, (
             f"Parte municipal publicado sobre {len(nodos)} puntos, dentro del "
             f"protocolo común. Mejora la información de la mesa y reduce el "
@@ -1016,17 +1191,22 @@ class FijarReglasEmpleoSector(Accion):
     bandera_que_activa = "reglas_escritas"
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
-        for b in ("reglas_escritas", "identificacion_agentes", "registro_av"):
+        # DOS BANDERAS Y ERAN TRES. `identificacion_agentes` vive dentro de
+        # `reglas_escritas`: nunca se encendía sola, ningún cálculo la consultaba
+        # aparte de su multiplicador, y su factor está absorbido en el de las
+        # reglas (ver `P.MITIGADORES`). El acto que la sala adopta no cambia
+        # —sigue siendo identificarse, escribir las reglas y grabar— y el
+        # descuento tampoco.
+        for b in ("reglas_escritas", "registro_av"):
             estado.banderas.activar(b, estado.turno)
         estado.reservas.aplicar(P.COSTO_RESERVAS["estandar_autoimpuesto"])
         return Resultado(True, (
             "Estándar de empleo adoptado por el propio sector: reglas escritas, "
-            "identificación obligatoria y registro audiovisual. Los tres "
-            "mitigadores activos dividen por casi cinco la probabilidad de "
-            "incidente y no consumen un solo escuadrón. Atarse las manos delante "
-            "de la mesa cuesta margen frente a quien pide mano dura."
-        ), {"mitigadores": ["reglas_escritas", "identificacion_agentes",
-                            "registro_av"]})
+            "identificación obligatoria y registro audiovisual. Los mitigadores "
+            "activos dividen por más de dos la probabilidad de incidente y no "
+            "consumen un solo escuadrón. Atarse las manos delante de la mesa "
+            "cuesta margen frente a quien pide mano dura."
+        ), {"mitigadores": ["reglas_escritas", "registro_av"]})
 
 
 @dataclass
@@ -1051,8 +1231,19 @@ class OperarNodo(Accion):
     tipo_unidad: str = "esmad"
     concertado_con_alcaldia: bool = False
     responsable_nominado: str | None = None
-    de_noche: bool = False
 
+    # `de_noche` SE RETIRÓ, y no era un campo sin usar: era una mecánica
+    # anunciada. El canal lo aceptaba, la lectura en voz alta decía «de noche» y
+    # el motor **no lo consultaba en ninguna línea** — la operación salía
+    # exactamente igual que de día, sin `FACTOR_NOCTURNO`. La sala creía estar
+    # eligiendo la franja y no estaba eligiendo nada.
+    #
+    # No se conecta, se quita: de noche la consola no recibe órdenes, así que
+    # «operar de noche» no puede significar nada dentro de este reloj. La franja
+    # la lleva `Estado.franja` y la aplica `force.evaluar_riesgo`.
+
+
+    objetivo = ("nodo_id",)
 
     @classmethod
     def sonda(cls, estado: Estado) -> "Accion | None":
@@ -1097,9 +1288,16 @@ class OperarNodo(Accion):
                 "Operar sin concertar es posible y cuesta legitimidad adicional."
             ), habilitada_por=["Alcalde de la ciudad epicentro"])
 
+        # LA FRASE DECÍA «se difiere un turno» Y NADA DIFERÍA NADA. El plazo
+        # suspensivo sí hace algo real —es lo que evita el costo de operar sin
+        # informar a la mesa, más abajo— pero no aplaza la operación ni un
+        # minuto: se ejecuta en esta misma jornada. Prometer un aplazamiento que
+        # el motor no cumple es peor que no avisar, porque la sala planifica
+        # contra él.
         if estado.banderas.plazo_suspensivo and not self.concertado_con_alcaldia:
             return Validacion(True, parcial=True, motivo=(
-                "Plazo suspensivo vigente: la operación se difiere un turno."
+                "Plazo suspensivo vigente: la mesa queda informada antes de que "
+                "la operación surta efecto. Sale hoy igualmente."
             ), habilitada_por=["Ministro del Interior"])
         return Validacion(True)
 
@@ -1174,7 +1372,8 @@ class OperarNodo(Accion):
         if (estado.banderas.concertacion_previa_cali
                 and nodo.region_id == estado.region_epicentro
                 and not self.concertado_con_alcaldia):
-            estado.reservas.aplicar({"legitimidad": -8.0, "cohesion_mesa": -4.0})
+            estado.reservas.aplicar(
+                P.COSTO_RESERVAS["operacion_sin_concertar_epicentro"])
 
         if not estado.banderas.plazo_suspensivo:
             estado.reservas.aplicar(P.COSTO_RESERVAS["operacion_no_informada"])
@@ -1200,7 +1399,11 @@ class RedesplegarMilitares(Accion):
     Traer capacidad militar a proteger infraestructura, o proyectarla por aire.
 
     Libera policías de la custodia y **abre un frente rural desatendido**, que el
-    motor contabiliza y que produce sus propios eventos.
+    motor contabiliza y que sale en el tablero y en la vista de Defensa.
+
+    (Decía «y produce sus propios eventos». No los produce: `frentes_rurales_
+    descubiertos` se acumula y se muestra, que es otra cosa. Lo que se cobra al
+    cierre es la cifra, igual que la exposición de infraestructura.)
     """
     codigo = "A2"
     rol = "Defensa"
@@ -1213,6 +1416,8 @@ class RedesplegarMilitares(Accion):
     n_unidades: int = 4
 
     MODOS = ("infraestructura", "proyeccion_aerea")
+
+    objetivo = ("modo",)
 
     def validar(self, estado: Estado) -> Validacion:
         # Sin esto, un `modo` desconocido caía por el `else` de `ejecutar` y se
@@ -1280,6 +1485,8 @@ class PresentarEvidenciaInteligencia(Accion):
     nodos: list[str] = field(default_factory=list)
     declara_solidez: bool = True    # ¿dice cuáles de sus casos no aguantan?
 
+    objetivo = ("nodos",)
+
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         objetivo = self.nodos or [
             n.nodo_id for n in sorted(
@@ -1291,10 +1498,10 @@ class PresentarEvidenciaInteligencia(Accion):
             n = estado.nodos.get(nid)
             if n and n.ultima_verificacion_turno is None:
                 information.marcar_verificado(
-                    estado, n, "inteligencia_defensa", estado.turno)
+                    estado, n, "inteligencia_defensa", estado.turno_decision)
 
         if self.declara_solidez:
-            estado.reservas.aplicar({"cohesion_mesa": 3.0, "credibilidad_mesa": 2.0})
+            estado.reservas.aplicar(P.COSTO_RESERVAS["evidencia_con_solidez"])
             return Resultado(True, (
                 f"Evidencia presentada sobre {len(objetivo)} punto(s), diciendo "
                 f"cuáles de los casos se sostienen ante un juez y cuáles no. "
@@ -1302,7 +1509,7 @@ class PresentarEvidenciaInteligencia(Accion):
                 f"sector para el resto del episodio."
             ), {"nodos": objetivo, "solidez_declarada": True})
 
-        estado.reservas.aplicar({"legitimidad": -3.0, "credibilidad_mesa": -5.0})
+        estado.reservas.aplicar(P.COSTO_RESERVAS["evidencia_sin_solidez"])
         estado.encuadre_dominante = "represion"
         return Resultado(True, (
             f"Evidencia presentada sobre {len(objetivo)} punto(s) sin declarar su "
@@ -1352,6 +1559,8 @@ class DesplegarEquiposTerreno(Accion):
     denuncias: list[str] = field(default_factory=list)
 
 
+    objetivo = ("nodos", "denuncias")
+
     @classmethod
     def sonda(cls, estado: Estado) -> "Accion | None":
         """Un punto sin mirar, o cualquiera: lo que se comprueba aquí es si
@@ -1389,7 +1598,7 @@ class DesplegarEquiposTerreno(Accion):
             )
 
         if self.nodos:
-            r = information.verificar_puntos(estado, self.nodos, estado.turno)
+            r = information.verificar_puntos(estado, self.nodos, estado.turno_decision)
             if r["ok"]:
                 partes.append(f"Verificados {len(r['verificados'])} punto(s).")
                 if r.get("aviso"):
@@ -1412,8 +1621,16 @@ class ClasificarParteOperacional(Accion):
     """
     Publicar el parte distinguiendo confirmado, estimado y en verificación.
 
-    En el papel parece transparencia sin recompensa. Lo que hace es que cada
-    desmentido posterior cueste la mitad — y da al Gobierno una cifra defendible.
+    En el papel parece transparencia sin recompensa. Lo que hace es retirar el
+    costo de que la propia cifra de la Policía se dispute — y da al Gobierno una
+    cifra defendible.
+
+    UN ACTO UNILATERAL, Y ASÍ SE DISTINGUE DE SU GEMELA. Hasta aquí esta acción
+    y `AdoptarProtocoloVerificacion` encendían la misma bandera las dos, con el
+    mismo rol y sin costo ninguna de las dos: un botón repetido. La lectura que
+    el propio caso sugiere es que son dos cosas distintas fundidas — clasificar
+    el parte es la Policía decidiendo cómo publica lo suyo; adoptar el protocolo
+    único es un acto de mesa que obliga a todos. Esta queda con lo primero.
     """
     codigo = "A3"
     rol = "Policía"
@@ -1424,10 +1641,10 @@ class ClasificarParteOperacional(Accion):
         "verificación. Evita que una estimación se lea en la mesa como un "
         "hecho.")
 
-    bandera_que_activa = "protocolo_verificacion"
+    bandera_que_activa = "parte_clasificado"
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
-        estado.banderas.activar("protocolo_verificacion", estado.turno)
+        estado.banderas.activar("parte_clasificado", estado.turno)
         return Resultado(True, (
             "Parte operacional clasificado y sostenido públicamente. La mesa pasa "
             "a tener una sola cifra oficial con su grado, y el desmentido deja de "
@@ -1437,7 +1654,15 @@ class ClasificarParteOperacional(Accion):
 
 @dataclass
 class AdoptarProtocoloVerificacion(Accion):
-    """Protocolo único de verificación de cifras y denuncias."""
+    """
+    Protocolo único de verificación de cifras y denuncias.
+
+    EL ACTO DE MESA, y así se distingue de su gemela. Obliga a todos por igual,
+    y es lo que `information.verificar_denuncia` exige para que la palabra del
+    que verifica cuente — verificar la denuncia del propio sector, sin una regla
+    pactada ANTES de saber qué iba a decir, no vale lo mismo que verificarla
+    dentro de ella.
+    """
     codigo = "A2"
     rol = "Policía"
     clase: Clase = "constitutiva"
@@ -1451,8 +1676,9 @@ class AdoptarProtocoloVerificacion(Accion):
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         estado.banderas.activar("protocolo_verificacion", estado.turno)
         return Resultado(True, (
-            "Protocolo único de verificación vigente. Una sola cifra oficial, "
-            "clasificada — y el Gobierno acepta que un tercero la fije."
+            "Protocolo único de verificación vigente. Una sola manera de "
+            "verificar cifras y denuncias, igual para todos — y la palabra del "
+            "que verifica una denuncia cuenta."
         ))
 
 
@@ -1492,7 +1718,7 @@ class DisponerESMAD(Accion):
                 "No quedan escuadrones en contención estática que traer: la fuerza "
                 "ya está toda comprometida."
             ))
-        estado.reservas.aplicar({"cohesion_mesa": -3.0})
+        estado.reservas.aplicar(P.COSTO_RESERVAS["esmad_concentrado"])
         return Resultado(True, (
             f"{r['concentrados']} escuadrón(es) concentrados y disponibles. Se "
             f"replegó la contención en {len(r['consolidados'])} punto(s), que se "
@@ -1520,6 +1746,8 @@ class Escoltar(Accion):
     clase_carga: str = "humanitario"
 
 
+    objetivo = ("corredor_id", "clase_carga")
+
     @classmethod
     def sonda(cls, estado: Estado) -> "Accion | None":
         """El corredor con mejor flujo: la escolta que más probablemente pasa."""
@@ -1533,14 +1761,16 @@ class Escoltar(Accion):
         c = estado.corredores.get(self.corredor_id)
         if c is None:
             return Validacion(False, f"No existe el corredor {self.corredor_id}.")
+        # AVISO Y NO REQUISITO: los escuadrones pueden concentrarse con una
+        # orden anterior de este mismo plan. `force.escoltar` vuelve a
+        # comprobarlo al ejecutar, que es donde ya no hay excusa.
         if len(estado.esmad_en_reserva()) < P.ESCUADRONES_POR_ESCOLTA:
-            return Validacion(
-                False,
-                f"Hacen falta {P.ESCUADRONES_POR_ESCOLTA} escuadrones sin comprometer.",
-                requisitos_faltantes=["escuadrones en reserva"],
-                habilitada_por=["Director de Policía (concentrar el ESMAD)",
-                                "Ministro de Defensa (redesplegar militares)"],
-            )
+            return Validacion(True, parcial=True, motivo=(
+                f"Hacen falta {P.ESCUADRONES_POR_ESCOLTA} escuadrones sin "
+                f"comprometer. Pueden quedar libres con una orden anterior EN "
+                f"ESTE MISMO plan — concentrar el ESMAD o redesplegar."
+            ), habilitada_por=["Director de Policía (concentrar el ESMAD)",
+                               "Ministro de Defensa (redesplegar militares)"])
         bloqueo = c.punto_que_bloquea(estado.nodos)
         if bloqueo:
             return Validacion(True, parcial=True, motivo=(
@@ -1721,6 +1951,8 @@ class OrganizarCaravana(Accion):
     corredor_id: str = ""
 
 
+    objetivo = ("corredor_id",)
+
     @classmethod
     def sonda(cls, estado: Estado) -> "Accion | None":
         if not estado.corredores:
@@ -1733,33 +1965,36 @@ class OrganizarCaravana(Accion):
         c = estado.corredores.get(self.corredor_id)
         if c is None:
             return Validacion(False, f"No existe el corredor {self.corredor_id}.")
-        escoltas = [u for u in estado.unidades if u.asignacion == "escolta"]
-        if not escoltas:
-            return Validacion(
-                False,
-                "La caravana requiere escolta.",
-                requisitos_faltantes=["escolta policial"],
-                habilitada_por=["Director General de la Policía Nacional (escoltar)"],
-            )
-        bloqueo = c.punto_que_bloquea(estado.nodos)
-        if bloqueo:
-            return Validacion(
-                False,
-                f"{c.nombre} está bloqueado en {estado.nodos[bloqueo].nombre}.",
-                requisitos_faltantes=[f"abrir {estado.nodos[bloqueo].nombre}"],
-                habilitada_por=["Ministro de Defensa (operar)",
-                                "Ministro del Interior (concertar)"],
-            )
-        return Validacion(True)
+        # AVISO Y NO REQUISITO. La escolta la pone otra acción de ESTE plan —
+        # o no la pone nadie —, y el punto que bloquea el corredor puede ser
+        # el que otra orden de este mismo plan abra. Al encolar no se puede
+        # saber; al ejecutar, sí.
+        v = ventana_escoltada(
+            estado, c, aviso_sin_escolta="La caravana requiere escolta.")
+        return _aviso_de_ventana(v) if v is not None else Validacion(True)
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
-        c = estado.corredores[self.corredor_id]
+        c = estado.corredores.get(self.corredor_id)
+        if c is None:
+            return Resultado(False, f"No existe el corredor {self.corredor_id}.")
+        # Aquí sí es requisito duro. Y si la escolta no vino en este plan, ya
+        # no puede venir: `paso_fatiga` libera las de la jornada anterior al
+        # cerrarla. La ventana vale para el plan que la pide.
+        v = ventana_escoltada(
+            estado, c, aviso_sin_escolta=(
+                "La caravana no salió: la escolta se pide en el mismo plan "
+                "que ella — pasada la jornada, la ventana se cierra."))
+        if v is not None:
+            return Resultado(False, v.motivo,
+                             requisitos_faltantes=v.requisitos_faltantes)
+
         caudal = c.caudal_efectivo(estado.nodos)
         regiones = sorted({estado.nodos[n].region_id for n in c.nodos
                            if n in estado.nodos})
         for clase in c.clases_prioridad:
-            supply.reponer_por_escolta(estado, regiones, 0.6 * caudal, clase)
-        estado.reservas.aplicar({"legitimidad": 3.0})
+            supply.reponer_por_escolta(
+                estado, regiones, P.REPOSICION_POR_CARAVANA * caudal, clase)
+        estado.reservas.aplicar(P.COSTO_RESERVAS["caravana_organizada"])
         estado.eventos_turno.append({"tipo": "caravana", "corredor": self.corredor_id})
         return Resultado(True, (
             f"Caravana en marcha por {c.nombre}, con {caudal:.0%} de flujo. "
@@ -1804,7 +2039,7 @@ class NegociarConGremios(Accion):
         if self.ofrece_compensacion:
             estado.posicion_gremios = "fuera"
             estado.ultimatum_gremios_turno = None
-            estado.reservas.aplicar({"legitimidad": 2.0, "credibilidad_mesa": -3.0})
+            estado.reservas.aplicar(P.COSTO_RESERVAS["gremios_compensados"])
             return Resultado(True, (
                 "Acuerdo con los gremios: quedan fuera del paro a cambio de "
                 "compensación por días de inmovilización y esquema de escolta. "
@@ -1837,6 +2072,8 @@ class AcordarPasosSeguros(Accion):
     nodo_id: str = ""
 
 
+    objetivo = ("nodo_id",)
+
     @classmethod
     def sonda(cls, estado: Estado) -> "Accion | None":
         """El punto donde más se controla la vocería: si ahí no hay con quién
@@ -1850,7 +2087,7 @@ class AcordarPasosSeguros(Accion):
         nodo = estado.nodos.get(self.nodo_id)
         if nodo is None:
             return Validacion(False, f"No existe el punto {self.nodo_id}.")
-        if nodo.control_voceria < 0.25:
+        if nodo.control_voceria < P.VOCERIA_MINIMA_PARA_ACORDAR:
             return Validacion(False, (
                 f"En {nodo.nombre} no hay con quién acordar un paso seguro: la "
                 f"vocería reconocida no controla el punto."
@@ -1860,12 +2097,13 @@ class AcordarPasosSeguros(Accion):
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         nodo = estado.nodos[self.nodo_id]
         # Un paso seguro no abre el punto: abre una ventana de despacho
-        nodo.caudal = max(nodo.caudal, 0.25 * nodo.control_voceria)
+        nodo.caudal = max(
+            nodo.caudal, P.CAUDAL_VENTANA_PASO_SEGURO * nodo.control_voceria)
         nodo.modo_apertura = "concertacion" if nodo.abierto else nodo.modo_apertura
 
         aviso = ""
         if estado.banderas.lineas_rojas_fijadas:
-            estado.reservas.aplicar({"cohesion_mesa": -4.0})
+            estado.reservas.aplicar(P.COSTO_RESERVAS["paso_seguro_contra_lineas_rojas"])
             aviso = (" Contradice la línea roja fijada por el Presidente: se leerá "
                      "como negociación paralela por fuera de la mesa.")
         estado.eventos_turno.append({"tipo": "paso_seguro", "nodo": nodo.nodo_id})
@@ -1893,6 +2131,8 @@ class PublicarMapaCierres(Accion):
         "apertura que no se sostiene cuesta credibilidad.")
     anunciar: str = ""      # corredor_id que se quiere anunciar como abierto
 
+    objetivo = ("anunciar",)
+
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         # Publicar el mapa hace visible qué punto bloquea cada corredor
         bloqueos = {}
@@ -1901,7 +2141,7 @@ class PublicarMapaCierres(Accion):
             if b:
                 bloqueos[c.corredor_id] = estado.nodos[b].nombre
                 information.marcar_verificado(
-                    estado, estado.nodos[b], "mapa_transporte", estado.turno)
+                    estado, estado.nodos[b], "mapa_transporte", estado.turno_decision)
 
         if not self.anunciar:
             return Resultado(True, (
@@ -1916,10 +2156,10 @@ class PublicarMapaCierres(Accion):
         c.anunciado_abierto = True
         c.anunciado_en_turno = estado.turno_decision
 
-        if caudal < 0.3:
+        if caudal < P.CAUDAL_MINIMO_PARA_ANUNCIAR:
             c.anunciado_verificado = False
             information.costo_de_no_clasificar(estado)
-            estado.reservas.aplicar({"legitimidad": -4.0})
+            estado.reservas.aplicar(P.COSTO_RESERVAS["apertura_anunciada_sin_sostener"])
             return Resultado(True, (
                 f"Se anunció {c.nombre} como abierto con {caudal:.0%} de flujo. "
                 f"Una docena de camiones presentada como normalización **se "
@@ -1927,7 +2167,7 @@ class PublicarMapaCierres(Accion):
             ), {"caudal": round(caudal, 2), "verificado": False})
 
         c.anunciado_verificado = True
-        estado.reservas.aplicar({"legitimidad": 3.0, "credibilidad_mesa": 2.0})
+        estado.reservas.aplicar(P.COSTO_RESERVAS["apertura_anunciada_verificada"])
         return Resultado(True, (
             f"{c.nombre} anunciado como abierto, con {caudal:.0%} de flujo "
             f"verificado. El dato es utilizable por los demás frentes."
@@ -2053,6 +2293,8 @@ class InstalarMesaTecnicaAgropecuaria(Accion):
         "local, y sigue en pie aunque el Comité del Paro se levante.")
     nodo_id: str = ""
 
+    objetivo = ("nodo_id",)
+
     @classmethod
     def sonda(cls, estado: Estado) -> "Accion | None":
         """El punto rural cerrado con mejor vocería: si ahí no hay con quién
@@ -2079,7 +2321,7 @@ class InstalarMesaTecnicaAgropecuaria(Accion):
                 habilitada_por=["Alcalde de la ciudad epicentro",
                                 "Ministro del Interior (concertar)"],
             )
-        if nodo.control_voceria < 0.25:
+        if nodo.control_voceria < P.VOCERIA_MINIMA_PARA_ACORDAR:
             return Validacion(False, (
                 f"En {nodo.nombre} no hay organización rural con quien acordar: "
                 f"la vocería reconocida no controla el punto."
@@ -2087,7 +2329,6 @@ class InstalarMesaTecnicaAgropecuaria(Accion):
         return Validacion(True)
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
-        from src.engine import mobilization
         nodo = estado.nodos[self.nodo_id]
 
         aperture.instalar_mesa(nodo, estado.turno_decision)
@@ -2115,37 +2356,31 @@ class InstalarMesaTecnicaAgropecuaria(Accion):
                 f"no sesiona no avanza.{nota_paralelo}"
             ), {"en_curso": True, "mesa_instalada": True})
 
-        estado.eventos_turno.append(
-            {"tipo": "apertura", "nodo": nodo.nodo_id, "via": "concertacion"}
-        )
-        estado.reservas.aplicar(P.COSTO_RESERVAS["apertura_concertada"])
-        mobilization.registrar_evento(estado, "apertura_concertada", nodo.region_id)
         if nodo.nodo_id in estado.mesas_tecnicas_agro:
             estado.mesas_tecnicas_agro.remove(nodo.nodo_id)
 
-        msg = r.mensaje
-        # LA CONTRAPARTE QUE NO ERA SOCIAL. Es el riesgo propio de esta acción y
-        # se paga en respaldo internacional, no en credibilidad: lo que se
-        # discute fuera no es si el acuerdo se cumple, es a quién se sentó el
-        # Estado en la mesa.
+        # LA CONTRAPARTE QUE NO ERA SOCIAL. Es el riesgo propio de ESTA acción
+        # —ninguna de las otras dos mesas lo corre— y por eso se queda aquí y no
+        # en el desenlace común. Se paga en respaldo internacional y no en
+        # credibilidad: lo que se discute fuera no es si el acuerdo se cumple,
+        # es a quién se sentó el Estado en la mesa.
+        nota_contraparte = ""
         organizada = nodo.composicion_real.normalizada().estructura_organizada
         if rng.random() < organizada * P.FACTOR_LEGITIMAR_ESTRUCTURA:
             estado.reservas.aplicar(
                 {"respaldo_internacional": -P.COSTO_LEGITIMAR_ESTRUCTURA})
             estado.eventos_turno.append(
                 {"tipo": "contraparte_no_social", "nodo": nodo.nodo_id})
-            msg += (" La contraparte de este cierre no era solo social: el "
-                    "acuerdo le reconoce interlocución a quien la inteligencia "
-                    "está documentando como financiador.")
-        if r.fragil:
-            nodo.caudal *= 0.4
-            estado.reservas.aplicar(P.COSTO_RESERVAS["acuerdo_incumplido"])
-            mobilization.registrar_evento(estado, "acuerdo_incumplido", nodo.region_id)
-            estado.eventos_turno.append(
-                {"tipo": "acuerdo_incumplido", "nodo": nodo.nodo_id})
-            msg += (" El acuerdo se incumplió en horas: quien firmó no manda "
-                    "sobre quien sostiene el cierre.")
-        return Resultado(True, msg + nota_paralelo,
+            nota_contraparte = (
+                " La contraparte de este cierre no era solo social: el acuerdo "
+                "le reconoce interlocución a quien la inteligencia está "
+                "documentando como financiador.")
+
+        msg = aperture.liquidar_concertacion(estado, nodo, r, nota_fragil=(
+            " El acuerdo se incumplió en horas: quien firmó no manda sobre "
+            "quien sostiene el cierre."))
+
+        return Resultado(True, msg + nota_contraparte + nota_paralelo,
                          {"caudal": round(nodo.caudal, 2), "via": "concertacion"})
 
 
@@ -2174,6 +2409,8 @@ class ActivarInstrumentosSectoriales(Accion):
         "excepción sanitaria deja un riesgo que se paga después.")
     region_id: str = ""
 
+    objetivo = ("region_id",)
+
     @classmethod
     def sonda(cls, estado: Estado) -> "Accion | None":
         if not estado.regiones:
@@ -2201,10 +2438,11 @@ class ActivarInstrumentosSectoriales(Accion):
         estado.instrumentos_sectoriales[region.region_id] = veces + 1
 
         region.dias_autonomia_alimentos += P.ALIVIO_ALIMENTOS_POR_INSTRUMENTOS * factor
-        region.indice_precios = max(1.0, region.indice_precios - 0.04 * factor)
+        region.indice_precios = max(
+            1.0, region.indice_precios - P.ALIVIO_PRECIOS_POR_INSTRUMENTOS * factor)
         mobilization.erosionar_apoyo_local(
             estado, region.region_id, P.ALIVIO_APOYO_POR_INSTRUMENTOS * factor)
-        estado.reservas.aplicar({"legitimidad": 3.0 * factor})
+        estado.reservas.aplicar(P.COSTO_RESERVAS["instrumentos_sectoriales"], factor)
 
         estado.riesgo_sanitario_asumido += 1
         estado.eventos_turno.append({
@@ -2257,7 +2495,8 @@ class PublicarBalancePerdida(Accion):
         # apoyo al cierre en TODAS las regiones y no solo donde hay pérdida: la
         # cifra circula por el país entero.
         for r in estado.regiones.values():
-            mobilization.erosionar_apoyo_local(estado, r.region_id, 0.04)
+            mobilization.erosionar_apoyo_local(
+                estado, r.region_id, P.DESGASTE_POR_BALANCE_PUBLICADO)
 
         estado.reservas.aplicar(P.COSTO_RESERVAS["balance_perdida_publicado"])
 
@@ -2305,6 +2544,8 @@ class AcordarAcopioYVentanas(Accion):
         "escolta, y quien queda fuera del cupo lo nota.")
     corredor_id: str = ""
 
+    objetivo = ("corredor_id",)
+
     @classmethod
     def sonda(cls, estado: Estado) -> "Accion | None":
         alimentarios = [c for c in estado.corredores.values()
@@ -2319,34 +2560,45 @@ class AcordarAcopioYVentanas(Accion):
         c = estado.corredores.get(self.corredor_id)
         if c is None:
             return Validacion(False, f"No existe el corredor {self.corredor_id}.")
+        # Las tres dependencias que puede satisfacer una orden ANTERIOR DE
+        # ESTE MISMO PLAN: la clase alimentaria la pone la constitutiva de
+        # Agricultura, la escolta la pone la Policía, y el punto que bloquea
+        # puede abrirlo otra orden. Ninguna se sabe al encolar; todas se
+        # comprueban al ejecutar.
         if "alimentario" not in c.clases_prioridad:
-            return Validacion(
-                False,
-                f"{c.nombre} no lleva carga alimentaria.",
-                requisitos_faltantes=["un corredor de clase alimentaria"],
-                habilitada_por=["Ministro de Agricultura "
-                                "(clase de prioridad agroalimentaria)"],
-            )
-        if not [u for u in estado.unidades if u.asignacion == "escolta"]:
-            return Validacion(
-                False,
-                "El despacho concentrado va por una ventana escoltada, y no hay.",
-                requisitos_faltantes=["escolta policial"],
-                habilitada_por=["Director General de la Policía Nacional (escoltar)"],
-            )
-        bloqueo = c.punto_que_bloquea(estado.nodos)
-        if bloqueo:
-            return Validacion(
-                False,
-                f"{c.nombre} está bloqueado en {estado.nodos[bloqueo].nombre}.",
-                requisitos_faltantes=[f"abrir {estado.nodos[bloqueo].nombre}"],
-                habilitada_por=["Ministro de Defensa (operar)",
-                                "Ministro del Interior (concertar)"],
-            )
-        return Validacion(True)
+            return Validacion(True, parcial=True, motivo=(
+                f"{c.nombre} no lleva carga alimentaria. El Ministro de "
+                f"Agricultura puede fijarle la clase ANTES en este mismo plan."))
+        # Hace rendir la ventana que `Escoltar` abrió: la comparte con la
+        # caravana, y solo cambia qué es lo que no puede circular sin ella.
+        v = ventana_escoltada(
+            estado, c,
+            aviso_sin_escolta=(
+                "El despacho concentrado va por una ventana escoltada, y no hay."),
+        )
+        return _aviso_de_ventana(v) if v is not None else Validacion(True)
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
-        c = estado.corredores[self.corredor_id]
+        c = estado.corredores.get(self.corredor_id)
+        if c is None:
+            return Resultado(False, f"No existe el corredor {self.corredor_id}.")
+        if "alimentario" not in c.clases_prioridad:
+            return Resultado(False, (
+                f"El despacho concentrado no salió: {c.nombre} no lleva carga "
+                f"alimentaria. La clase se fija en el mismo plan que el despacho."
+            ), requisitos_faltantes=["un corredor de clase alimentaria"])
+        # Requisito duro al ejecutar, con la memoria del plan encima: la
+        # escolta de la jornada anterior ya se liberó al cerrarla.
+        v = ventana_escoltada(
+            estado, c,
+            aviso_sin_escolta=(
+                "El despacho concentrado no salió: la escolta se pide en el "
+                "mismo plan que él — pasada la jornada, la ventana se cierra."),
+        )
+        if v is not None:
+            return Resultado(False, v.motivo,
+                             requisitos_faltantes=v.requisitos_faltantes)
+
         caudal = c.caudal_efectivo(estado.nodos)
         regiones = sorted({estado.nodos[n].region_id for n in c.nodos
                            if n in estado.nodos})
@@ -2355,7 +2607,8 @@ class AcordarAcopioYVentanas(Accion):
         for rid in regiones:
             r = estado.regiones.get(rid)
             if r is not None:
-                r.indice_precios = max(1.0, r.indice_precios - 0.08 * caudal)
+                r.indice_precios = max(
+                    1.0, r.indice_precios - P.ALIVIO_PRECIOS_POR_ACOPIO * caudal)
 
         estado.reservas.aplicar(P.COSTO_RESERVAS["acopio_por_cupos"])
         estado.eventos_turno.append(
@@ -2388,28 +2641,12 @@ class EntregarCalendarioAgotamiento(Accion):
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         r = supply.difundir_calendario(estado)
-        estado.reservas.aplicar({"cohesion_mesa": 3.0})
+        estado.reservas.aplicar(P.COSTO_RESERVAS["calendario_entregado"])
         return Resultado(True, (
             "Calendario entregado a la mesa. La deliberación pasa a tener fecha "
             "límite — y acelera aquello que mide: el pánico sube y el consumo con "
             "él. Entregar el reloj cambia el reloj."
         ), r)
-
-
-# ===========================================================================
-# 09 · MINISTRO DE AGRICULTURA Y DESARROLLO RURAL
-#
-# EL ROL QUE MEJOR MIDE EL EFECTO DEL BLOQUEO SOBRE LA POBLACIÓN Y EL QUE MENOS
-# PUEDE HACER PARA LEVANTARLO. No manda fuerza, no tiene corredores y ninguna de
-# sus cinco acciones se ejecuta sin que la Policía escolte, Transporte priorice
-# priorice. Lo que sí tiene es lo que a esta mesa le falta:
-#
-#   · el único reloj que ya está corriendo — en su frente el día de bloqueo no
-#     es un costo diferido, es una pérdida que ya ocurrió: hay granjas
-#     sacrificando animales mientras la mesa delibera;
-#   · una interlocución rural que NO depende del Comité del Paro, y que por eso
-#     sigue en pie exactamente cuando el canal del Interior se cae.
-#
 
 
 # ===========================================================================
@@ -2446,10 +2683,10 @@ CATALOGO = [
 # LA GUÍA DE ACCIONES — qué hace falta antes, y cómo se pide
 # ===========================================================================
 #
-# Las treinta y nueve filas de la tabla que cada titular tiene en su tablero
+# Las treinta y siete filas de la tabla que cada titular tiene en su tablero
 # individual, juntas y en un solo sitio. Están aquí y no repartidas por sus
 # clases por una razón de oficio: **una guía se lee comparando sus filas**, y
-# treinta y nueve enunciados de requisito escritos a dos mil líneas de
+# treinta y siete enunciados de requisito escritos a dos mil líneas de
 # distancia no se pueden redactar con el mismo rasero.
 #
 # EL NOMBRE ES UN VERBO Y CABE EN UN RENGLÓN

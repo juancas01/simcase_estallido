@@ -194,7 +194,7 @@ export function Delta({ valor, sentido = 'arriba_mejor', decimales = 0 }) {
 // «medio» y el movimiento deja de verse. Con siete, la sala vuelve a contar.
 // ---------------------------------------------------------------------------
 
-export const NIVELES = ['muy bajo', 'bajo', 'medio', 'alto', 'muy alto']
+export const NIVELES = ['Muy bajo', 'Bajo', 'Medio', 'Alto', 'Muy alto']
 
 /** De 0–100 al peldaño que le toca. Los cortes son los cinco quintos. */
 export function peldano(valor) {
@@ -227,7 +227,7 @@ export function Medidor({ nombre, valor, sentido = 'arriba_mejor', ayuda, delta 
         </span>
       </div>
       <div className="medidor-escala" role="img"
-           aria-label={`${nombre}: ${NIVELES[i]} de ${NIVELES.length} niveles`}>
+           aria-label={`${nombre}: ${NIVELES[i].toLowerCase()} de ${NIVELES.length} niveles`}>
         {NIVELES.map((_, k) => (
           <span key={k} className={k <= i ? 'peldano lleno' : 'peldano'}
                 style={k <= i ? { background: color } : undefined} />
@@ -257,4 +257,51 @@ export function Barra({ nombre, valor, nivel, ayuda, delta, sentido }) {
       </div>
     </div>
   )
+}
+
+// ---------------------------------------------------------------------------
+// EL DINERO, ESCRITO SIEMPRE IGUAL
+//
+// El ejercicio cuenta pesos en dos sitios —la pérdida diaria del país en la
+// franja de estado y el costo de cada corredor en su tabla— y los escribía de
+// dos maneras: uno con separador de miles y su unidad en el rótulo, el otro
+// como un entero pelado, «48000», bajo una columna llamada «Costo» cuya unidad
+// solo constaba en una nota al pie de la tabla.
+//
+// Un número de cinco dígitos sin separadores no se lee: se cuenta. Y dos
+// formatos para la misma magnitud obligan a la sala a preguntarse si son la
+// misma magnitud, que es la duda más cara que puede sembrar un tablero.
+//
+// UNA SOLA FUNCIÓN, y la unidad viaja pegada al número y no en el encabezado:
+// una cifra de dinero que se lee sin su unidad se malinterpreta por un factor
+// de un millón, y en esta escala eso es la diferencia entre una molestia y una
+// catástrofe.
+// ---------------------------------------------------------------------------
+
+const MILES = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 })
+
+/** Solo la cifra, con sus puntos de millar. */
+export const dinero = (n) => MILES.format(Math.round(Number(n) || 0))
+
+/** La cifra con su unidad al lado, atenuada: se lee el número, no la unidad. */
+export function Dinero({ valor }) {
+  return (
+    <>
+      {dinero(valor)}
+      <span className="unidad"> MM$</span>
+    </>
+  )
+}
+
+/**
+ * Habitantes en millones, con la coma decimal del español.
+ *
+ * `(n / 1e6).toFixed(2)` daba «2.40 M», y en una pantalla en español eso se lee
+ * como doscientos cuarenta millones: el punto separa los millares. Un decimal
+ * basta —la diferencia entre 2,4 y 2,43 millones no cambia ninguna decisión de
+ * la mesa— y con coma no hay ambigüedad posible.
+ */
+export function millones(n) {
+  const v = (Number(n) || 0) / 1e6
+  return `${new Intl.NumberFormat('es-CO', { maximumFractionDigits: 1 }).format(v)} M`
 }

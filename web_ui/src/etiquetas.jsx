@@ -13,6 +13,20 @@
 // añade un valor que aquí no está, sale «Valor nuevo» y no `valor_nuevo`.
 // ---------------------------------------------------------------------------
 
+/**
+ * LA BANDA DE UNA LECTURA, escrita como se escribe una frase.
+ *
+ * El motor nombra sus bandas en minúscula —«sin vocería clara», «muy duro»,
+ * «enquistado»— porque para él son valores de un enum, no prosa. En pantalla
+ * cada una ocupa su propia celda o su propio renglón, y una celda que empieza
+ * en minúscula al lado de otra que empieza en mayúscula se lee como un
+ * descuido de maquetación, no como una diferencia de significado.
+ *
+ * La misma frontera de siempre: el identificador es del motor, el rótulo es de
+ * la sala.
+ */
+export const banda = (v) => (v ? v[0].toUpperCase() + v.slice(1) : '—')
+
 /** Sustituto digno para un valor que aún no tiene rótulo propio. */
 function prettificar(valor) {
   const s = String(valor).replace(/_/g, ' ').trim()
@@ -29,7 +43,7 @@ function prettificar(valor) {
  * con un solo argumento es `undefined`— antes de darse cuenta de que el
  * argumento único ERA el valor.
  *
- * Y así es como se formatea cada celda de texto de las nueve vistas privadas.
+ * Y así es como se formatea cada celda de texto de las siete vistas privadas.
  * El resultado no era un error visible: era que **el nombre de cada punto, cada
  * corredor, cada región y cada estado salía como «—»** en la pantalla de su
  * titular. Ocho tablas llenas de guiones, que es lo que se ve como una pantalla

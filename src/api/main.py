@@ -68,7 +68,7 @@ motor = MotorCrisis(_estado)
 # software garantiza vale más que una que el software recomienda.
 #
 # VIVE AQUÍ Y NO EN EL NAVEGADOR, y no es un detalle de implementación: hay diez
-# pantallas mirando a la vez —el tablero, la consola y las nueve vistas—, y un
+# pantallas mirando a la vez —el tablero, la consola y las siete vistas—, y un
 # cronómetro por pantalla es un cronómetro distinto por pantalla en cuanto una se
 # recarga. El servidor guarda TRES INSTANTES y cada superficie deriva de ellos lo
 # que muestra:
@@ -372,7 +372,7 @@ def tablero():
 
 
 # ===========================================================================
-# Superficie 2 · Las nueve vistas privadas
+# Superficie 2 · Las siete vistas privadas
 # ===========================================================================
 
 @app.get("/api/vista/{rol}")
@@ -390,7 +390,7 @@ def vista_privada(rol: str):
     try:
         v = views.vista(_estado, rol)
     except KeyError:
-        raise HTTPException(404, f"Rol desconocido: {rol}. Los nueve son {views.ROLES}")
+        raise HTTPException(404, f"Rol desconocido: {rol}. Los siete son {views.ROLES}")
     v["cronometro"] = _cronometro()
     v["admite_ordenes"] = v["cronometro"]["admite_ordenes"]
     # EL REPERTORIO VIENE CON SU SEMÁFORO. Cada acción dice si se puede pedir
@@ -634,9 +634,17 @@ def _encolar_plan(plan) -> tuple[int, list[dict]]:
         # `encolar` VALIDA, y si no valida no encola. Contarla igual decía a la
         # sala que su orden estaba en cola cuando no lo estaba — y al dictar de
         # una en una, ese hueco no salía hasta resolver el turno.
+        #
+        # EL CAMPO ES `motivo` Y AQUÍ DECÍA `mensaje`. `Validacion` no tiene
+        # `mensaje` —lo tiene `Resultado`, que es la otra mitad del patrón— así
+        # que esta línea no omitía la orden: lanzaba `AttributeError` y la
+        # consola devolvía un 500. Se alcanzaba siempre que `validar()` cambiaba
+        # de opinión entre interpretar y confirmar, y de forma segura al dictar
+        # la orden que pasa el tope de la cola, donde `encolar` rechaza sin que
+        # ninguna capa anterior lo haya visto venir.
         if not v.ok:
             omitidas.append({"herramienta": a.herramienta, "estado": "no_viable",
-                             "motivo": v.mensaje})
+                             "motivo": v.motivo or "El motor no la admitió."})
             continue
         encoladas += 1
 
@@ -768,7 +776,17 @@ def reloj_jornada_siguiente():
     with _cerrojo:
         if sala["cerrado"]:
             raise HTTPException(409, "El ejercicio ya terminó.")
-        if sala["fase"] == "dia" and sala["reloj"]["jornada_desde"] is not None:
+        # CON EL RELOJ PARADO ESTO ADELANTABA LA JORNADA SIN RESOLVER NADA. La
+        # condición de arriba solo cierra el día si el reloj corre, así que
+        # pulsarlo antes de «Iniciar» —montando, que es cuando se pulsa todo—
+        # subía `jornada_abierta` una vez por pulsación mientras
+        # `turno_decision` seguía en cero: el tablero decía «jornada 4 de 5» con
+        # el ejercicio sin empezar.
+        if sala["reloj"]["jornada_desde"] is None:
+            raise HTTPException(409, (
+                "El ejercicio no ha empezado. La jornada 1 se abre con "
+                "«Iniciar», no saltando a la siguiente."))
+        if sala["fase"] == "dia":
             _cerrar_jornada()
         if sala["cerrado"]:
             return _cronometro()
@@ -787,6 +805,13 @@ def reloj_reiniciar():
     with _cerrojo:
         sala["reloj"] = {"sesion_desde": None, "jornada_desde": None,
                          "pausa_desde": None}
+        # Y VUELVE A LA FASE DE RESERVA, que es lo que este docstring prometía y
+        # no hacía. Sin esta línea, reiniciar durante la noche dejaba la sala
+        # rotulada «noche» para siempre —nada la volvía a mover, porque
+        # `_sincronizar` se retira en cuanto el reloj está parado— mientras el
+        # canal SÍ aceptaba órdenes. La pantalla decía una cosa y el servidor
+        # hacía otra.
+        sala["fase"] = "dia"
     return _cronometro()
 
 

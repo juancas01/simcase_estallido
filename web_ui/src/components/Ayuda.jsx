@@ -106,7 +106,13 @@ export default function Ayuda({ children, etiqueta = 'Ver la definición' }) {
             '--flecha': `${pos?.flecha ?? 0}px`,
           }}
         >
-          {children}
+          {/* Un globo es UNA definición de dos frases, y por eso llega como
+              cadena. Se envuelve aquí en su párrafo: quien escribe el catálogo
+              no tiene que acordarse de marcarlo, y el catálogo no tiene que
+              importar React para decir una frase. Si algún globo necesitara
+              alguna vez más estructura, sigue admitiendo JSX — pero tendría
+              que justificar por qué dos frases no bastan. */}
+          {typeof children === 'string' ? <p>{children}</p> : children}
         </div>,
         document.body,
       )}

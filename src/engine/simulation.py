@@ -105,11 +105,50 @@ class MotorCrisis:
     # ------------------------------------------------------------------
 
     def encolar(self, accion: Accion) -> Validacion:
+        """
+        LA PRIMERA DE LAS DOS VALIDACIONES, contra el estado de la ventana
+        ANTERIOR. La segunda ocurre al ejecutar, dentro de `paso()`, contra el
+        estado a mitad de plan — con todo lo que las acciones anteriores del
+        mismo plan ya hicieron.
+
+        Esa distancia es un contrato y no un accidente:
+
+          · Lo que OTRO DÍA pudo habilitar (una bandera, un acuerdo) tiene que
+            haber ocurrido ya: aquí es requisito duro y la acción no entra.
+          · Lo que ESTE MISMO PLAN puede habilitar (la escolta que `Escoltar`
+            pone una línea antes, el ESMAD que se concentra, el punto que se
+            abre) no se exige aquí: se AVISA (`parcial`) y se comprueba al
+            ejecutar. Exigirlo aquí hacía inalcanzables a las que dependían de
+            algo que solo existe dentro de un plan — la escolta se libera al
+            cerrar cada paso, así que en el momento de encolar nunca hay una.
+
+        El orden del dictado es el orden de ejecución: la cola es FIFO y no se
+        reordena jamás. Quien habilita va antes en la frase, igual que en la
+        mesa.
+
+        Y UNA ORDEN NO SE DICTA DOS VECES EN LA MISMA JORNADA. No había nada que
+        lo impidiera: la cola era una lista y esto solo miraba el tope de doce,
+        de modo que seis sesiones de la mesa nacional en un día eran seis
+        sesiones — con sus seis acuerdos y sus seis descuentos de intensidad. Una
+        acción repetida ganaba el ejercicio. Lo que distingue una orden de otra
+        es `Accion.llave()`: el acto, y su objetivo cuando el acto tiene uno.
+        """
         v = accion.validar(self.estado)
-        if v.ok:
-            if len(self.cola_inmediata) >= P.TOPE_ACCIONES_POR_PLAN:
-                return Validacion(False, f"Tope de {P.TOPE_ACCIONES_POR_PLAN} acciones por plan.")
-            self.cola_inmediata.append(accion)
+        if not v.ok:
+            return v
+
+        llave = accion.llave()
+        ya = next((a for a in self.cola_inmediata if a.llave() == llave), None)
+        if ya is not None:
+            return Validacion(False, (
+                "Esa orden ya está dictada en esta jornada y sigue en cola. "
+                "Repetirla no la hace valer más: para hacer otra cosa, dígala "
+                "sobre otro objetivo."
+            ))
+
+        if len(self.cola_inmediata) >= P.TOPE_ACCIONES_POR_PLAN:
+            return Validacion(False, f"Tope de {P.TOPE_ACCIONES_POR_PLAN} acciones por plan.")
+        self.cola_inmediata.append(accion)
         return v
 
     def encolar_condicional(self, accion: Accion, condicion, descripcion: str) -> None:
@@ -223,7 +262,7 @@ class MotorCrisis:
             except Exception as exc:   # una acción rota no tumba el turno
                 r = Resultado(False, f"Error interno en {accion.__class__.__name__}: {exc}")
             res.resultados.append((accion.__class__.__name__, r))
-            self._registrar(accion, r)
+            self._registrar(accion)
         self.cola_inmediata = []
 
         # 3 · El costo de no decidir
@@ -243,6 +282,7 @@ class MotorCrisis:
         #      contarla también de noche la duplicaría sin que nada cambie.
         if es_dia:
             self._acumular_riesgo_infraestructura()
+            self._cobrar_corredores_negados()
 
         # 5 · Motores de subsistema, en orden fijo
         #
@@ -455,6 +495,41 @@ class MotorCrisis:
             if not i.protegida:
                 i.jornadas_sin_proteger += 1
 
+    def _cobrar_corredores_negados(self) -> None:
+        """
+        El paso humanitario que se exigió y sigue cerrado. **Con fecha.**
+
+        `COSTO_RESERVAS["corredor_humanitario_negado"]` era la huérfana más cara
+        del archivo: −12 de respaldo internacional y −5 de legitimidad
+        declarados, calibrados, documentados **y jamás aplicados**. Sin esto,
+        `RequerirCorredoresHumanitarios` era +5 de respaldo a cambio de nada, y
+        la ficha del rol prometía lo contrario —«si se niega, el incumplimiento
+        queda con fecha»—.
+
+        La regla es la de la acción, sin machinery nueva: el requerimiento vence
+        al cerrar la jornada siguiente. Si el corredor está abierto para
+        entonces, se cumplió y no cuesta; si no, se cobra UNA vez y el plazo se
+        apaga. Nadie tiene que acordarse de nada: el plazo vive en el corredor.
+        """
+        e = self.estado
+        for c in e.corredores.values():
+            if c.requerido_en_turno is None:
+                continue
+            if e.turno_decision <= c.requerido_en_turno:
+                continue
+            c.requerido_en_turno = None
+            if c.caudal_efectivo(e.nodos) > P.CAUDAL_MINIMO_PARA_ANUNCIAR:
+                e.eventos_turno.append({
+                    "tipo": "corredor_humanitario_cumplido",
+                    "corredor": c.corredor_id,
+                })
+                continue
+            e.reservas.aplicar(P.COSTO_RESERVAS["corredor_humanitario_negado"])
+            e.eventos_turno.append({
+                "tipo": "corredor_humanitario_negado",
+                "corredor": c.corredor_id,
+            })
+
     def riesgo_infraestructura(self) -> dict:
         """
         Lo que la sala dejó sin proteger, y durante cuánto. **Para el cierre.**
@@ -560,7 +635,16 @@ class MotorCrisis:
         elif nuevos:
             e.encuadre_dominante = "desorden"
 
-    def _registrar(self, accion: Accion, r: Resultado) -> None:
+    def _registrar(self, accion: Accion) -> None:
+        """
+        El pliego: quién ordenó qué y bajo la responsabilidad de quién.
+
+        YA NO RECIBE EL RESULTADO. Se guardaba como «ok»/«falló» en
+        `Decision.resultado` y no lo leía ninguna superficie. El desenlace de
+        cada orden vive en `ResultadoTurno.resultados`, que es lo que la consola
+        lee de vuelta, y el que hará falta en el debriefing es el archivo de la
+        corrida (`B1`), con su ventana y sus deltas.
+        """
         self.estado.registro.append(Decision(
             turno=self.estado.turno_decision,
             franja=self.estado.franja,
@@ -568,7 +652,6 @@ class MotorCrisis:
             accion=accion.__class__.__name__,
             descripcion=getattr(accion, "descripcion", ""),
             responsable_nominado=getattr(accion, "responsable_nominado", None),
-            resultado="ok" if r.ok else "falló",
         ))
 
     def _resumen(self, res: ResultadoTurno) -> str:

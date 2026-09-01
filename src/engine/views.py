@@ -28,8 +28,8 @@ DOS BLOQUES Y NADA MÁS
     detalle   tres o cuatro datos de su cartera. Cabe en una pantalla sin scroll.
     alerta    una línea: qué señala ese detalle como más urgente AHORA.
 
-**Las nueve alertas de cada turno no caben en la capacidad disponible.** Ese es
-el diseño: nueve personas con nueve urgencias legítimas y una escolta.
+**Las siete alertas de cada turno no caben en la capacidad disponible.** Ese es
+el diseño: siete carteras con siete urgencias legítimas y una escolta.
 
 INVARIANTE
 ----------
@@ -186,14 +186,24 @@ def _calendario_por_region(estado: Estado) -> list[dict]:
 # Las once decisiones constitutivas que la mesa puede tomar, y qué bandera
 # levanta cada una. Es el cuadro de mando del Presidente: quién ha constituido
 # qué, y qué sigue sin constituirse. Se lee del estado y no se escribe a mano.
+#
+# ERAN ONCE FILAS PARA DIEZ DECISIONES, Y VOLVIERON A SER ONCE — pero ahora
+# para once. «Identificación de agentes» tenía fila propia y no era una decisión
+# aparte: se encendía siempre con las reglas de empleo, en el mismo acto, y
+# nunca sin ellas — una fila que jamás cambia sola no informa de nada, y su
+# rótulo vive en el de al lado. La fila nueva es la otra cara: «parte
+# clasificado» y «protocolo de verificación» eran DOS decisiones que el motor
+# registraba como una, porque las dos acciones de Policía que las adoptan
+# encendían la misma bandera. El cuadro no puede enseñar la diferencia si el
+# estado no la guarda.
 CONSTITUTIVAS = (
     ("registro_escrito", "Registro escrito de decisiones", "Presidente"),
     ("lineas_rojas_fijadas", "Líneas rojas del Ejecutivo", "Presidente"),
     ("protocolo_voceria", "Protocolo de vocería única", "Interior"),
     ("concertacion_previa_cali", "Fuerza concertada con la Alcaldía", "Alcalde"),
-    ("reglas_escritas", "Reglas de empleo escritas", "Defensa"),
-    ("identificacion_agentes", "Identificación de agentes", "Defensa"),
+    ("reglas_escritas", "Reglas de empleo escritas e identificación", "Defensa"),
     ("registro_av", "Registro audiovisual", "Defensa"),
+    ("parte_clasificado", "Parte operacional clasificado", "Policía"),
     ("protocolo_verificacion", "Protocolo de verificación", "Policía"),
     ("criterio_priorizacion", "Criterio de priorización", "Transporte"),
     ("prioridad_combustible_fijada", "Prioridad del combustible", "Transporte"),
@@ -658,7 +668,10 @@ def _policia(estado: Estado):
              "declarada_en_verificacion": d.declarada_en_verificacion}
             for d in denuncias_abiertas
         ],
-        "parte_clasificado": estado.banderas.protocolo_verificacion,
+        # Antes leía `protocolo_verificacion` — que era lo único que encendían
+        # las dos acciones gemelas. La clave ya se llamaba así: ahora significa
+        # lo que dice, y el protocolo es la otra fila.
+        "parte_clasificado": estado.banderas.parte_clasificado,
         "_nota_sesgo": "el parte operacional subestima las víctimas civiles",
     }
 

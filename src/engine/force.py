@@ -97,8 +97,10 @@ def evaluar_riesgo(
 
     b = estado.banderas
     disponibles = {
+        # `reglas_escritas` lleva dentro la identificación de agentes: eran dos
+        # banderas que nunca se encendían por separado, y su producto está en
+        # MITIGADORES. Ver la nota de `parameters.MITIGADORES`.
         "reglas_escritas": b.reglas_escritas,
-        "identificacion_agentes": b.identificacion_agentes,
         "registro_av": b.registro_av,
         "concertado_con_alcaldia": concertado_con_alcaldia,
         "unidades_descansadas": fatiga < P.UMBRAL_FATIGA_DESCANSADA,
@@ -130,7 +132,7 @@ def multiplicador_costo_civil(nodo: Nodo) -> float:
     Cuánto más cuesta un incidente según a quién se le hizo.
 
     **Es la primera de las dos vías por las que la mezcla real de un punto tiene
-    consecuencia** (`docs/COMO_FUNCIONA.md` §8). Un incidente en un punto que es 90 %
+    consecuencia**. Un incidente en un punto que es 90 %
     protesta legítima cuesta casi el doble que uno donde la mitad es otra cosa:
     es fuerza sobre población civil, y se paga como tal.
 

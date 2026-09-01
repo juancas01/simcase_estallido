@@ -17,7 +17,7 @@ aquí en la siguiente corrida y no hay una segunda versión de la verdad.
     uv run python scripts/repertorio.py
 
 Lo que NO trae, y es deliberado: ni una cifra del motor. Cuánto cuesta cada cosa
-está en `docs/LAS_ACCIONES.md`, que es el documento del equipo docente. Este es
+está en `parameters.py` y en el comentario de cada acción, en el código. Este es
 el de la sala, y en la sala un número es algo que se optimiza.
 """
 
@@ -82,8 +82,8 @@ def documento() -> str:
     w("> en la siguiente corrida — no hay una segunda versión de la verdad.")
     w("")
     w("> **Sin una sola cifra, a propósito.** Cuánto cuesta cada cosa está en")
-    w("> [`LAS_ACCIONES.md`](LAS_ACCIONES.md), que es el documento del equipo")
-    w("> docente. Este es el de la sala, y **un nivel se interpreta; un número se")
+    w("> el código: `parameters.py` y el comentario de cada acción. Este es el de")
+    w("> la sala, y **un nivel se interpreta; un número se")
     w("> optimiza**.")
     w("")
     w("---")

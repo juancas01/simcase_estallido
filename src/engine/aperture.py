@@ -157,6 +157,54 @@ def avanzar_concertacion(
     )
 
 
+def liquidar_concertacion(
+    estado: Estado, nodo: Nodo, r: ResultadoApertura, *, nota_fragil: str
+) -> str:
+    """
+    El desenlace de una mesa que rindió: la apertura, lo que cuesta y lo que pasa
+    si el acuerdo sale frágil. Devuelve el mensaje para la sala.
+
+    LA FRONTERA, Y ES LO QUE HACE QUE ESTO NO BORRE NINGÚN ROL. Lo que distingue
+    una mesa de otra —a quién puede sentar, dónde, con qué requisito previo, qué
+    le cuesta abrir un canal paralelo, qué riesgo propio corre— **se queda en su
+    acción**. Lo que es una regla del mundo —qué pasa cuando una mesa rinde— vive
+    aquí, una sola vez. El Ministro del Interior, el Alcalde y el Ministro de
+    Agricultura siguen teniendo cada uno su acción, con su jurisdicción y su
+    contraparte.
+
+    ESTABA ESCRITO TRES VECES Y YA HABÍAN DIVERGIDO. La mesa del Alcalde no
+    registraba el evento `acuerdo_incumplido` en `eventos_turno`, de modo que un
+    incumplimiento que sí ocurría no se dibujaba en el mapa ni salía en las
+    consecuencias de la noche. **Nadie decidió esa diferencia**: se perdió al
+    copiar el bloque, que es exactamente lo que un bloque copiado tres veces
+    acaba haciendo.
+
+    `nota_fragil` la pone cada rol porque es su voz —«los voceros con quienes se
+    pactó», «quien firmó no manda sobre quien sostiene el cierre»— y eso sí es
+    suyo.
+    """
+    from src.engine import mobilization
+
+    estado.eventos_turno.append(
+        {"tipo": "apertura", "nodo": nodo.nodo_id, "via": "concertacion"}
+    )
+    estado.reservas.aplicar(P.COSTO_RESERVAS["apertura_concertada"])
+    mobilization.registrar_evento(estado, "apertura_concertada", nodo.region_id)
+
+    if not r.fragil:
+        return r.mensaje
+
+    # Quien firmó no manda sobre quien sostiene el cierre: el acuerdo se
+    # incumple en horas y solo queda una fracción de lo que se abrió.
+    nodo.caudal *= P.CAUDAL_RESTANTE_ACUERDO_FRAGIL
+    estado.reservas.aplicar(P.COSTO_RESERVAS["acuerdo_incumplido"])
+    mobilization.registrar_evento(estado, "acuerdo_incumplido", nodo.region_id)
+    estado.eventos_turno.append(
+        {"tipo": "acuerdo_incumplido", "nodo": nodo.nodo_id}
+    )
+    return r.mensaje + nota_fragil
+
+
 def revisar_desgaste(nodo: Nodo, rng: random.Random) -> ResultadoApertura | None:
     """
     Si el apoyo del barrio cae lo suficiente Y SE SOSTIENE, el cierre se deshace

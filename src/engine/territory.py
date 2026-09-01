@@ -244,10 +244,16 @@ def lectura_nodo(nodo: Nodo) -> dict:
             "peldano": peldano(nodo.control_voceria, P.BANDAS_VOCERIA),
             "de": len(P.BANDAS_VOCERIA),
             "sentido": "arriba_mejor",
-            # Quién lo constató, y cuándo. Sin esto, las tres bandas de la
-            # vocería se leen como un hecho establecido, y no lo son: son la
-            # lectura gruesa de la sala mientras nadie haya ido a mirar.
-            "constatado": nodo.verificado_por == "dupla_defensoria",
+            # `constatado` SE RETIRÓ. Comparaba `verificado_por` con
+            # «dupla_defensoria», un valor que **nadie escribe desde que salió la
+            # Defensoría del Pueblo**: las cuatro fuentes que marcan un punto
+            # ponen «equipo_terreno», «parte_municipal», «inteligencia_defensa» o
+            # «mapa_transporte». Salía `false` siempre, en el mapa y en las
+            # vistas, y un dato que siempre dice lo mismo no dice nada.
+            #
+            # Quién miró y cuándo sigue estando, y ahí sí es verdad: el punto
+            # lleva `verificado_por` y `ultima_verificacion_turno`, y el tablero
+            # los sirve en `verificado_turno`.
         },
     }
 
@@ -369,7 +375,6 @@ def lectura_region(region: Region, nodos: list[Nodo],
             "peldano": peldano(media(lambda x: x.control_voceria), P.BANDAS_VOCERIA),
             "de": len(P.BANDAS_VOCERIA),
             "sentido": "arriba_mejor",
-            "constatado": all(x.verificado_por == "dupla_defensoria" for x in nodos),
         },
     }
 

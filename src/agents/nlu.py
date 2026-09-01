@@ -59,7 +59,6 @@ TOPE_ACCIONES = 12
 # banda de riesgo con su lista.
 ARGUMENTOS_EN_CLARO: dict = {
     "concertado_con_alcaldia": lambda v: "concertado con la Alcaldía" if v else "",
-    "de_noche": lambda v: "de noche" if v else "",
     "responsable_nominado": lambda v: f"responsable: {v}" if v else "",
     "clase_carga": lambda v: f"carga: {v}",
     "modo": lambda v: f"modo: {v}",
@@ -85,7 +84,11 @@ ARGUMENTOS_EN_CLARO: dict = {
                                "SIN la Alcaldía"),
     "ofrece_compensacion": lambda v: ("ofreciendo compensación" if v else
                                       "sin ofrecer compensación"),
-    "margen": lambda v: f"margen negociable: {v}",
+    # Se dice en los DOS sentidos, porque el valor por defecto es `amplio` y la
+    # sala tiene que oír cuál de los dos va a quedar fijado antes de confirmar.
+    "margen": lambda v: ("SIN margen: nada queda negociable"
+                         if str(v) == "estrecho" else
+                         "con margen para que Interior pacte"),
     "orden": lambda v: f"orden de prioridad: {' > '.join(v)}" if v else "",
     # Los cinco de las ocho acciones que hasta ahora no se podían pedir. Los
     # tres booleanos se leen EN LOS DOS SENTIDOS, porque en las tres el valor
