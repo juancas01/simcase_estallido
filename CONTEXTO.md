@@ -37,7 +37,8 @@ intensidad de lo que se intenta contener. El principio que ordena todo:
 | cómo se entiende una orden dictada en lenguaje natural | `src/agents/nlu.py` · `src/agents/herramientas.py` · `src/agents/config.py` |
 | la API de la consola y las pantallas | `src/api/main.py` · `web_ui/src/` |
 | calibración, estrategias, semillas, la tabla de `--comparar` | `PENDIENTES.md` (C5) · `scripts/correr_ejercicio.py --comparar` |
-| el debriefing futuro y la «lectura de la corrida» (B14) | `docs/LA_MEDICION.md` — propuesta sin implementar |
+| **el debriefing y la «lectura de la corrida»** (B7 · B14) | `src/engine/lectura.py` · `src/api/main.py` (`/api/debriefing`) · `web_ui/src/components/Debriefing.jsx` · el porqué en `docs/LA_MEDICION.md` |
+| **dónde queda escrita una corrida**, y cómo volver a contarla (B1) | `src/engine/bitacora.py` — `corridas/<fecha-hora>/corrida.jsonl` |
 | el diseño original del juego, el historial de decisiones | git history — ver la tabla final |
 
 ---
@@ -52,6 +53,8 @@ intensidad de lo que se intenta contener. El principio que ordena todo:
 | `src/engine/actions.py` | las **37 acciones** por rol (`CATALOGO`), `ventana_escoltada`, y `GUIA` — de ahí se regenera la guía impresa |
 | `src/engine/force.py` | riesgo de incidente y los cuatro mitigadores, la operación, la escolta, fatiga y custodia |
 | `src/engine/aperture.py` | las **tres vías de abrir** (fuerza · concertación · desgaste), las mesas y sus sesiones, los acuerdos y su vencimiento |
+| `src/engine/bitacora.py` | **el archivo de la corrida**: un JSONL de solo anexado por sesión. Es lo único que escribe a disco, y no lee el estado ni sabe que existe un motor |
+| `src/engine/lectura.py` | **la lectura del cierre**: el cómo (las seis vías y sus tres calificadores) y el qué (atención, saldo y su cruce). Pura, y **ninguna superficie en vivo puede importarla** — hay prueba |
 | `src/engine/supply.py` | el reloj: combustible → plantas → oxígeno → alimentos; las muertes evitables |
 | `src/engine/mobilization.py` | el adversario reflexivo: intensidad, eventos, cierres nuevos, apoyo local |
 | `src/engine/information.py` | estimaciones sesgadas, los tres equipos por día, denuncias y su verificación, la cifra oficial |
@@ -59,10 +62,10 @@ intensidad de lo que se intenta contener. El principio que ordena todo:
 | `src/engine/views.py` | la vista pública (el tablero) y los datos por rol que consume la sección «Carteras» de la web UI · el cuadro `CONSTITUTIVAS` |
 | `src/engine/loader.py` | carga y valida `data/escenario/estado_inicial.json` — el escenario se edita ahí, el motor identifica por código y no por nombre |
 | `src/agents/` | las dos capas de lenguaje (con llave usan el modelo; sin llave degradan a plantilla y el ejercicio corre igual) |
-| `src/api/main.py` | FastAPI: consola, `/encolar`, cerrar jornada, tablero y carteras |
-| `scripts/correr_ejercicio.py` | correr el motor solo: `--detalle`, `--vistas`, `--comparar`, `--semilla` |
+| `src/api/main.py` | FastAPI: consola, `/encolar`, cerrar jornada, tablero y carteras · `/api/lectura`, `/api/metricas` y `/api/debriefing` **responden 409 hasta que la sala cierra** |
+| `scripts/correr_ejercicio.py` | correr el motor solo: `--detalle`, `--vistas`, `--comparar`, `--semilla`, `--lectura [--todas]` |
 | `scripts/repertorio.py` | **regenera la guía de acciones** que se imprime para la sala |
-| `tests/` | `test_invariantes.py` (el motor) · `test_canal_ordenes.py` (el canal) — cada prueba explica la regla que clava |
+| `tests/` | `test_invariantes.py` (el motor) · `test_canal_ordenes.py` (el canal) · `test_bitacora.py` (**lee el `.jsonl` escrito**, no el código que lo escribe) · `test_lectura.py` · `test_debriefing.py` (los 409 y que el vocabulario del cierre no se filtre) — cada prueba explica la regla que clava |
 
 ---
 

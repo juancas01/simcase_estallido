@@ -206,4 +206,32 @@ export const D = {
     'Qué capa tradujo la orden de lenguaje natural a acciones. Sin llave de API '
     + 'se emplea un intérprete determinista, y la validación y la ejecución son '
     + 'las mismas en los dos casos.',
+// --- la lectura del cierre (solo /debriefing) ------------------------------
+
+  firma:
+    'Una frase que resume cómo gobernó esta sala: qué vías usó, cuáles no, y '
+    + 'qué pasó con lo que abrió. Se lee en voz alta y se deja en pantalla.',
+
+  vias:
+    'Las seis maneras de buscarle salida al bloqueo. Las tres primeras abren '
+    + 'un punto; las otras tres lo sortean, cambian las reglas o cambian lo '
+    + 'que el país cree que pasa.',
+
+  atencion:
+    'Dónde gastó la sala sus decisiones. Atender a uno es no atender a otro, '
+    + 'y por eso el reparto mide una prioridad y no una generosidad.',
+
+  saldo:
+    'Cómo terminó cada público, según el mundo y no según las intenciones. '
+    + 'Se entrega en banda y con los hechos debajo: la lista abre la '
+    + 'conversación; la banda sola, no.',
+
+  gobierno_de_si_mismo:
+    'Las decisiones que no atienden a ningún público: protocolos, registros y '
+    + 'mesas ordenándose. No es tiempo perdido —abarata todo lo demás—, pero '
+    + 'un país entero gastado ahí tiene una conversación pendiente.',
+
+  el_publico_que_nadie_miro:
+    'El público que no recibió ni una decisión, con la consecuencia que tuvo '
+    + 'esa omisión. Es la línea que más se recuerda del debriefing.',
 }

@@ -34,3 +34,17 @@ def sin_red(monkeypatch):
 
     monkeypatch.setattr(nlu, "cliente", lambda: None)
     monkeypatch.setattr(entorno, "cliente", lambda: None)
+
+
+@pytest.fixture(autouse=True)
+def sin_bitacora(monkeypatch):
+    """
+    La suite no escribe corridas en el repositorio.
+
+    El archivo de la corrida (`B1`) va ENCENDIDO en producción — su condición
+    es que lo escrito sobreviva al proceso—, pero cada `reload` del módulo de
+    la API crearía una carpeta nueva por prueba. La comprobación de que el
+    dato llega al archivo está en `test_bitacora.py`, que construye su bitácora
+    apuntando a `tmp_path` y usa el motor directamente, sin pasar por aquí.
+    """
+    monkeypatch.setenv("SIMCASE_BITACORA", "off")

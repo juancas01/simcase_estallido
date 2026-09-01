@@ -1,9 +1,16 @@
 // ---------------------------------------------------------------------------
-// DOS SUPERFICIES. NI UNA MÁS.
+// DOS SUPERFICIES Y SU EPÍLOGO. NI UNA MÁS.
 //
-//   /consola   ORDENAR · donde se transcriben las órdenes · NO se proyecta
+//   /consola      ORDENAR · donde se transcriben las órdenes · NO se proyecta
+//   /debriefing   MIRAR ATRÁS · el cierre, con el ejercicio terminado
 //   todo lo demás
-//              LEER · el tablero, que es la pantalla de la sala
+//                 LEER · el tablero, que es la pantalla de la sala
+//
+// EL DEBRIEFING ES UNA RUTA Y NO UNA PESTAÑA DEL TABLERO, porque el tablero
+// sigue proyectándose durante los dos minutos de la última noche — y lo que
+// esa pantalla muestra después es el país que la sala dejó, no su retrato.
+// El enlace existe desde el principio; el servidor decide cuándo hay algo que
+// mostrar, y responde 409 hasta entonces.
 //
 // NO HAY PORTADA. Hubo un menú en `/` con una tarjeta por superficie, y era
 // una pantalla que solo servía para salir de ella: nadie monta una sala de dos
@@ -23,6 +30,7 @@ import { Component } from 'react'
 
 import Tablero from './components/Tablero'
 import Consola from './components/Consola'
+import Debriefing from './components/Debriefing'
 
 // ---------------------------------------------------------------------------
 // LA RED DE SEGURIDAD
@@ -77,8 +85,10 @@ export default function App() {
 function Superficie() {
   const ruta = decodeURIComponent(window.location.pathname)
 
-  // Una sola ruta se aparta del tablero, y es la que no se proyecta.
+  // Dos rutas se apartan del tablero: la que no se proyecta y la que solo
+  // existe después del cierre.
   if (ruta === '/consola') return <Consola />
+  if (ruta === '/debriefing') return <Debriefing />
 
   return <Tablero />
 }

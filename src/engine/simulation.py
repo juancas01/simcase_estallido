@@ -28,6 +28,7 @@ from dataclasses import dataclass, field
 from src.engine import parameters as P
 from src.engine import mobilization, force, aperture, supply, information
 from src.engine.actions import Accion, Resultado, Validacion
+from src.engine.bitacora import Bitacora
 from src.engine.state import Estado, Decision, Franja
 
 
@@ -43,6 +44,15 @@ class ResultadoTurno:
     indicadores: dict = field(default_factory=dict)
     umbrales_cruzados: list[str] = field(default_factory=list)
     resumen: str = ""
+    # Semáforo y autonomías por región al cerrar el paso. Es la serie que la
+    # lectura necesita («jornadas-región en rojo», «se les cayó de hambre») y
+    # es exactamente lo que no puede dibujarse en vivo sin volverlo marcador:
+    # vive en el historial del motor y en el archivo de la corrida (`B1`),
+    # nunca en `Estado`.
+    regiones: dict = field(default_factory=dict)
+    # Los mitigadores persistentes encendidos al cerrar el paso. Es lo que
+    # permite decir, en el cierre, con cuánta red se operó cada punto.
+    mitigadores: list[str] = field(default_factory=list)
 
 
 class MotorCrisis:
@@ -55,7 +65,8 @@ class MotorCrisis:
         r = motor.paso()
     """
 
-    def __init__(self, estado: Estado, semilla: int = P.SEMILLA_POR_DEFECTO):
+    def __init__(self, estado: Estado, semilla: int = P.SEMILLA_POR_DEFECTO,
+                 bitacora: Bitacora | None = None):
         self.estado = estado
         # La semilla queda registrada para repetir la corrida en el debriefing con
         # una decisión cambiada. NO es un elemento visible de la interfaz (A6).
@@ -73,9 +84,19 @@ class MotorCrisis:
         self.eventos_programados: list[dict] = []
         self.acciones_condicionales: list[dict] = []
 
-        # PENDIENTE(B1): el historial vive solo en memoria. Sin volcarlo a disco
-        # con la semilla, la corrida no se puede repetir con una decisión
-        # cambiada — que es la mejor herramienta del debriefing.
+        # EL ARCHIVO DE LA CORRIDA (`B1`). De solo anexado, para que lo escrito
+        # sobreviva a una caída del proceso. Nadie la pidió → `inactiva()`: el
+        # motor corre entero sin escribir nada, como siempre pudo.
+        self.bitacora = bitacora or Bitacora.inactiva()
+
+        # La memoria de las decisiones con su imputación resuelta (`via`,
+        # `atiende`, ver docs/LA_MEDICION.md §4). Va AQUÍ y no en `Estado` ni en
+        # `Decision` a propósito: el tablero serializa el registro tal cual, y
+        # el vocabulario de la lectura no puede salir antes del cierre (§7).
+        self.imputaciones: list[dict] = []
+
+        # El historial sigue siendo la memoria en vivo de los pasos; la bitácora
+        # es la copia que sobrevive al proceso.
         self.historial: list[ResultadoTurno] = []
         self.lineas_declaradas: dict[str, str] = {}
 
@@ -83,6 +104,7 @@ class MotorCrisis:
         # compararse, y el primer turno es justo donde la sala aún no sabe qué
         # es normal en este tablero.
         self._indicadores_t0 = self._indicadores()
+        self.bitacora.fijar_apertura(semilla, self._indicadores_t0)
 
     # ------------------------------------------------------------------
     # Turno 0 — instalación
@@ -99,6 +121,7 @@ class MotorCrisis:
         """
         self.lineas_declaradas[rol] = f"{linea}" + (f" · se movería si: {condicion}"
                                                     if condicion else "")
+        self.bitacora.linea(rol, self.lineas_declaradas[rol])
 
     # ------------------------------------------------------------------
     # Encolar
@@ -310,8 +333,17 @@ class MotorCrisis:
         res.eventos = list(e.eventos_turno)
         res.reservas = self._reservas_dict()
         res.indicadores = self._indicadores()
+        res.regiones = self._regiones_dict()
+        res.mitigadores = [k for k, v in e.banderas.mitigadores_activos().items()
+                           if v]
         res.resumen = self._resumen(res)
         self.historial.append(res)
+        self.bitacora.ventana(
+            n=e.turno_decision, franja=e.franja,
+            indicadores=res.indicadores, deltas=self.deltas(),
+            eventos=res.eventos, regiones=res.regiones,
+            mitigadores=res.mitigadores,
+        )
         return res
 
     # ------------------------------------------------------------------
@@ -395,6 +427,26 @@ class MotorCrisis:
             "credibilidad_mesa": round(r.credibilidad_mesa, 1),
             "respaldo_internacional": round(r.respaldo_internacional, 1),
             "cohesion_mesa": round(r.cohesion_mesa, 1),
+        }
+
+    def _regiones_dict(self) -> dict:
+        """
+        Semáforo y autonomías de cada región, para el historial y la bitácora.
+
+        No es un dato nuevo: es el mismo `Region.semaforo` que el tablero
+        publica, congelado por paso. La serie completa —qué región pasó cuántas
+        jornadas en rojo— solo la necesita la lectura del cierre, y por eso no
+        existe como campo de `Estado`.
+        """
+        return {
+            rid: {
+                "nombre": r.nombre,
+                "semaforo": r.semaforo,
+                "dias_autonomia_alimentos": round(r.dias_autonomia_alimentos, 2),
+                "dias_autonomia_combustible": round(r.dias_autonomia_combustible, 2),
+                "dias_autonomia_oxigeno": round(r.dias_autonomia_oxigeno, 2),
+            }
+            for rid, r in self.estado.regiones.items()
         }
 
     def _eventos_de_calendario(self) -> None:
@@ -644,15 +696,53 @@ class MotorCrisis:
         cada orden vive en `ResultadoTurno.resultados`, que es lo que la consola
         lee de vuelta, y el que hará falta en el debriefing es el archivo de la
         corrida (`B1`), con su ventana y sus deltas.
+
+        Aquí se resuelve además la IMPUTACIÓN de la decisión —su vía y su
+        público— que cada acción declara (`Accion.imputacion`). Se guarda en
+        `self.imputaciones` y en la bitácora, JAMÁS en `Decision`: el tablero
+        serializa el registro tal cual, y estas dos palabras son el vocabulario
+        de la lectura del cierre.
         """
-        self.estado.registro.append(Decision(
-            turno=self.estado.turno_decision,
-            franja=self.estado.franja,
-            rol=getattr(accion, "rol", "?"),
+        e = self.estado
+        rol = getattr(accion, "rol", "?")
+        nombre = getattr(accion, "nombre", "") or accion.__class__.__name__
+        descripcion = getattr(accion, "descripcion", "")
+        responsable = getattr(accion, "responsable_nominado", None)
+
+        e.registro.append(Decision(
+            turno=e.turno_decision,
+            franja=e.franja,
+            rol=rol,
             accion=accion.__class__.__name__,
-            descripcion=getattr(accion, "descripcion", ""),
-            responsable_nominado=getattr(accion, "responsable_nominado", None),
+            descripcion=descripcion,
+            responsable_nominado=responsable,
         ))
+
+        via, atiende = accion.imputacion(e)
+        # EL OBJETO de la orden —dónde cayó—, para la lectura del cierre. Se
+        # deriva de los campos que la acción ya declara; no hace falta lógica
+        # nueva por acción.
+        objeto = (getattr(accion, "region_id", "")
+                  or getattr(accion, "nodo_id", "")
+                  or getattr(accion, "corredor_id", ""))
+        self.imputaciones.append({
+            "ventana": e.turno_decision,
+            "franja": e.franja,
+            "rol": rol,
+            "accion": accion.__class__.__name__,
+            "nombre": nombre,
+            "descripcion": descripcion,
+            "responsable": responsable,
+            "via": list(via),
+            "atiende": list(atiende),
+            "objeto": objeto,
+        })
+        self.bitacora.decision(
+            ventana=e.turno_decision, rol=rol,
+            accion=accion.__class__.__name__, nombre=nombre,
+            descripcion=descripcion, responsable=responsable,
+            via=list(via), atiende=list(atiende),
+        )
 
     def _resumen(self, res: ResultadoTurno) -> str:
         e = self.estado

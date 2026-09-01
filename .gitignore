@@ -24,6 +24,13 @@ logs/
 sim_history/
 *.log
 
+# El archivo de la corrida (B1): un JSONL por sesión, se escribe a medida que
+# ocurre y es material del equipo docente, no del repositorio.
+corridas/
+
+# El cuaderno de la herramienta de asistencia: planes de sesión, no del proyecto.
+.zcode/
+
 # Sistema
 .DS_Store
 Thumbs.db

@@ -8,6 +8,7 @@ montar la sala.
     uv run python scripts/correr_ejercicio.py --estrategia constituida
     uv run python scripts/correr_ejercicio.py --comparar
     uv run python scripts/correr_ejercicio.py --vistas
+    uv run python scripts/correr_ejercicio.py --lectura
 
 Las estrategias existen para el criterio de calibración: ajustar hasta que
 NINGUNA pura gane. Si `solo_fuerza` domina, el modelo está mal calibrado; si
@@ -17,6 +18,7 @@ NINGUNA pura gane. Si `solo_fuerza` domina, el modelo está mal calibrado; si
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import sys
 from pathlib import Path
@@ -31,6 +33,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.engine import parameters as P                      # noqa: E402
 from src.engine import views                                # noqa: E402
+from src.engine import lectura as modulo_lectura            # noqa: E402
 from src.engine.loader import cargar_estado                 # noqa: E402
 from src.engine.simulation import MotorCrisis               # noqa: E402
 from src.engine.actions import (                            # noqa: E402
@@ -344,7 +347,12 @@ def correr(estrategia: str, semilla: int, verboso: bool = True) -> dict:
         for r in estado.regiones.values()
     }
     banderas_al_cierre = dict(estado.banderas.activada_en_turno)
-    proy = motor.proyectar_sin_mando()
+    # LA PROYECCIÓN VA SOBRE UNA COPIA. `proyectar_sin_mando()` corre turnos de
+    # verdad sobre el motor que se le pasa: hacerlo aquí sobre el motor real
+    # dejaba, después de la tabla, un motor con tres turnos de más — y la
+    # lectura de `--lectura` salía describiendo un país que la sala nunca
+    # entregó. Es la misma copia que hace `_proyeccion_final()` en la API.
+    proy = copy.deepcopy(motor).proyectar_sin_mando()
 
     if verboso:
         print()
@@ -368,7 +376,7 @@ def correr(estrategia: str, semilla: int, verboso: bool = True) -> dict:
         for k, v in proy["despues"].items():
             print(f"    {k:.<26} {v}")
 
-    return {"metricas": m, "proyeccion": proy, "traza": traza,
+    return {"motor": motor, "metricas": m, "proyeccion": proy, "traza": traza,
             "sirvio_humanitario": sirvio_humanitario,
             "regiones": regiones_al_cierre,
             "banderas": banderas_al_cierre}
@@ -578,6 +586,215 @@ def mostrar_vistas(semilla: int, turnos: int = 2) -> None:
                                   indent=2).replace("\n", "\n    ")[:1400])
 
 
+# ---------------------------------------------------------------------------
+# La lectura (`B14`, docs/LA_MEDICION.md)
+#
+# El mismo material que el equipo docente ve en el debriefing, impreso desde la
+# terminal y sin montar la sala. Existe por dos razones distintas:
+#
+#   · PARA LEERLA. La firma y los repartos de una estrategia pura son la única
+#     forma barata de comprobar que la lectura DICE ALGO — que `solo_fuerza` y
+#     `solo_mesa` no salen descritas igual. Si salieran, el instrumento no
+#     estaría midiendo la conducta sino el escenario.
+#   · PARA VALIDARLA. La lectura viaja como JSON a una pantalla, y una lectura
+#     que no cierra sus cuentas es peor que ninguna: da una cifra falsa con
+#     cara de verdadera. Las comprobaciones de abajo son las mismas que hacen
+#     las pruebas, corriendo aquí sobre CUALQUIER estrategia.
+#
+# La comparación contra las siete salas ficticias NO va aquí: es `C5`, y exige
+# corridas reales contra las que calibrar las bandas (§10).
+# ---------------------------------------------------------------------------
+
+def validar_lectura(L: dict, motor) -> list[str]:
+    """
+    Las cuentas de la lectura, comprobadas. Devuelve la lista de fallas —
+    vacía si todo cierra.
+
+    No lanza: imprimir la lectura y DESPUÉS decir qué no cuadra es más útil
+    para calibrar que morirse en la primera resta que no da.
+    """
+    fallas: list[str] = []
+
+    def cerca(a: float, b: float, tol: float = 0.01) -> bool:
+        return abs(a - b) <= tol
+
+    # 1 · El vocabulario. Ninguna acción puede inventarse una vía o un público.
+    for im in motor.imputaciones:
+        for v in im["via"]:
+            if v not in modulo_lectura.VIAS:
+                fallas.append(f"{im['accion']} declara la vía inexistente «{v}»")
+        for pub in im["atiende"]:
+            if pub not in modulo_lectura.PUBLICOS:
+                fallas.append(f"{im['accion']} declara el público inexistente «{pub}»")
+
+    # 2 · El reparto de vías suma uno (las dobles cuentan en las dos, §4).
+    vias = L["como"]["vias"]
+    total_vias = sum(v["decisiones"] for v in vias.values())
+    if total_vias:
+        suma = sum(v["proporcion"] for v in vias.values())
+        if not cerca(suma, 1.0):
+            fallas.append(f"las proporciones de vía suman {suma:.3f}, no 1")
+        contadas = sum(len(im["via"]) for im in motor.imputaciones)
+        if total_vias != contadas:
+            fallas.append(f"el reparto de vías cuenta {total_vias} y las "
+                          f"decisiones declaran {contadas}")
+
+    # 3 · La atención suma uno SOBRE LAS DECISIONES CON PÚBLICO, y el residuo
+    #     —el gobierno de sí mismo— sobre el total. Son dos denominadores
+    #     distintos a propósito, y es justo donde se cuela el error.
+    at = L["que"]["atencion"]
+    con_publico = sum(pu["decisiones"] for pu in at["por_publico"].values())
+    if con_publico:
+        suma = sum(pu["proporcion"] for pu in at["por_publico"].values())
+        if not cerca(suma, 1.0):
+            fallas.append(f"las proporciones de atención suman {suma:.3f}, no 1")
+    if at["decisiones"] != len(motor.imputaciones):
+        fallas.append(f"la atención dice {at['decisiones']} decisiones y el "
+                      f"motor registró {len(motor.imputaciones)}")
+    sin_publico = sum(1 for im in motor.imputaciones if not im["atiende"])
+    if at["gobierno_de_si_mismo"]["decisiones"] != sin_publico:
+        fallas.append(f"el residuo dice {at['gobierno_de_si_mismo']['decisiones']} "
+                      f"y hay {sin_publico} decisiones sin público")
+
+    # 4 · Los cuatro públicos tienen saldo y celda en el 2×2. Un público que se
+    #     cae del cruce es exactamente el que nadie miraría en el debriefing.
+    for pub in modulo_lectura.PUBLICOS:
+        if pub not in L["que"]["saldo"]:
+            fallas.append(f"«{pub}» no tiene saldo")
+        if pub not in L["que"]["cruce"]:
+            fallas.append(f"«{pub}» no tiene celda en el cruce")
+
+    # 5 · Viaja como JSON, que es la única forma en que la pantalla la recibe.
+    try:
+        json.dumps(L, ensure_ascii=False)
+    except (TypeError, ValueError) as exc:
+        fallas.append(f"la lectura no es serializable: {exc}")
+
+    # 6 · Y es pura: calcularla no mueve el mundo ni consume la semilla.
+    if modulo_lectura.calcular(motor) != L:
+        fallas.append("dos lecturas del mismo cierre salieron distintas")
+
+    return fallas
+
+
+def imprimir_lectura(estrategia: str, motor) -> bool:
+    """La lectura de una corrida, impresa y comprobada. `True` si cuadra."""
+    L = modulo_lectura.calcular(motor)
+    como, que = L["como"], L["que"]
+
+    print()
+    print(SEP)
+    print(f"  LA LECTURA — {estrategia}")
+    print(SEP)
+    print(f"  «{L['firma']}»")
+
+    print()
+    print("  EL CÓMO — las seis vías")
+    abren, no_abren = como["bloques"]
+    for titulo, bloque_vias in (("    las que abren el punto", abren),
+                                ("    las que no lo abren", no_abren)):
+        print(titulo)
+        for v in bloque_vias:
+            d = como["vias"][v]
+            barra = "#" * int(round(d["proporcion"] * 30))
+            print(f"      {v:<12}{d['decisiones']:>3}  {d['proporcion']:>5.0%} {barra}")
+    if como["sin_usar"]:
+        print(f"    sin usar: {', '.join(como['sin_usar'])}")
+
+    print(f"    aperturas {como['aperturas']} · reaperturas {como['reaperturas']}")
+    des = como["desgaste"]
+    print(f"    desgaste · lo desgastaron: {len(des['lo_desgastaron'])} · "
+          f"se les cayó de hambre: {len(des['se_les_cayo_de_hambre'])}")
+
+    c = como["calificadores"]
+    c1, c3 = c["c1_anticiparon"], c["c3_miraron"]
+    print(f"    C1 ¿anticiparon? .... {c1['anticipadas']} banderas antes del "
+          f"primer incidente (jornada {c1['primer_incidente'] or '—'})")
+    print(f"    C2 ¿aguantó? ........ revertidas la misma jornada: "
+          f"{c['c2_aguantaron']['revertidas_misma_jornada']}")
+    print(f"    C3 ¿miraron antes? .. {c3['verificados_antes']}/"
+          f"{c3['puntos_operados']} puntos operados estaban verificados")
+
+    print()
+    print("  EL QUÉ — a quién atendieron, y cómo terminó cada uno")
+    at = que["atencion"]
+    for pub in modulo_lectura.PUBLICOS:
+        d = at["por_publico"][pub]
+        cruce = que["cruce"][pub]
+        print(f"    {pub:<15}{d['decisiones']:>3}  {d['proporcion']:>5.0%}  "
+              f"atención {cruce['atencion']:<7} saldo {cruce['saldo']}")
+    r = at["gobierno_de_si_mismo"]
+    print(f"    {'(de sí mismo)':<15}{r['decisiones']:>3}  {r['proporcion']:>5.0%}"
+          f"  — sobre {at['decisiones']} decisiones")
+    print(f"    bandas: {que['saldo']['base']}")
+
+    print()
+    print("  LOS HECHOS DEL SALDO")
+    for pub in modulo_lectura.PUBLICOS:
+        s_pub = que["saldo"][pub]
+        print(f"    {pub} [{s_pub['banda']}]")
+        for hecho in s_pub["hechos"]:
+            print(f"       · {hecho}")
+
+    nadie = que["publico_que_nadie_miro"]
+    print()
+    if nadie:
+        print(f"  EL PÚBLICO QUE NADIE MIRÓ — {nadie['publico']}")
+        print(f"    {nadie['linea']}")
+        print(f"    {nadie['consecuencia']}")
+    else:
+        print("  EL PÚBLICO QUE NADIE MIRÓ — ninguno se quedó sin una decisión.")
+
+    sf = que["empresa_sin_fuerza"]
+    print(f"  Residuo §5B: de {sf['atendieron']} decisión(es) que atendieron a "
+          f"la empresa, {sf['sin_fuerza']} sin fuerza.")
+
+    print()
+    fallas = validar_lectura(L, motor)
+    if fallas:
+        print("  LA LECTURA NO CIERRA SUS CUENTAS:")
+        for f in fallas:
+            print(f"    ! {f}")
+    else:
+        print("  Las cuentas de la lectura cierran.")
+    return not fallas
+
+
+def leer(estrategia: str, semilla: int, verboso: bool = False) -> bool:
+    """Corre una estrategia y lee su corrida. `True` si la lectura cuadra."""
+    r = correr(estrategia, semilla, verboso=verboso)
+    return imprimir_lectura(estrategia, r["motor"])
+
+
+def leer_todas(semilla: int) -> bool:
+    """
+    La lectura de las siete estrategias puras, seguidas.
+
+    El criterio no es que ninguna gane —eso lo mira `--comparar`— sino que
+    ninguna se LEA IGUAL que otra. Dos firmas idénticas para dos conductas
+    opuestas serían el instrumento describiendo el escenario y no a la sala.
+    """
+    ok = True
+    firmas: dict[str, str] = {}
+    for nombre in ESTRATEGIAS:
+        r = correr(nombre, semilla, verboso=False)
+        ok = imprimir_lectura(nombre, r["motor"]) and ok
+        firmas[nombre] = modulo_lectura.calcular(r["motor"])["firma"]
+
+    print()
+    print(SEP)
+    print("  LAS SIETE FIRMAS — ninguna debería leerse igual que otra")
+    print(SEP)
+    for nombre, firma in firmas.items():
+        print(f"  {nombre:<17}«{firma}»")
+    repetidas = len(firmas) - len(set(firmas.values()))
+    if repetidas:
+        print(f"  ! {repetidas} firma(s) repetida(s): la lectura no está "
+              f"distinguiendo conductas distintas.")
+        ok = False
+    return ok
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="SIMCASE · Estallido Social")
     ap.add_argument("--estrategia", default="constituida", choices=list(ESTRATEGIAS))
@@ -586,12 +803,22 @@ def main() -> None:
     ap.add_argument("--detalle", action="store_true",
                     help="con --comparar: la traza de órdenes y el diagnóstico")
     ap.add_argument("--vistas", action="store_true")
+    ap.add_argument("--lectura", action="store_true",
+                    help="imprime y valida la lectura del cierre (B14)")
+    ap.add_argument("--todas", action="store_true",
+                    help="con --lectura: las siete estrategias y sus firmas")
     args = ap.parse_args()
 
     if args.comparar:
         comparar(args.semilla, detalle=args.detalle)
     elif args.vistas:
         mostrar_vistas(args.semilla)
+    elif args.lectura:
+        # Sale con 1 si la lectura no cierra sus cuentas: así vale como
+        # comprobación de un script y no solo como algo que se mira.
+        ok = (leer_todas(args.semilla) if args.todas
+              else leer(args.estrategia, args.semilla))
+        sys.exit(0 if ok else 1)
     else:
         correr(args.estrategia, args.semilla)
 

@@ -302,3 +302,42 @@ export const COLOR_CORREDOR = {
   'C-REF': '#cfa055',
   'C-NOR': '#6cb4c2',
 }
+
+// --- la lectura del cierre ---------------------------------------------------
+//
+// ESTE VOCABULARIO NO EXISTE EN NINGUNA PANTALLA DE LA CORRIDA. Las seis vías
+// y los cuatro públicos son la taxonomía del debriefing (docs/LA_MEDICION.md):
+// si una sola de estas palabras apareciera en vivo, la sala empezaría a jugar
+// contra la lectura en vez de contra la crisis. Por eso viven aquí abajo, al
+// final del archivo, y solo las importa `/debriefing`.
+//
+// Las tres primeras vías conservan la palabra del motor —`MODO_APERTURA` ya
+// traduce `fuerza` como «Fuerza»— a propósito: la sala ya las lee en el mapa,
+// y un segundo vocabulario para las mismas tres cosas es la deriva que este
+// repositorio ya tiene pruebas para no volver a tener.
+
+export const VIA = {
+  despejar: 'Despejar',
+  concertar: 'Concertar',
+  desgastar: 'Desgastar',
+  sortear: 'Sortear',
+  constituir: 'Constituir',
+  encuadrar: 'Encuadrar',
+}
+
+// Las dos familias de §2: las tres que abren un punto y las tres que no.
+export const VIAS_QUE_ABREN = ['despejar', 'concertar', 'desgastar']
+export const VIAS_QUE_NO_ABREN = ['sortear', 'constituir', 'encuadrar']
+
+export const PUBLICO = {
+  empresa: 'Empresa',
+  gremios: 'Gremios',
+  ciudadania: 'Ciudadanía',
+  internacional: 'Internacional',
+}
+
+export const BANDA_SALDO = {
+  bien: 'bien',
+  regular: 'regular',
+  mal: 'mal',
+}

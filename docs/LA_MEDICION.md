@@ -1,8 +1,42 @@
 # La medición — el cómo y el qué
 
-**Propuesta. Nada de esto está implementado.** Es el diseño de la lectura que se
-hace de una corrida cuando el ejercicio terminó: **cómo destrabaron el país** y
-**a quién atendieron mientras lo hacían.**
+**Implementado.** Este documento es el diseño —y sigue siendo el sitio donde
+está el *porqué* de cada pieza— de la lectura que se hace de una corrida cuando
+el ejercicio terminó: **cómo destrabaron el país** y **a quién atendieron
+mientras lo hacían.**
+
+> **YA ESTÁ CONSTRUIDO, y esto es dónde vive cada parte:**
+>
+> | De este documento | En el código |
+> |---|---|
+> | §2 el cómo · §3 el qué · §5 el residuo · §6 el cruce | [`src/engine/lectura.py`](../src/engine/lectura.py) — `calcular(motor) -> dict`, pura y solo al cierre |
+> | §4 qué decisión imputa a quién | dos atributos de clase en cada `Accion` (`via`, `atiende`) y un método `imputacion(estado)` para las que se imputan por su objeto, en [`actions.py`](../src/engine/actions.py) |
+> | §7 cómo se garantiza que no lo vean | `GET /api/lectura`, `/api/metricas` y `/api/debriefing` responden **409 mientras la sala no haya cerrado**, en [`main.py`](../src/api/main.py) |
+> | §8 cómo se presenta al final | la pestaña 2 de [`Debriefing.jsx`](../web_ui/src/components/Debriefing.jsx) |
+> | de dónde salen los datos | el archivo de la corrida, [`bitacora.py`](../src/engine/bitacora.py) (**B1**) |
+>
+> **Cuatro decisiones que la §10 dejaba abiertas se tomaron.** Están escritas en
+> `PENDIENTES.md · B14` y son revisables sin tocar el diseño:
+>
+> 1. **La capa 1 no se revela en el debriefing** — decisión del equipo docente.
+>    La puerta no se construye, así que no hay que recordar no abrirla.
+> 2. **Las bandas del saldo son provisionales**: normalizadas al peor caso del
+>    escenario y **marcadas «sin calibrar» en la propia salida**. Calibrarlas es
+>    tocar cuatro constantes de `lectura.py` y nada más.
+> 3. **Imputación doble = una entera a cada público.** Ponderar por mitades o por
+>    costo cambia todos los repartos, así que la regla vive en una sola línea y
+>    **viaja declarada dentro de la respuesta**.
+> 4. **La comparación contra las siete salas ficticias queda fuera** — necesita
+>    corridas reales (**C5**). Lo que sí hay para no volar a ciegas:
+>    `scripts/correr_ejercicio.py --lectura --todas`, que imprime las siete
+>    firmas y **falla si dos se leen igual**.
+>
+> **Una cosa que el diseño no preveía y el código tuvo que resolver:** dónde
+> guardar la imputación. No cabe en `Estado` ni en `Decision`, porque
+> `/api/tablero` serializa el registro con `asdict` y el vocabulario de la §2
+> se habría publicado solo, en mitad de la jornada 2. Vive en una lista
+> paralela del motor (`motor.imputaciones`), y hay pruebas que barren todas las
+> respuestas en vivo buscando estas palabras.
 
 > **Ninguna de estas cifras se ve durante la sesión.** No es una preferencia de
 > presentación: es la condición para que midan algo. Un marcador visible deja de
@@ -15,7 +49,7 @@ hace de una corrida cuando el ejercicio terminó: **cómo destrabaron el país**
 | **Qué mide** | dos preguntas: por qué vía se abrió el país, y a quién se atendió |
 | **Cuándo se calcula** | al cierre, leyendo el pliego y la traza. **No es una variable del mundo** |
 | **Quién lo ve** | el equipo docente, en el debriefing. Nunca los participantes durante la corrida |
-| **De qué depende** | de **B1** (el archivo de la corrida) y se presenta dentro de **B7** (el debriefing) |
+| **De qué depende** | de **B1** (el archivo de la corrida) y se presenta dentro de **B7** (el debriefing) — **los tres, hechos** |
 | **Qué NO es** | un puntaje, un ranking, ni una respuesta correcta |
 
 ---
@@ -455,6 +489,17 @@ la única salida que tendría la verdad del motor. Si se hace, hay que hacerlo p
 una sola función, después del cierre, y extender la prueba que hoy garantiza que
 la capa 1 no sale nunca para que permita esa única puerta y ninguna otra.
 
+> **RESUELTA: no se revela.** Decisión del equipo docente. La puerta **no se
+> construye**, que es más fuerte que construirla y acordar no usarla: la prueba
+> que garantiza que la capa 1 no sale nunca sigue sin excepciones, y el
+> debriefing implementado no la toca. Si algún día se decide lo contrario, el
+> párrafo de arriba sigue siendo la forma correcta de hacerlo.
+
+**Lo implementado son estas cinco piezas más el país recibido/entregado, la
+línea declarada contra la ejecutada, el pliego por ventanas y los tres
+momentos**, en cinco pestañas — la lectura es la segunda, en el sitio que este
+apartado le da.
+
 ---
 
 ## 9 · Lo que esto no mide, dicho antes de que alguien lo suponga
@@ -482,17 +527,25 @@ la capa 1 no sale nunca para que permita esa única puerta y ninguna otra.
 | | Decisión |
 |---|---|
 | **1** | ¿Se les anuncia en el briefing que habrá una lectura? **Anunciar los ejes los hace jugables**; no anunciar nada puede sentirse como una trampa. Mi recomendación: anunciar que la habrá, no cuáles son |
-| **2** | ¿Se revela la capa 1 en el debriefing? (§8) |
+| **2** | ~~¿Se revela la capa 1 en el debriefing? (§8)~~ · **DECIDIDO: no.** La puerta no se construye |
 | **3** | ¿La celda «le fue bien sin ustedes» se dice en voz alta? Es la más incómoda |
 | **4** | ¿Se guarda el perfil entre cohortes para comparar promociones? Cambia el consentimiento que hay que pedir |
 
-**Sin calibrar** (van con **C5** y **B13**):
+**Sin calibrar** (van con **C5** y **B13**). Los tres están **puestos con un
+valor provisional y declarado**, no en blanco: el instrumento corre, y lo que
+falta es medirlo contra corridas reales.
 
-| | Qué hay que fijar |
-|---|---|
-| **1** | Si una decisión que atiende a dos públicos imputa media a cada uno o una entera a los dos. Cambia todos los repartos |
-| **2** | Los cortes de banda de cada saldo. Hoy no hay ninguna corrida real contra la que ponerlos |
-| **3** | Si la atención se cuenta por decisión o se pondera por lo que costó. Doce decisiones baratas no deberían pesar como una cara — y ponderar por costo mete las reservas por la ventana |
+| | Qué hay que fijar | Qué hace hoy el código |
+|---|---|---|
+| **1** | Si una decisión que atiende a dos públicos imputa media a cada uno o una entera a los dos. Cambia todos los repartos | **una entera a cada uno.** Vive en una sola línea de `_atencion()` y **viaja declarada en la respuesta** (`"regla"`), así que la pantalla dice bajo qué convención está leyendo |
+| **2** | Los cortes de banda de cada saldo. Hoy no hay ninguna corrida real contra la que ponerlos | **normalizados al peor caso del escenario** y marcados `"provisional · sin calibrar"` en la propia salida. Son cuatro constantes al principio de `lectura.py` |
+| **3** | Si la atención se cuenta por decisión o se pondera por lo que costó. Doce decisiones baratas no deberían pesar como una cara — y ponderar por costo mete las reservas por la ventana | **por decisión.** Ponderar por costo se descartó por lo que dice esta misma celda; queda abierto para C5 |
+
+**Y una cautela que el código añade y este documento no pedía:**
+`scripts/correr_ejercicio.py --lectura --todas` corre las siete estrategias
+puras y **sale con error si dos firmas se leen igual**. No calibra nada, pero
+detecta lo peor que puede pasarle a este instrumento: que describa el escenario
+en vez de a la sala.
 
 **Y un defecto que apareció mirando el catálogo para escribir esto**, ajeno a la
 medición pero que la estorba: **`codigo` dejó de ser único dentro de un rol** tras

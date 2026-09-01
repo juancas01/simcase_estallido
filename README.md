@@ -61,10 +61,14 @@ uv run python scripts/correr_ejercicio.py
 # 3 · Comparar estrategias — el criterio de calibración
 uv run python scripts/correr_ejercicio.py --comparar
 
-# 4 · Las siete vistas privadas de un turno real
+# 4 · La lectura del cierre de una estrategia, impresa y comprobada
+uv run python scripts/correr_ejercicio.py --lectura --estrategia solo_fuerza
+uv run python scripts/correr_ejercicio.py --lectura --todas
+
+# 5 · Las siete vistas privadas de un turno real
 uv run python scripts/correr_ejercicio.py --vistas
 
-# 5 · Las superficies
+# 6 · Las superficies
 cd web_ui
 npm install
 npm run build
@@ -221,6 +225,20 @@ serlo — y eso, sobre hechos con responsabilidad judicial viva, es tomar partid
   de datos cartográficos abiertos de un sitio que no consta, y **cada corredor
   se dibuja por el camino que existe**, ruteado sobre esa red
 - corredor sin interfaz con **seis estrategias** comparables
+- **la corrida queda escrita**: un JSONL de solo anexado por sesión
+  (`corridas/<fecha-hora>/corrida.jsonl`) con la apertura, las líneas del turno
+  0, cada orden dictada, cada decisión, el desarrollo de las métricas jornada a
+  jornada y el cierre. Si el proceso se cae, sobrevive lo escrito; y si el disco
+  falla, **se desactiva la bitácora, no el ejercicio**
+- **el debriefing**, en `/debriefing`: el país recibido contra el entregado con
+  su proyección, **la lectura de la corrida**, la línea que cada rol declaró
+  contra la que ejecutó, el pliego por ventanas y los tres momentos
+- **la lectura de la corrida** — no un puntaje: una firma que se lee en voz alta
+  y los hechos que la sostienen. Cómo destrabaron el país (las seis vías, y si
+  el desgaste fue desgaste o hambre) y a quién atendieron mientras lo hacían.
+  **Nada de esto se ve durante la sesión**: el servidor devuelve 409 hasta que
+  la última jornada está resuelta, porque un marcador visible deja de medir la
+  conducta y pasa a producirla
 
 **Falta** — la lista completa está en [`PENDIENTES.md`](PENDIENTES.md):
 
@@ -229,11 +247,15 @@ serlo — y eso, sobre hechos con responsabilidad judicial viva, es tomar partid
 - **verificación de lo que la interfaz dibuja** (B9). Todo lo que se comprueba
   hoy mira el motor y el canal; nada mira la pantalla, y un fallo de una línea
   vació las siete vistas privadas sin que nada avisara
-- **persistencia** de la corrida, para repetirla con una decisión cambiada
-- **telemetría por turno**, para saber dónde se fue el tiempo
+- **el cruce entre lo que se decidió y lo que su rol podía saber** (B3). El
+  archivo de la corrida ya trae el material; falta leerlo
+- **calibrar las bandas del saldo** (C5). Salen normalizadas al peor caso del
+  escenario y **marcadas «sin calibrar» en la propia pantalla**, que es lo
+  honesto mientras no haya corridas reales contra las que ajustarlas
 - cinco decisiones que esperan al equipo docente (A1–A7 en `PENDIENTES.md`)
 
-Los stubs están marcados donde viven: `grep -rn "PENDIENTE" src/`
+Lo pendiente está citado desde el código por prosa (`PENDIENTES.md · B9`);
+ahora mismo no queda ninguna marca `PENDIENTE(...)` viva.
 
 ---
 

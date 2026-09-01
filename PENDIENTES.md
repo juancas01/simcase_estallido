@@ -14,7 +14,7 @@ lunes por la mañana:
 | **[3 · Decisiones que no son mías](#parte-3--decisiones-que-no-son-mías)** | no son técnicas | el equipo docente |
 
 > **Los identificadores no cambian aunque el documento se reordene.** Están
-> citados desde el código (`PENDIENTE(B1)`), desde `CONTEXTO.md` y desde
+> citados desde el código (`PENDIENTES.md · B9`), desde `CONTEXTO.md` y desde
 > aquí mismo. Renumerarlos por estética rompería la navegación en los dos
 > sentidos que este documento promete — y ya se rompió una vez.
 
@@ -24,16 +24,16 @@ lunes por la mañana:
 
 | | Pendiente | ¿Necesita gente? | Estado |
 |---|---|---|---|
-| **B1** | el archivo de la corrida — persistencia y telemetría | no | **no existe** · bloquea B7 |
+| **B1** | el archivo de la corrida — persistencia y telemetría | no | **hecho** · `bitacora.py`, un JSONL de solo anexado por corrida |
 | **B2** | la identidad de los siete roles, en datos | no | `data/roles/` vacío · hoy duplicada en el frontend · **ahora son nueve** |
-| **B7** | el debriefing, la superficie que falta | no | **no existe** · depende de B1 |
+| **B7** | el debriefing, la superficie que falta | no | **hecho** · `/debriefing`, cinco paneles sobre B1 y B14 |
 | **B5** | presupuesto de latencia medido | el reloj de la fase, en P2 | **medido** · el timeout ya es duro y las dos capas caben dentro |
 | **B6** | el guion de la sesión | no | fuera del código |
 | **P1** | correr el motor solo y leer la traza | **no** — una persona, 20 min | listo para correr |
 | **P2** | las pantallas | **sí** — dos personas, 30 min | listo |
 | **P3** | en seco, tres roles | **sí** — tres personas, 45 min | listo |
 | **P4** | la corrida completa | **sí** — nueve personas, 2 h | listo |
-| **B3** | decisiones alineadas con información privada | no | derivado del motor · sale en B1, se lee en B7 |
+| **B3** | decisiones alineadas con información privada | no | **pendiente** · el archivo de B1 ya trae el material; falta el cruce y su panel |
 | **C1–C5** | cinco calibraciones | **sí** | esperando P3/P4 · **C5 es nueva y bloquea la tabla** |
 | **A1** | cuántos dispositivos, o papel | — | esperando |
 | **A2** | quién opera la consola | — | esperando |
@@ -47,7 +47,7 @@ lunes por la mañana:
 | **B11** | la lista agroalimentaria no se comprueba después | no | se concede la clase y nadie mira si se cumplió |
 | **B12** | tres constantes y tres campos que nadie lee | no | **cerrado por la simplificación del motor (S1–S11, ya aplicadas)** · retirados; quedó una huérfana declarada |
 | **B13** | dos números del reparto de carteras sin calibrar | no | provisionales y declarados · van con **C5** |
-| **B14** | **la lectura de la corrida — el cómo y el qué** | no | **propuesta escrita**, sin implementar · depende de **B1**, se presenta en **B7** |
+| **B14** | **la lectura de la corrida — el cómo y el qué** | no | **hecho** · `lectura.py` y `GET /api/lectura`, servido solo con la sala cerrada |
 
 Lo que **sí** funciona está en el README, sección «Estado actual»; y dónde
 mirar según la pregunta —el mapa del código y las claves del motor—, en
@@ -61,9 +61,16 @@ mirar según la pregunta —el mapa del código y las claves del motor—, en
 grep -rn "PENDIENTE" src/
 ```
 
-Cada marca lleva el identificador de esta lista (`PENDIENTE(B1)`), así que se
-puede ir en las dos direcciones: del código a la explicación y de la explicación
-al código. Una marca sin entrada es un error y se detecta sola.
+Cada marca lleva el identificador de esta lista, así que se puede ir en las dos
+direcciones: del código a la explicación y de la explicación al código. Una marca
+sin entrada es un error y se detecta sola.
+
+> **Hoy el `grep` no devuelve ninguna marca `PENDIENTE(...)`**, y conviene decirlo
+> en vez de dejar que alguien lo descubra buscando: la única que había era la de
+> **B1**, en `simulation.py`, y se retiró al escribirse el archivo de la corrida.
+> Lo que queda pendiente en el código está citado por prosa (`PENDIENTES.md · B9`
+> en `territory.py`, `views.py` y `Mapa.jsx`). La convención sigue en pie para la
+> próxima marca; ahora mismo no hay ninguna.
 
 ---
 ---
@@ -114,8 +121,27 @@ no del azar. Si algún día empezaran a bailar, algo se rompió.
 
 ### B1 · El archivo de la corrida — persistencia y telemetría, un solo archivo
 
-**Dónde:** `src/engine/bitacora.py` (por escribir) ·
-[`simulation.py`](src/engine/simulation.py) lleva la marca `PENDIENTE(B1)`
+**Dónde:** [`bitacora.py`](src/engine/bitacora.py) ·
+[`simulation.py`](src/engine/simulation.py) la cablea ·
+[`main.py`](src/api/main.py) la crea al arrancar
+
+> **HECHO.** `corridas/<fecha-hora>/corrida.jsonl`, de solo anexado, con las seis
+> clases de línea de abajo. La `decision` lleva además la **imputación** que
+> resuelve **B14** (`via`, `atiende`), y el `cierre` lleva la lectura completa.
+> Tres decisiones que conviene tener a mano:
+>
+> · **Una bitácora rota no tumba el ejercicio.** Si el disco falla en plena
+>   corrida se desactiva sola, deja constancia en `stderr` y el motor sigue.
+>   Perder el registro es un daño; detener la sala por él serían dos.
+> · **Va encendida salvo que se apague.** `SIMCASE_BITACORA=off` la apaga y
+>   `SIMCASE_CORRIDAS=<dir>` la redirige — las dos existen para las pruebas.
+>   Sin variable escribe, que es la condición de esta entrada.
+> · **`corridas/` está en el `.gitignore`.** Es material del equipo docente, no
+>   del repositorio.
+>
+> La trampa que el recuadro de más abajo anuncia se respetó:
+> [`tests/test_bitacora.py`](tests/test_bitacora.py) **abre el `.jsonl` escrito**
+> y lee de él, no del código que lo escribió.
 
 **Estaban separados y por eso no se movió ninguno.** B1 quería que la corrida
 sobreviviera al proceso; B3 quería poder medirla. Son **el mismo artefacto visto
@@ -191,8 +217,24 @@ Depende de **A5** (nombres).
 
 ### B7 · El debriefing — la superficie que falta
 
-**Dónde:** `/debriefing` en [`App.jsx`](web_ui/src/App.jsx) y
-`GET /api/debriefing` · **depende de B1**
+**Dónde:** `/debriefing` en [`App.jsx`](web_ui/src/App.jsx) ·
+[`Debriefing.jsx`](web_ui/src/components/Debriefing.jsx) ·
+`GET /api/debriefing` en [`main.py`](src/api/main.py)
+
+> **HECHO**, con los cinco paneles de abajo en pestañas y **uno más** que esta
+> entrada no preveía porque **B14** no estaba escrita: *la lectura* — la firma,
+> las seis vías, la rosa de atención y el 2×2. Es la pestaña 2, entre el país y
+> la línea declarada.
+>
+> **`GET /api/debriefing` devuelve 409 mientras la sala no haya cerrado**, y con
+> él `/api/lectura` y `/api/metricas`. Lo último cerró un agujero viejo: las
+> métricas del cierre estuvieron servidas toda la vida, y un participante con la
+> URL podía leer `ratio_fuerza_concertacion` en mitad de la jornada 2. **Lo que
+> solo existe al final lo guarda el servidor, no la pantalla.**
+>
+> Y la proyección se calcula **una sola vez, sobre una copia del motor**: correr
+> las 72 horas sobre el motor real dejaba a la sala mirando un tablero con tres
+> turnos de más en la última noche.
 
 Veinte minutos, más que cualquier turno, y hoy no hay nada que proyectar. El
 motor ya tiene los datos; lo que falta es **el relato**.
@@ -243,6 +285,14 @@ una región cruzó el reloj de oxígeno. Los cruces de umbral ya se calculan en
 
 **Dónde:** [`simulation.py`](src/engine/simulation.py) · sale en el archivo de
 **B1** y se lee en **B7**
+
+> **SIGUE PENDIENTE, y ahora es lo único de este bloque que lo está.** Con **B1**
+> y **B7** hechos, lo que le faltaba —un sitio donde el dato quede y una pantalla
+> donde leerlo— ya existe: cada `decision` del `.jsonl` lleva su rol, su ventana y
+> su acción, y el debriefing ya dibuja el pliego por ventanas. Lo que falta es el
+> **cruce**: comparar lo que cada decisión exigía saber contra lo que su rol podía
+> ver, y sacar de ahí las que solo se explican si alguien habló. Eso es trabajo
+> nuevo, no cableado.
 
 **Esta entrada estaba mal planteada y la corrección viene del equipo docente.**
 Yo proponía una hoja de observación: alguien con un papel anotando quién habló
@@ -676,8 +726,39 @@ no.
 ### B14 · La lectura de la corrida — cómo destrabaron y a quién atendieron
 
 **Dónde:** [`docs/LA_MEDICION.md`](docs/LA_MEDICION.md) es la propuesta completa ·
-`src/engine/lectura.py` y `GET /api/lectura` están **por escribir** · depende de
-**B1** y se presenta dentro de **B7**
+[`lectura.py`](src/engine/lectura.py) y `GET /api/lectura` la implementan ·
+se apoya en **B1** y se presenta dentro de **B7**
+
+> **HECHO.** [`lectura.py`](src/engine/lectura.py) — `calcular(motor) -> dict`,
+> pura y solo al cierre — servida por `GET /api/lectura` y dibujada en la
+> pestaña 2 del debriefing. Las decisiones que
+> [`docs/LA_MEDICION.md`](docs/LA_MEDICION.md) §10 dejaba abiertas se tomaron
+> así, y son revisables:
+>
+> | Lo que quedaba abierto | Lo que se decidió |
+> |---|---|
+> | ¿el debriefing revela la capa 1? | **no** — decisión del equipo docente; la puerta no se construye |
+> | las bandas del saldo | **provisionales**, normalizadas al peor caso del escenario y marcadas «sin calibrar» en la propia salida |
+> | una decisión que atiende a dos públicos | **una entera a cada uno**; la regla vive en una sola línea y viaja declarada en la respuesta |
+> | comparar contra las siete salas ficticias | **fuera de esta versión** — va con **C5**, que necesita corridas reales |
+>
+> **Nada de este vocabulario sale antes del cierre.** La imputación de cada
+> decisión no vive en `Estado` ni en `Decision`, sino en una lista paralela del
+> motor (`motor.imputaciones`): `/api/tablero` serializa el registro con `asdict`
+> y una palabra nueva ahí se habría publicado sola. Hay pruebas que lo vigilan —
+> ninguna respuesta en vivo dice «vía», «atiende» ni «firma», y `views.py` no
+> importa este módulo.
+>
+> Para leerla sin montar la sala:
+>
+> ```bash
+> uv run python scripts/correr_ejercicio.py --lectura --estrategia solo_fuerza
+> uv run python scripts/correr_ejercicio.py --lectura --todas
+> ```
+>
+> `--todas` imprime las siete firmas juntas y **sale con 1 si dos se leen
+> igual**: dos conductas opuestas descritas con la misma frase serían el
+> instrumento retratando el escenario y no a la sala.
 
 Dos preguntas que el ejercicio hoy no responde y que son el material del
 debriefing: **por qué vía se destrabó el país** y **a quién se atendió**

@@ -56,6 +56,28 @@ from src.engine.state import Estado, Acuerdo, Corredor
 
 Clase = Literal["constitutiva", "operativa", "informativa"]
 
+# LAS DOS PREGUNTAS DE LA LECTURA DEL CIERRE (docs/LA_MEDICION.md §4).
+#
+#   `via`      POR QUÉ VÍA se buscó resolver. Seis verbos en dos familias: las
+#              tres que abren un punto —despejar, concertar, desgastar— y las
+#              tres que no —sortear, constituir, encuadrar—. Las tres primeras
+#              conservan la palabra del motor (`fuerza`, `concertacion`,
+#              `desgaste` en `modo_apertura`), que la sala ya lee en el mapa;
+#              las otras tres no abren nada y por eso ningún campo del mundo
+#              las nombra: viven aquí.
+#
+#   `atiende`  A QUIÉN atendió la decisión. Cuatro públicos —empresa, gremios,
+#              ciudadanía, internacional— y el vacío: las decisiones que no
+#              atienden a nadie son el gobierno de sí mismo, la mesa
+#              ordenándose, y se cuentan aparte.
+#
+# Van DECLARADAS en cada acción, igual que `codigo`, `rol` y `clase`, y no en
+# una tabla aparte que se desincroniza. La regla de imputación es una sola
+# pregunta: si esta decisión sale bien, ¿quién duerme mejor esa noche?
+Via = Literal["despejar", "concertar", "desgastar", "sortear",
+              "constituir", "encuadrar"]
+Publico = Literal["empresa", "gremios", "ciudadania", "internacional"]
+
 
 @dataclass
 class Resultado:
@@ -250,6 +272,22 @@ class Accion:
     # así que «ya está en la cola» ES «ya se pidió en esta jornada».
     objetivo: tuple[str, ...] = ()
 
+    # LA IMPUTACIÓN DE LA LECTURA. La mayoría de las acciones la lleva entera
+    # en dos tuplas de clase; las que se imputan POR SU OBJETO —el orden que
+    # fijaron, la carga que escoltaron, la región del punto— sobreescriben
+    # `imputacion()` y leen sus propios campos contra el estado del momento.
+    # Se resuelve AL EJECUTAR (la llama `MotorCrisis._registrar`) porque el
+    # objeto de la orden solo existe entonces, y se guarda en la memoria del
+    # motor y en la bitácora — JAMÁS en `Estado`, de donde cualquier vista la
+    # podría serializar en mitad de la jornada.
+    via: tuple[str, ...] = ()
+    atiende: tuple[str, ...] = ()
+
+    def imputacion(self, estado: Estado) -> tuple[tuple[str, ...],
+                                                  tuple[str, ...]]:
+        """La vía y el público de ESTA decisión, contra el estado del momento."""
+        return tuple(type(self).via), tuple(type(self).atiende)
+
     def llave(self) -> tuple:
         """La identidad de esta orden dentro de la jornada. Ver `objetivo`."""
         return (type(self).__name__,
@@ -320,6 +358,52 @@ class Accion:
         return Disponibilidad()
 
 
+# ---------------------------------------------------------------------------
+# LOS DOS AYUDANTES DE LA IMPUTACIÓN POR OBJETO (docs/LA_MEDICION.md §4)
+# ---------------------------------------------------------------------------
+
+def _publico_por_region(estado: Estado, region_id: str) -> tuple[str, ...]:
+    """
+    A quién atiende actuar sobre una región — la imputación de las decisiones
+    que apuntan a un punto concreto («operar», «abrir una mesa»).
+
+    El caso tiene tres clases de región y cada una responde ante un público
+    distinto:
+
+      · la del EPICENTRO           la ciudad cerrada            → ciudadanía
+      · la del RELOJ MÁS CORTO     los que están por no comer   → ciudadanía
+      · cualquier otra (la rural)  el campo que produce y
+                                   transporta                   → gremios
+
+    Se mira AL EJECUTAR, que es cuando la orden cae: «la región del reloj más
+    corto» es la peor del país en ese momento, no al cierre.
+    """
+    if not estado.regiones or region_id not in estado.regiones:
+        return ("ciudadania",)
+    if region_id == estado.region_epicentro:
+        return ("ciudadania",)
+    peor = min(estado.regiones.values(),
+               key=lambda r: min(r.dias_autonomia_oxigeno,
+                                 r.dias_autonomia_combustible,
+                                 r.dias_autonomia_alimentos))
+    if region_id == peor.region_id:
+        return ("ciudadania",)
+    return ("gremios",)
+
+
+def _region_con_cierre(estado: Estado, region_id: str) -> bool:
+    """
+    Si en la región había algún punto cerrado — la condición de la vía
+    «desgastar» en las tres decisiones humanitarias.
+
+    Atender al barrio disuelve el bloqueo SOLO si había un bloqueo que
+    disolver. Donde no hay cierre, el esquema humanitario alivia gente y no
+    desgasta nada: imputarle la vía sería cobrarle a la sala una apertura que
+    no existía.
+    """
+    return any(not n.abierto for n in estado.nodos_de_region(region_id))
+
+
 # ===========================================================================
 # 01 · PRESIDENTE DE LA REPÚBLICA — 5
 # ===========================================================================
@@ -331,6 +415,9 @@ class FijarRegistroEscrito(Accion):
     rol = "Presidente"
     clase: Clase = "constitutiva"
     descripcion = "Nodo único de coordinación y registro escrito de decisiones"
+
+    via = ("constituir",)
+    atiende = ()
     en_claro = (
         "Deja por escrito cada decisión y quién responde por ella. Sin "
         "registro, al cierre nadie puede decir quién ordenó qué.")
@@ -357,6 +444,9 @@ class FijarLineasRojas(Accion):
     rol = "Presidente"
     clase: Clase = "constitutiva"
     descripcion = "Líneas rojas del Ejecutivo y marco de lo negociable"
+
+    via = ("constituir",)
+    atiende = ("empresa",)
     en_claro = (
         "Anuncia qué está y qué no está sobre la mesa. Fija el terreno de lo "
         "negociable antes de que lo fije otro.")
@@ -409,6 +499,9 @@ class FirmarAsistenciaMilitar(Accion):
     rol = "Presidente"
     clase: Clase = "operativa"
     descripcion = "Acto administrativo de asistencia militar"
+
+    via = ("despejar",)
+    atiende = ("empresa",)
     en_claro = (
         "Autoriza que el Ejército apoye a la Policía. Da más fuerza "
         "disponible, y militares frente a multitudes suben la tensión en la "
@@ -456,6 +549,9 @@ class ConvocarAlcaldes(Accion):
     rol = "Presidente"
     clase: Clase = "operativa"
     descripcion = "Convocatoria a los alcaldes de las ciudades críticas"
+
+    via = ("constituir",)
+    atiende = ()
     en_claro = (
         "Reúne a los alcaldes de las ciudades más golpeadas. Sirve para "
         "llegar a la mesa con una sola posición en vez de varias.")
@@ -486,6 +582,9 @@ class DesplazarseAlEpicentro(Accion):
     rol = "Presidente"
     clase: Clase = "informativa"
     descripcion = "Desplazamiento presidencial al epicentro"
+
+    via = ("encuadrar",)
+    atiende = ("ciudadania",)
     en_claro = (
         "Viaja en persona a la ciudad más afectada. Es un gesto público de "
         "que el Gobierno da la cara.")
@@ -534,6 +633,9 @@ class ExigirProtocoloVoceria(Accion):
     rol = "Interior"
     clase: Clase = "constitutiva"
     descripcion = "Protocolo de vocería y plazo suspensivo de 24 h"
+
+    via = ("constituir",)
+    atiende = ()
     en_claro = (
         "Establece que una sola persona habla por el Gobierno. Evita que dos "
         "carteras digan cosas distintas el mismo día.")
@@ -564,6 +666,9 @@ class ConvocarMesaNacional(Accion):
     rol = "Interior"
     clase: Clase = "operativa"
     descripcion = "Sesión de la mesa nacional con el Comité del Paro"
+
+    via = ("concertar",)
+    atiende = ("ciudadania",)
     en_claro = (
         "Sienta al Gobierno con el Comité del Paro. Es la vía más rápida para "
         "bajar la tensión, y operar por la fuerza ese mismo día es lo que más "
@@ -648,6 +753,9 @@ class AbrirMesaLocal(Accion):
     rol = "Interior"
     clase: Clase = "operativa"
     descripcion = "Mesa local de concertación, corredor por corredor"
+
+    via = ("concertar",)
+    atiende = ("ciudadania",)
     en_claro = (
         "Negocia un punto concreto para que lo desbloqueen sus propios "
         "voceros. Tarda dos turnos, y lo que se abre así aguanta mientras se "
@@ -657,6 +765,18 @@ class AbrirMesaLocal(Accion):
 
 
     objetivo = ("nodo_id",)
+
+    def imputacion(self, estado: Estado) -> tuple[tuple[str, ...],
+                                                  tuple[str, ...]]:
+        """
+        Por la región del punto donde se sienta la mesa — la misma regla que
+        «operar un punto» (docs/LA_MEDICION.md §4): pactar en el epicentro o
+        donde el reloj aprieta es pactar por la ciudadanía; pactar en el resto
+        es pactar por el campo, que son los gremios.
+        """
+        nodo = estado.nodos.get(self.nodo_id)
+        return (("concertar",),
+                _publico_por_region(estado, nodo.region_id if nodo else ""))
 
     @classmethod
     def sonda(cls, estado: Estado) -> "Accion | None":
@@ -719,6 +839,9 @@ class OfrecerContraprestacion(Accion):
     rol = "Interior"
     clase: Clase = "informativa"
     descripcion = "Contraprestación legislativa por el levantamiento de cierres"
+
+    via = ("concertar",)
+    atiende = ("ciudadania",)
     en_claro = (
         "Ofrece algo concreto a cambio de levantar los cierres. Funciona "
         "donde hay con quién negociar; no donde nadie manda.")
@@ -763,6 +886,9 @@ class RequerirCorredoresHumanitarios(Accion):
     rol = "Interior"
     clase: Clase = "operativa"
     descripcion = "Requerimiento de corredores humanitarios permanentes"
+
+    via = ("sortear", "desgastar")
+    atiende = ("ciudadania", "internacional")
     en_claro = (
         "Exige que haya un paso permanente para lo humanitario. Negarlo es lo "
         "que más caro cuesta de cara al exterior.")
@@ -805,6 +931,21 @@ class RequerirCorredoresHumanitarios(Accion):
             ), habilitada_por=["Ministro de Defensa (operar)",
                                "Ministro del Interior (concertar)"])
         return Validacion(True)
+
+    def imputacion(self, estado: Estado) -> tuple[tuple[str, ...],
+                                                  tuple[str, ...]]:
+        """
+        Exigir el paso es sortear —la misión médica por encima del cierre— y
+        apretar el apoyo al cierre en cada punto del corredor, que es
+        desgastar. La vía desgastar solo cuenta donde había un punto cerrado
+        que apretar (docs/LA_MEDICION.md §4).
+        """
+        objetivo = self._objetivo(estado)
+        hay_cierre = any(not estado.nodos[n].abierto
+                         for n in (objetivo.nodos if objetivo else [])
+                         if n in estado.nodos)
+        via = (("sortear", "desgastar") if hay_cierre else ("sortear",))
+        return (via, ("ciudadania", "internacional"))
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         objetivo = self._objetivo(estado)
@@ -855,6 +996,9 @@ class DeclararInfraestructuraCritica(Accion):
     rol = "Interior"
     clase: Clase = "operativa"
     descripcion = "Declaratoria de infraestructura crítica"
+
+    via = ("despejar",)
+    atiende = ("empresa",)
     en_claro = (
         "Pone bajo custodia una instalación del registro de infraestructura "
         "relevante. Queda protegida, e inmoviliza fuerza que hace falta en "
@@ -990,6 +1134,9 @@ class CondicionarEmpleoFuerza(Accion):
     rol = "Alcalde"
     clase: Clase = "constitutiva"
     descripcion = "Concertación previa del empleo de la fuerza en su jurisdicción"
+
+    via = ("constituir",)
+    atiende = ("ciudadania",)
     en_claro = (
         "Exige que cualquier operación en su ciudad se acuerde antes con la "
         "Alcaldía. Baja el riesgo de que salga mal, y le quita velocidad a "
@@ -1013,6 +1160,9 @@ class InstalarMesaConVoceros(Accion):
     rol = "Alcalde"
     clase: Clase = "operativa"
     descripcion = "Mesa local de desbloqueo con voceros del punto"
+
+    via = ("concertar",)
+    atiende = ("ciudadania",)
     en_claro = (
         "Sienta a hablar a los voceros de un punto de su ciudad. Es la vía "
         "pactada, hecha desde el municipio.")
@@ -1078,10 +1228,25 @@ class EsquemaHumanitarioMunicipal(Accion):
     rol = "Alcalde"
     clase: Clase = "operativa"
     descripcion = "Esquema humanitario municipal"
+
+    via = ("sortear", "desgastar")
+    atiende = ("ciudadania",)
     en_claro = (
         "Monta un paso para ambulancias, oxígeno y alimentos en su "
         "jurisdicción. No abre el punto: abre una ventana.")
     region_id: str = ""
+
+    def imputacion(self, estado: Estado) -> tuple[tuple[str, ...],
+                                                  tuple[str, ...]]:
+        """
+        Sortear siempre: la ayuda pasa por encima del cierre. «Desgastar» solo
+        si en la jurisdicción había un cierre que desgastar — atender al barrio
+        disuelve el bloqueo cuando hay bloqueo (docs/LA_MEDICION.md §2 y §4).
+        """
+        rid = self.region_id or estado.region_epicentro
+        via = (("sortear", "desgastar") if _region_con_cierre(estado, rid)
+               else ("sortear",))
+        return (via, ("ciudadania",))
 
     def validar(self, estado: Estado) -> Validacion:
         rid = self.region_id or estado.region_epicentro
@@ -1123,6 +1288,9 @@ class PublicarParteMunicipal(Accion):
     rol = "Alcalde"
     clase: Clase = "informativa"
     descripcion = "Parte municipal verificado y disputa de la cifra nacional"
+
+    via = ("encuadrar",)
+    atiende = ("internacional",)
     en_claro = (
         "Publica su propio conteo de lo que pasó en la ciudad. Si contradice "
         "la cifra nacional, uno de los dos queda desmentido.")
@@ -1183,6 +1351,9 @@ class FijarReglasEmpleoSector(Accion):
     rol = "Defensa"
     clase: Clase = "constitutiva"
     descripcion = "Reglas de empleo del sector y registro audiovisual obligatorio"
+
+    via = ("constituir",)
+    atiende = ("internacional",)
     en_claro = (
         "Ordena que sus unidades vayan identificadas, con reglas escritas y "
         "grabando. Baja mucho la probabilidad de que una operación termine "
@@ -1222,6 +1393,9 @@ class OperarNodo(Accion):
     rol = "Defensa"
     clase: Clase = "operativa"
     descripcion = "Operación de desbloqueo sobre un punto"
+
+    via = ("despejar",)
+    atiende = ("empresa",)
     en_claro = (
         "Manda a la fuerza pública a abrir un punto. Es lo más rápido que "
         "existe y lo más caro: el punto suele volver a cerrarse esa misma "
@@ -1244,6 +1418,18 @@ class OperarNodo(Accion):
 
 
     objetivo = ("nodo_id",)
+
+    def imputacion(self, estado: Estado) -> tuple[tuple[str, ...],
+                                                  tuple[str, ...]]:
+        """
+        Por la región del punto operado: abrir por la fuerza la ciudad del
+        epicentro o la región del reloj más corto es abrirle paso a la
+        ciudadanía; abrir el resto es abrirle paso al campo que produce —
+        gremios (docs/LA_MEDICION.md §4, las que se imputan por su objeto).
+        """
+        nodo = estado.nodos.get(self.nodo_id)
+        return (("despejar",),
+                _publico_por_region(estado, nodo.region_id if nodo else ""))
 
     @classmethod
     def sonda(cls, estado: Estado) -> "Accion | None":
@@ -1409,6 +1595,9 @@ class RedesplegarMilitares(Accion):
     rol = "Defensa"
     clase: Clase = "operativa"
     descripcion = "Redespliegue militar a infraestructura o proyección aérea"
+
+    via = ("despejar",)
+    atiende = ("empresa",)
     en_claro = (
         "Mueve tropa a proteger instalaciones críticas. Libera policía para "
         "otras tareas e inmoviliza esas unidades donde las puso.")
@@ -1478,6 +1667,9 @@ class PresentarEvidenciaInteligencia(Accion):
     rol = "Defensa"
     clase: Clase = "informativa"
     descripcion = "Evidencia de financiación de cierres y su solidez judicial"
+
+    via = ("encuadrar",)
+    atiende = ()
     en_claro = (
         "Presenta lo que Inteligencia tiene sobre quién financia los cierres. "
         "Vale según lo sólido que sea; si no se sostiene, se vuelve en "
@@ -1551,6 +1743,9 @@ class DesplegarEquiposTerreno(Accion):
     rol = "Defensa"
     clase: Clase = "operativa"
     descripcion = "Despliegue de equipos de verificación en terreno"
+
+    via = ("encuadrar",)
+    atiende = ("internacional",)
     en_claro = (
         "Manda equipos suyos a constatar en el sitio qué pasa en un punto o si "
         "una denuncia es cierta. Solo tiene tres por turno, y son los mismos "
@@ -1636,6 +1831,9 @@ class ClasificarParteOperacional(Accion):
     rol = "Policía"
     clase: Clase = "constitutiva"
     descripcion = "Parte operacional clasificado en confirmado, estimado y en verificación"
+
+    via = ("constituir",)
+    atiende = ("internacional",)
     en_claro = (
         "Separa en su parte lo confirmado, lo estimado y lo que está en "
         "verificación. Evita que una estimación se lea en la mesa como un "
@@ -1667,6 +1865,9 @@ class AdoptarProtocoloVerificacion(Accion):
     rol = "Policía"
     clase: Clase = "constitutiva"
     descripcion = "Protocolo único de verificación de cifras y denuncias"
+
+    via = ("constituir",)
+    atiende = ("internacional",)
     en_claro = (
         "Establece una sola manera de verificar cifras y denuncias, igual "
         "para todos. Evita que cada cartera traiga su propio número.")
@@ -1694,6 +1895,9 @@ class DisponerESMAD(Accion):
     rol = "Policía"
     clase: Clase = "operativa"
     descripcion = "Concentración del ESMAD en puntos priorizados"
+
+    via = ("despejar",)
+    atiende = ("empresa",)
     en_claro = (
         "Concentra escuadrones en los puntos que decida. Gana fuerza donde la "
         "lleva y deja descubierto lo que abandona.")
@@ -1738,6 +1942,9 @@ class Escoltar(Accion):
     rol = "Policía"
     clase: Clase = "operativa"
     descripcion = "Escolta de caravana, carrotanque o misión médica"
+
+    via = ("sortear",)
+    atiende = ()
     en_claro = (
         "Escolta una caravana, un carrotanque o una misión médica. Hace "
         "llegar el suministro sin abrir el punto, y ocupa escuadrones todo el "
@@ -1747,6 +1954,18 @@ class Escoltar(Accion):
 
 
     objetivo = ("corredor_id", "clase_carga")
+
+    def imputacion(self, estado: Estado) -> tuple[tuple[str, ...],
+                                                  tuple[str, ...]]:
+        """
+        Por la carga: escoltar una misión médica es escoltar a la ciudadanía;
+        escoltar carga —combustible, alimentos, general— es escoltar a quienes
+        la mueven y a quien espera lo que va dentro: gremios y empresa
+        (docs/LA_MEDICION.md §4).
+        """
+        if self.clase_carga == "humanitario":
+            return (("sortear",), ("ciudadania",))
+        return (("sortear",), ("gremios", "empresa"))
 
     @classmethod
     def sonda(cls, estado: Estado) -> "Accion | None":
@@ -1820,6 +2039,9 @@ class SolicitarRelevo(Accion):
     rol = "Policía"
     clase: Clase = "operativa"
     descripcion = "Relevo y rotación de unidades agotadas"
+
+    via = ("despejar",)
+    atiende = ()
     en_claro = (
         "Releva a las unidades más agotadas. Un escuadrón cansado es el "
         "principal factor de que una operación salga mal.")
@@ -1873,11 +2095,33 @@ class AdoptarCriterioPriorizacion(Accion):
     rol = "Transporte"
     clase: Clase = "constitutiva"
     descripcion = "Criterio único de priorización de corredores"
+
+    via = ("constituir",)
+    atiende = ()
     en_claro = (
         "Fija en qué orden se atienden los corredores y por qué. Sin "
         "criterio, cada turno se discute lo mismo desde cero.")
 
     bandera_que_activa = "criterio_priorizacion"
+
+    def imputacion(self, estado: Estado) -> tuple[tuple[str, ...],
+                                                  tuple[str, ...]]:
+        """
+        Por la clase que encabeza el criterio. «La clase que encabeza» no es
+        un campo: es la del corredor que encabeza el orden que ESTA decisión
+        fija — población primero, costo después. Si el que encabeza lleva lo
+        humanitario o lo alimentario, la prioridad atendió a la ciudadanía; el
+        resto es el país abierto que la empresa espera (docs/LA_MEDICION.md §4).
+        """
+        orden = sorted(estado.corredores.values(),
+                       key=lambda c: (-c.poblacion_aguas_abajo,
+                                      -c.costo_diario_mm_cop))
+        clases = (orden[0].clases_prioridad if orden else set())
+        if "humanitario" in clases:
+            return (("constituir",), ("ciudadania",))
+        if "alimentario" in clases:
+            return (("constituir",), ("ciudadania", "gremios"))
+        return (("constituir",), ("empresa",))
 
     def ejecutar(self, estado: Estado, rng: random.Random) -> Resultado:
         estado.banderas.activar("criterio_priorizacion", estado.turno)
@@ -1903,11 +2147,32 @@ class FijarPrioridadCombustible(Accion):
     rol = "Transporte"
     clase: Clase = "constitutiva"
     descripcion = "Orden de prioridad del combustible entre usos"
+
+    via = ("constituir",)
+    atiende = ()
     en_claro = (
         "Decide a qué va primero el combustible que queda: hospitales, "
         "transporte o industria. Es un criterio permanente, no una entrega "
         "puntual.")
     orden: list[str] = field(default_factory=lambda: list(P.ORDEN_PRIORIDAD_COMBUSTIBLE))
+
+    def imputacion(self, estado: Estado) -> tuple[tuple[str, ...],
+                                                  tuple[str, ...]]:
+        """
+        EL PRIMER USO DEL ORDEN ES LA RESPUESTA ESCRITA DE LA SALA A «¿A QUIÉN?».
+
+        El orden completo queda como criterio permanente —eso es constituir—,
+        pero a quién atendió ESTA decisión lo escribió la propia sala, de
+        primero a cuarto, con hora y responsable. La lectura toma el primero:
+        la prioridad declarada con todas las letras (docs/LA_MEDICION.md §4).
+        """
+        atiende = {
+            "mision_medica": ("ciudadania",),
+            "transporte_alimentos": ("ciudadania", "gremios"),
+            "fuerza_publica": (),
+            "consumo_general": ("empresa",),
+        }.get(self.orden[0] if self.orden else "", ())
+        return (("constituir",), atiende)
 
     def validar(self, estado: Estado) -> Validacion:
         if set(self.orden) != set(P.ORDEN_PRIORIDAD_COMBUSTIBLE):
@@ -1945,6 +2210,9 @@ class OrganizarCaravana(Accion):
     rol = "Transporte"
     clase: Clase = "operativa"
     descripcion = "Caravana escoltada en un corredor priorizado"
+
+    via = ("sortear",)
+    atiende = ("empresa", "gremios")
     en_claro = (
         "Junta la carga en una caravana por un corredor prioritario. Necesita "
         "escolta para poder pasar.")
@@ -2014,6 +2282,9 @@ class NegociarConGremios(Accion):
     rol = "Transporte"
     clase: Clase = "operativa"
     descripcion = "Negociación con los gremios camioneros"
+
+    via = ("concertar",)
+    atiende = ("gremios",)
     en_claro = (
         "Habla con los camioneros antes de que decidan sumarse al paro. Si se "
         "suman, se cierra lo que hoy todavía circula.")
@@ -2066,6 +2337,9 @@ class AcordarPasosSeguros(Accion):
     rol = "Transporte"
     clase: Clase = "operativa"
     descripcion = "Pasos seguros y ventanas de despacho concertadas"
+
+    via = ("concertar", "sortear")
+    atiende = ("empresa", "gremios")
     en_claro = (
         "Acuerda ventanas horarias para que pasen carrotanques por un punto. "
         "Pasa el suministro sin abrir el bloqueo.")
@@ -2126,6 +2400,9 @@ class PublicarMapaCierres(Accion):
     rol = "Transporte"
     clase: Clase = "informativa"
     descripcion = "Mapa de cierres y anuncio verificado de aperturas"
+
+    via = ("encuadrar",)
+    atiende = ("empresa",)
     en_claro = (
         "Publica dónde está cerrado y qué se ha abierto. Anunciar una "
         "apertura que no se sostiene cuesta credibilidad.")
@@ -2207,6 +2484,9 @@ class FijarClasePrioridadAlimentaria(Accion):
     rol = "Agricultura"
     clase: Clase = "constitutiva"
     descripcion = "Clase de prioridad agroalimentaria con ventana crítica en horas"
+
+    via = ("constituir",)
+    atiende = ("ciudadania",)
     en_claro = (
         "Consigue que los alimentos y el alimento de las granjas tengan turno "
         "propio en el reparto de corredores. Lo que va detrás de todo llega "
@@ -2287,6 +2567,9 @@ class InstalarMesaTecnicaAgropecuaria(Accion):
     rol = "Agricultura"
     clase: Clase = "operativa"
     descripcion = "Mesa técnica agropecuaria de tránsito de carga, corredor por corredor"
+
+    via = ("concertar",)
+    atiende = ("gremios",)
     en_claro = (
         "Se sienta con las organizaciones campesinas de un punto rural para "
         "acordar el paso de alimentos e insumos. Avanza igual que una mesa "
@@ -2403,6 +2686,9 @@ class ActivarInstrumentosSectoriales(Accion):
     rol = "Agricultura"
     clase: Clase = "operativa"
     descripcion = "Instrumentos financieros y autorización sanitaria excepcional"
+
+    via = ("sortear", "desgastar")
+    atiende = ("gremios",)
     en_claro = (
         "Da crédito y alivios a los productores con pérdida, y autoriza mover "
         "animales y su alimento por rutas alternas. Alivia sin resolver, y la "
@@ -2418,6 +2704,24 @@ class ActivarInstrumentosSectoriales(Accion):
         peor = min(estado.regiones.values(),
                    key=lambda r: r.dias_autonomia_alimentos)
         return cls(region_id=peor.region_id)
+
+    def imputacion(self, estado: Estado) -> tuple[tuple[str, ...],
+                                                  tuple[str, ...]]:
+        """
+        Aliviar al productor es sortear —la carga sigue su curso por rutas
+        alternas— y morder el incentivo material del cierre en su región, que
+        es desgastar. Solo donde había cierre que morder (docs/LA_MEDICION.md
+        §4). La región se resuelve igual que en `ejecutar`: la dicha, o la del
+        reloj más corto si la orden no la nombra.
+        """
+        region = (estado.regiones.get(self.region_id) if self.region_id
+                  else min(estado.regiones.values(),
+                           key=lambda r: r.dias_autonomia_alimentos,
+                           default=None))
+        rid = region.region_id if region else ""
+        via = (("sortear", "desgastar") if _region_con_cierre(estado, rid)
+               else ("sortear",))
+        return (via, ("gremios",))
 
     def validar(self, estado: Estado) -> Validacion:
         if self.region_id and self.region_id not in estado.regiones:
@@ -2483,6 +2787,9 @@ class PublicarBalancePerdida(Accion):
     rol = "Agricultura"
     clase: Clase = "informativa"
     descripcion = "Balance público de la pérdida pecuaria y del deterioro de precios"
+
+    via = ("encuadrar",)
+    atiende = ("gremios",)
     en_claro = (
         "Publica con los gremios cuántos animales se están sacrificando y "
         "cuánto ha subido la comida. Le quita respaldo ciudadano al cierre, y "
@@ -2538,6 +2845,9 @@ class AcordarAcopioYVentanas(Accion):
     rol = "Agricultura"
     clase: Clase = "operativa"
     descripcion = "Acopio, cupos y despacho concentrado en ventanas escoltadas"
+
+    via = ("sortear",)
+    atiende = ("gremios", "ciudadania")
     en_claro = (
         "Junta la producción en pocos despachos grandes y los manda por la "
         "ventana escoltada que ya existe. Llega mucha más comida con la misma "
@@ -2634,6 +2944,9 @@ class EntregarCalendarioAgotamiento(Accion):
     rol = "Agricultura"
     clase: Clase = "informativa"
     descripcion = "Calendario de agotamiento por región"
+
+    via = ("encuadrar",)
+    atiende = ("ciudadania",)
     en_claro = (
         "Dice cuántos días de oxígeno, combustible y comida le quedan a cada "
         "región. Es el dato que solo usted tiene, y difundirlo también genera "

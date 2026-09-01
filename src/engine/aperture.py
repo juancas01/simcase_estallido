@@ -246,7 +246,7 @@ def step(estado: Estado, rng: random.Random) -> dict:
     da su sentido literal a la frase del caso, y lo que la sala ve pasar sin
     poder intervenir durante el interludio nocturno.
     """
-    reaperturas: list[str] = []
+    reaperturas: list[tuple[str, str]] = []
     desgastes: list[str] = []
 
     # UN DÍA POR JORNADA, NO UNO POR TRAMO. `step()` corre dos veces al día
@@ -276,7 +276,7 @@ def step(estado: Estado, rng: random.Random) -> dict:
                     nodo.modo_apertura = "cerrado"
                     nodo.turnos_desde_apertura = 0
                     nodo.dureza = min(1.0, nodo.dureza + 0.08)
-                    reaperturas.append(nodo.nodo_id)
+                    reaperturas.append((nodo.nodo_id, "fuerza"))
 
         elif nodo.abierto and nodo.modo_apertura == "concertacion":
             # Se sostiene mientras el acuerdo se cumpla. Si la credibilidad de la
@@ -285,7 +285,7 @@ def step(estado: Estado, rng: random.Random) -> dict:
                 if rng.random() < 0.35:
                     nodo.caudal = 0.0
                     nodo.modo_apertura = "cerrado"
-                    reaperturas.append(nodo.nodo_id)
+                    reaperturas.append((nodo.nodo_id, "concertacion"))
 
         else:
             if revisar_desgaste(nodo, rng):
@@ -293,8 +293,13 @@ def step(estado: Estado, rng: random.Random) -> dict:
 
         nodo.clamp()
 
-    for nid in reaperturas:
-        estado.eventos_turno.append({"tipo": "reapertura", "nodo": nid})
+    # La reapertura lleva su VIA porque es una pregunta del cierre: «¿aguantó
+    # lo que abrieron?» se resuelve repartiendo aperturas contra reaperturas
+    # por vía, y «tres se volvieron a cerrar esa misma noche» solo se puede
+    # decir de las de fuerza. `via` ya viaja en los hechos de punto del mapa.
+    for nid, via in reaperturas:
+        estado.eventos_turno.append({"tipo": "reapertura", "nodo": nid,
+                                     "via": via})
     for nid in desgastes:
         estado.eventos_turno.append({"tipo": "desgaste", "nodo": nid})
 

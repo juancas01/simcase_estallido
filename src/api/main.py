@@ -22,6 +22,8 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import copy
+import sys
 import threading
 import time
 from contextlib import asynccontextmanager
@@ -36,15 +38,19 @@ from src.agents import entorno, nlu
 from src.agents.config import config as cfg_llm
 from src.engine import parameters as P
 from src.engine import views
+from src.engine import lectura
 from src.engine.actions import catalogo_por_rol
+from src.engine.bitacora import Bitacora
 from src.engine.loader import cargar_estado, catalogo_para_agente
 from src.engine.simulation import MotorCrisis
 
 app = FastAPI(title="SIMCASE · Estallido Social")
 
 # --- estado global del ejercicio -------------------------------------------
+# Con bitácora (`B1`): la corrida se escribe a disco a medida que ocurre. En
+# pruebas se apaga con SIMCASE_BITACORA=off para no sembrar carpetas.
 _estado = cargar_estado()
-motor = MotorCrisis(_estado)
+motor = MotorCrisis(_estado, bitacora=Bitacora.desde_entorno())
 
 # ---------------------------------------------------------------------------
 # EL RELOJ DE SALA — dos mitades por jornada, y solo dos
@@ -138,6 +144,9 @@ sala = {
     # Lo que produjo el último cierre de jornada, para que la consola lo enseñe
     # durante los dos minutos de noche sin que nadie tenga que pedirlo.
     "consecuencias": None,
+    # La proyección final, calculada UNA sola vez al cerrar. `proyectar_sin_mando`
+    # avanza el mundo, y servirla en cada GET la corría otra vez cada consulta.
+    "proyeccion": None,
 }
 
 
@@ -240,7 +249,33 @@ def _cerrar_jornada() -> dict:
         }
         if _estado.turno_decision >= P.TURNOS_DECISION:
             sala["cerrado"] = True
+            _cerrar_la_corrida()
         return sala["consecuencias"]
+
+
+def _cerrar_la_corrida() -> None:
+    """
+    Lo que se calcula UNA vez cuando el ejercicio termina: la proyección, la
+    lectura y la línea de cierre de la bitácora (`B1`).
+
+    LA PROYECCIÓN VA SOBRE UNA COPIA DEL MOTOR, y no es un detalle técnico.
+    `proyectar_sin_mando` avanza el mundo tres pasos: correrlo sobre el motor
+    real movería el tablero de la última noche al país proyectado, y durante
+    los dos minutos de consecuencias la sala tiene derecho a mirar el país
+    que dejó, no el que viene. La copia lo deja como estaba — y de paso hace
+    la proyección idempotente, cuando antes cada GET la volvía a correr.
+    """
+    try:
+        copia = copy.deepcopy(motor)
+        copia.bitacora = Bitacora.inactiva()    # la copia no escribe
+        sala["proyeccion"] = copia.proyectar_sin_mando()
+        l = lectura.calcular(motor)
+        motor.bitacora.cierre(metricas=motor.metricas(),
+                              proyeccion=sala["proyeccion"],
+                              lectura=l)
+    except Exception as exc:   # un cierre roto no puede romper la corrida
+        print(f"[cierre] no se pudo completar el cierre: {exc}",
+              file=sys.stderr)
 
 
 def _reanudar_si_estaba_en_pausa() -> None:
@@ -479,6 +514,10 @@ def interpretar(orden: TextoOrden):
     for viejo in list(sala["planes"])[:-PLANES_EN_MEMORIA]:
         sala["planes"].pop(viejo, None)
     sala["planes"][plan_id] = plan
+    # A la bitácora (`B1`): lo que la sala dictó y cómo lo tradujo el canal.
+    motor.bitacora.orden(
+        ventana=_estado.turno_decision, dictado=orden.texto,
+        acciones=[a.herramienta for a in plan.acciones], plan_id=plan_id)
     return plan.a_dict()
 
 
@@ -871,13 +910,158 @@ def consulta(tema: str):
 
 @app.get("/api/metricas")
 def metricas():
+    """
+    Las métricas del cierre. **Se sirven solo con el ejercicio cerrado.**
+
+    Estuvo abierto toda la vida sin que ninguna pantalla lo consultara — y un
+    participante con la URL podía leer `ratio_fuerza_concertacion` en mitad de
+    la jornada 2. Es el agujero que LA_MEDICION §7 marca y agranda: lo que se
+    sirve solo al cierre lo guarda el servidor, no la pantalla.
+    """
+    _exigir_cierre()
     return motor.metricas()
 
 
 @app.get("/api/proyeccion")
 def proyeccion():
     """T+72h sin nadie al mando: el país que la sala entrega."""
-    return motor.proyectar_sin_mando()
+    return _proyeccion_final()
+
+
+def _proyeccion_final() -> dict:
+    """La proyección del cierre, UNA sola vez y sin mover el mundo real."""
+    if sala["proyeccion"] is None:
+        copia = copy.deepcopy(motor)
+        copia.bitacora = Bitacora.inactiva()    # la copia no escribe
+        sala["proyeccion"] = copia.proyectar_sin_mando()
+    return sala["proyeccion"]
+
+
+# ===========================================================================
+# El cierre — la lectura y el debriefing
+# ===========================================================================
+
+def _exigir_cierre() -> None:
+    """
+    La llave de todo lo que solo existe después.
+
+    Que la lectura no se vea durante la sesión no es una preferencia de
+    presentación: es la condición para que mida algo. Y la garantiza el
+    servidor con un 409, no la pantalla con un rótulo — igual que la noche.
+    """
+    if not sala["cerrado"]:
+        raise HTTPException(409, (
+            "El ejercicio no ha terminado. La lectura del cierre se sirve "
+            "cuando la última jornada está resuelta, y no antes: un marcador "
+            "visible deja de medir la conducta y pasa a producirla."))
+
+
+@app.get("/api/lectura")
+def la_lectura():
+    """
+    LA LECTURA de la corrida (`B14`, docs/LA_MEDICION.md): cómo destrabaron el
+    país y a quién atendieron mientras lo hacían.
+
+    No es un puntaje. Es una firma —una frase que se lee en voz alta— y los
+    hechos que la sostienen. Solo el equipo docente, en el debriefing; jamás
+    los participantes durante la corrida.
+    """
+    _exigir_cierre()
+    return lectura.calcular(motor)
+
+
+@app.get("/api/debriefing")
+def debriefing():
+    """
+    Todo el material del debriefing en una sola respuesta (`B7`).
+
+    Hechos y contraste, no un volcado de variables: el país que se recibió
+    contra el que se entrega con su proyección, la línea declarada contra la
+    ejecutada, el pliego con la ventana en que cayó cada decisión, los tres
+    momentos, y la lectura. Las agendas reservadas NO van: son contexto fijo
+    del rol, no una jugada oculta que haya que destapar al final.
+    """
+    _exigir_cierre()
+    return _debriefing()
+
+
+def _debriefing() -> dict:
+    recibido = motor._indicadores_t0
+    entregado = motor.metricas()
+    pliego = []
+    pasos_de_dia = [p for p in motor.historial if p.franja == "dia"]
+    for paso in pasos_de_dia:
+        pliego.append({
+            "jornada": paso.turno,
+            "resumen": paso.resumen,
+            # La foto de indicadores al cerrar la jornada: lo que se movió
+            # alrededor de esas decisiones, sin atribuírselo.
+            "indicadores": paso.indicadores,
+            "decisiones": [
+                {"rol": im["rol"], "nombre": im["nombre"],
+                 "descripcion": im["descripcion"],
+                 "responsable": im["responsable"],
+                 "ventana": im["ventana"], "via": im["via"],
+                 "atiende": im["atiende"]}
+                for im in motor.imputaciones if im["ventana"] == paso.turno
+            ],
+        })
+
+    lineas = []
+    for rol in views.ROLES:
+        ejecutada = [im["nombre"] for im in motor.imputaciones
+                     if im["rol"] == rol]
+        lineas.append({
+            "rol": rol,
+            "declarada": motor.lineas_declaradas.get(rol),
+            "ejecutada": ejecutada,
+            "decisiones": len(ejecutada),
+        })
+
+    return {
+        "recibido": recibido,
+        "entregado": entregado,
+        "proyeccion": _proyeccion_final(),
+        "lineas_vs_ejecutada": lineas,
+        "pliego_por_jornada": pliego,
+        "momentos": _los_tres_momentos(),
+        "lectura": lectura.calcular(motor),
+    }
+
+
+def _los_tres_momentos() -> dict:
+    """
+    Los tres momentos del B7, cada uno con su jornada:
+
+      · cuándo la mesa dejó de ser una mesa (el Comité se suspendió o se fue),
+      · cuándo se escribió el primer registro,
+      · qué región cruzó primero el reloj de oxígeno.
+    """
+    e = _estado
+    dejo_de_ser_mesa = None
+    primera_region_roja = None
+    for paso in motor.historial:
+        if dejo_de_ser_mesa is None and any(
+                ev.get("tipo") in ("comite_suspende",
+                                   "comite_se_retira_definitivo")
+                for ev in paso.eventos):
+            dejo_de_ser_mesa = paso.turno
+        if (primera_region_roja is None and paso.franja == "dia"):
+            rojas = [rid for rid, r in paso.regiones.items()
+                     if r.get("semaforo") == "rojo"]
+            if rojas:
+                primera_region_roja = {
+                    "jornada": paso.turno,
+                    "region": e.regiones[rojas[0]].nombre
+                    if rojas[0] in e.regiones else rojas[0],
+                }
+    turno_registro = e.banderas.activada_en_turno.get("registro_escrito")
+    return {
+        "la_mesa_dejo_de_ser_mesa": dejo_de_ser_mesa,
+        "primer_registro_escrito": (max(1, (turno_registro + 1) // 2)
+                                    if turno_registro is not None else None),
+        "primera_region_en_rojo": primera_region_roja,
+    }
 
 
 # ===========================================================================
